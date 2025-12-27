@@ -1,36 +1,123 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DealWatch - Mobile Deal Monitoring App
+
+DealWatch is a mobile-first web application that helps users monitor online listings for cars and other items. Users can create watchlists with custom filters and get notified when new deals match their criteria.
+
+## Features
+
+### 📱 Mobile-First Design
+- **Bottom Navigation**: Easy thumb navigation with 4 main tabs
+- **Responsive UI**: Optimized for mobile devices with touch-friendly interactions
+- **Clean Interface**: Modern design with proper spacing and shadows
+
+### 🏠 Home Dashboard
+- **Hero Section**: Personalized welcome with user's name
+- **Quick Stats**: Active alerts and new matches display
+- **Popular Listings**: Featured car deals with images and details
+- **Your Monitors**: Overview of active watchlist items
+- **Quick Add**: One-tap button to add new listings to monitor
+
+### 📋 Watchlist Management
+- **Active Monitoring**: Track multiple car searches with custom criteria
+- **Smart Filters**: Filter by make, model, year range, price, location, and condition
+- **Real-time Updates**: See when listings were last checked and how many matches found
+- **Search & Filter**: Find specific watchlist items quickly
+- **Add New Items**: Comprehensive form to set up new monitoring criteria
+
+### 🤖 AI Chat Assistant
+- **Intelligent Help**: AI-powered chatbot to help with car searches
+- **Quick Prompts**: Pre-defined questions for common requests
+- **Real-time Chat**: Smooth messaging experience with typing indicators
+- **Persistent History**: Chat history maintained during session
+
+### 👤 Profile & Settings
+- **User Management**: Edit profile information and preferences
+- **Statistics**: View your usage stats (watchlists, alerts, deals found)
+- **Account Settings**: Manage notifications, privacy, and theme preferences
+- **Support**: Help center, feedback, and app information
+- **Data Management**: Options to manage or delete account data
+
+## Tech Stack
+
+- **Framework**: Next.js 16 with TypeScript
+- **Styling**: Tailwind CSS with custom design system
+- **Icons**: Lucide React for consistent iconography
+- **Components**: Custom UI components built on Radix UI primitives
+- **State Management**: React hooks for local state
+- **Responsive**: Mobile-first design with desktop support
+
+## Color Scheme
+
+The app uses a modern color palette with support for both light and dark themes:
+- **Primary**: Blue (#2563eb) for primary actions and highlights
+- **Secondary**: Gray (#f1f5f9) for secondary elements
+- **Background**: Dynamic based on system theme preference
+- **Custom Shadows**: Soft shadows optimized for mobile viewing
+
+## UI Components
+
+### Core Components
+- **Button**: Multiple variants (default, outline, ghost, secondary)
+- **Card**: Container component with consistent spacing
+- **Input/Textarea**: Form elements with proper mobile optimization
+- **Avatar**: User profile images with fallbacks
+- **Badge**: Status indicators and labels
+- **Bottom Navigation**: Fixed navigation with active state indicators
+
+### Layout Features
+- **Sticky Headers**: Important navigation stays accessible
+- **Safe Areas**: Proper padding for mobile devices
+- **Touch Targets**: All interactive elements sized for finger navigation
+- **Loading States**: Smooth transitions and feedback
 
 ## Getting Started
 
-First, run the development server:
+1. **Install dependencies**:
+   ```bash
+   npm install
+   ```
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+2. **Start development server**:
+   ```bash
+   npm run dev
+   ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+3. **Open browser**: Navigate to `http://localhost:3000`
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Mobile Optimization
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Viewport**: Properly configured for mobile devices
+- **Touch Interactions**: All buttons and links optimized for touch
+- **Performance**: Optimized images and efficient rendering
+- **PWA Ready**: Can be installed as a mobile app
+- **Responsive Images**: Automatically sized for different screen densities
 
-## Learn More
+## Future Enhancements
 
-To learn more about Next.js, take a look at the following resources:
+- **Push Notifications**: Real-time alerts when new deals are found
+- **Advanced Filters**: More granular search criteria
+- **Deal Comparison**: Side-by-side comparison of similar listings
+- **Saved Favorites**: Bookmark specific listings
+- **Price History**: Track price changes over time
+- **Social Features**: Share deals with friends
+- **API Integration**: Connect with real car listing services
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Browser Support
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Mobile**: iOS Safari 12+, Chrome Mobile 70+
+- **Desktop**: Chrome 70+, Firefox 65+, Safari 12+, Edge 79+
 
-## Deploy on Vercel
+## Development Notes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Mobile-First**: All components designed for mobile, then enhanced for desktop
+- **Accessibility**: Proper ARIA labels and keyboard navigation
+- **Performance**: Optimized for mobile networks and devices
+- **SEO**: Proper meta tags and semantic HTML structure
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Backend Listing sources:
+
+- **Dubicars.com**: 8531 Listings
+
+---
+
+Built with ❤️ for car enthusiasts and deal hunters.

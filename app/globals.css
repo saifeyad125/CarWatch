@@ -1,26 +1,269 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Light Mode - Red Theme */
+  --background: 0 0% 98%;
+  --foreground: 0 0% 10%;
+  
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 10%;
+  
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 10%;
+  
+  /* Primary Red - Main brand color */
+  --primary: 0 84% 60%;
+  --primary-foreground: 0 0% 100%;
+  
+  /* Secondary - Light neutral */
+  --secondary: 0 0% 96%;
+  --secondary-foreground: 0 0% 10%;
+  
+  /* Muted - Subtle backgrounds */
+  --muted: 0 0% 95%;
+  --muted-foreground: 0 0% 45%;
+  
+  /* Accent - Subtle red tint */
+  --accent: 0 70% 97%;
+  --accent-foreground: 0 84% 50%;
+  
+  /* Destructive - Deeper red for warnings */
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  
+  /* Borders and inputs - Light gray with subtle warmth */
+  --border: 0 0% 90%;
+  --input: 0 0% 90%;
+  
+  /* Ring - Red focus ring */
+  --ring: 0 84% 60%;
+  
+  --radius: 0.5rem;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Dark Mode - Red Theme optimized for dark backgrounds */
+.dark {
+  --background: 0 0% 13%;
+  --foreground: 0 0% 95%;
+  
+  --card: 0 0% 16%;
+  --card-foreground: 0 0% 95%;
+  
+  --popover: 0 0% 14%;
+  --popover-foreground: 0 0% 95%;
+  
+  /* Primary Red - Slightly more vibrant for dark mode */
+  --primary: 0 84% 65%;
+  --primary-foreground: 0 0% 100%;
+  
+  /* Secondary - Dark neutral */
+  --secondary: 0 0% 20%;
+  --secondary-foreground: 0 0% 95%;
+  
+  /* Muted - Darker backgrounds */
+  --muted: 0 0% 18%;
+  --muted-foreground: 0 0% 60%;
+  
+  /* Accent - Subtle red tint for dark */
+  --accent: 0 50% 18%;
+  --accent-foreground: 0 84% 70%;
+  
+  /* Destructive - Brighter red for visibility */
+  --destructive: 0 72% 60%;
+  --destructive-foreground: 0 0% 100%;
+  
+  /* Borders and inputs - Darker gray */
+  --border: 0 0% 22%;
+  --input: 0 0% 22%;
+  
+  /* Ring - Bright red focus ring */
+  --ring: 0 84% 65%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--font-geist-sans, Arial, Helvetica, sans-serif);
+}
+
+/* Custom shadows for mobile */
+.shadow-soft {
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+.shadow-card {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+/* Animation classes */
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mobile optimizations */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.safe-area-inset-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.pb-safe {
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+}
+
+/* Touch interactions */
+.active\:scale-95:active {
+  transform: scale(0.95);
+}
+
+.active\:scale-98:active {
+  transform: scale(0.98);
+}
+
+/* Backdrop blur support */
+@supports (backdrop-filter: blur(12px)) {
+  .backdrop-blur-xl {
+    backdrop-filter: blur(12px);
+  }
+}
+
+@supports not (backdrop-filter: blur(12px)) {
+  .backdrop-blur-xl {
+    background-color: rgba(255, 255, 255, 0.9);
+  }
+  
+  .dark .backdrop-blur-xl {
+    background-color: rgba(15, 15, 15, 0.9);
+  }
+}
+
+/* Dark mode specific enhancements */
+.dark {
+  /* Enhance shadow visibility in dark mode */
+  --tw-shadow-color: rgba(0, 0, 0, 0.5);
+}
+
+/* Red gradient adjustments for dark mode */
+.dark .bg-gradient-to-r.from-red-50 {
+  background-image: linear-gradient(to right, hsl(0, 40%, 15%), hsl(0, 40%, 18%));
+}
+
+.dark .bg-gradient-to-r.from-red-100 {
+  background-image: linear-gradient(to right, hsl(0, 40%, 18%), hsl(0, 35%, 20%));
+}
+
+/* Green gradient adjustments for dark mode */
+.dark .bg-gradient-to-r.from-green-50 {
+  background-image: linear-gradient(to right, hsl(150, 40%, 15%), hsl(150, 40%, 18%));
+}
+
+.dark .bg-gradient-to-r.from-green-100 {
+  background-image: linear-gradient(to right, hsl(150, 40%, 18%), hsl(150, 35%, 20%));
+}
+
+/* Cyan gradient adjustments for dark mode */
+.dark .bg-gradient-to-r.from-cyan-50 {
+  background-image: linear-gradient(to right, hsl(180, 40%, 15%), hsl(180, 40%, 18%));
+}
+
+.dark .bg-gradient-to-r.from-cyan-100 {
+  background-image: linear-gradient(to right, hsl(180, 40%, 18%), hsl(180, 35%, 20%));
+}
+
+/* Amber gradient adjustments for dark mode */
+.dark .bg-gradient-to-r.from-amber-50 {
+  background-image: linear-gradient(to right, hsl(45, 40%, 15%), hsl(45, 40%, 18%));
+}
+
+.dark .bg-gradient-to-r.from-amber-100 {
+  background-image: linear-gradient(to right, hsl(45, 40%, 18%), hsl(45, 35%, 20%));
+}
+
+/* Border color adjustments for dark mode */
+.dark .border-red-200 {
+  border-color: hsl(0, 40%, 25%);
+}
+
+.dark .border-green-200 {
+  border-color: hsl(150, 40%, 25%);
+}
+
+.dark .border-cyan-200 {
+  border-color: hsl(180, 40%, 25%);
+}
+
+.dark .border-amber-200 {
+  border-color: hsl(45, 40%, 25%);
+}
+
+/* Background color adjustments */
+.dark .bg-red-100 {
+  background-color: hsl(0, 40%, 18%);
+}
+
+.dark .bg-green-100 {
+  background-color: hsl(150, 40%, 18%);
+}
+
+.dark .bg-cyan-100 {
+  background-color: hsl(180, 40%, 18%);
+}
+
+.dark .bg-amber-100 {
+  background-color: hsl(45, 40%, 18%);
+}
+
+/* Text color adjustments for dark mode */
+.dark .text-red-700 {
+  color: hsl(0, 70%, 75%);
+}
+
+.dark .text-green-700 {
+  color: hsl(150, 60%, 75%);
+}
+
+.dark .text-cyan-700 {
+  color: hsl(180, 60%, 75%);
+}
+
+.dark .text-amber-700 {
+  color: hsl(45, 60%, 75%);
+}
+
+.dark .text-red-600 {
+  color: hsl(0, 70%, 70%);
+}
+
+.dark .text-green-600 {
+  color: hsl(150, 60%, 70%);
+}
+
+.dark .text-cyan-600 {
+  color: hsl(180, 60%, 70%);
+}
+
+.dark .text-red-800 {
+  color: hsl(0, 70%, 80%);
+}
+
+.dark .text-green-800 {
+  color: hsl(150, 60%, 80%);
 }
