@@ -59,27 +59,5 @@ for col in num_features:
 # ===========================
 output_path = 'datasets/full_dataset_cleaned.csv'
 df.to_csv(output_path, index=False)
-print(f"\n✅ Cleaned dataset saved to: {output_path}")
+print(f"\nCleaned dataset saved to: {output_path}")
 
-# Also create cleaned train and test sets
-print("\nCleaning train and test sets...")
-
-# Train set
-train_df = pd.read_csv('datasets/train.csv')
-for col in cat_features:
-    if col in train_df.columns:
-        train_df[col] = train_df[col].fillna("Unknown").astype(str)
-train_df.to_csv('datasets/train_cleaned.csv', index=False)
-print("✅ train_cleaned.csv saved")
-
-# Test set
-test_df = pd.read_csv('datasets/test.csv')
-for col in cat_features:
-    if col in test_df.columns:
-        test_df[col] = test_df[col].fillna("Unknown").astype(str)
-test_df.to_csv('datasets/test_cleaned.csv', index=False)
-print("✅ test_cleaned.csv saved")
-
-print("\n" + "="*70)
-print("CLEANING COMPLETE!")
-print("="*70)
