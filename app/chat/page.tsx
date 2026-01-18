@@ -5,7 +5,8 @@ import { Send, Bot, User, Sparkles, Trash2, Menu, Plus, MessageSquare, Clock, X 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import Link from "next/link";
 
 interface Message {
   id: number;
@@ -33,8 +34,13 @@ export default function ChatPage() {
   const [inputMessage, setInputMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Mock chat history
   const [chatHistory] = useState<ChatHistory[]>([
@@ -205,7 +211,7 @@ export default function ChatPage() {
                     <div className="flex items-center gap-1 mt-1">
                       <Clock className="h-3 w-3 text-muted-foreground" />
                       <span className="text-xs text-muted-foreground">
-                        {formatRelativeTime(chat.timestamp)}
+                        {isMounted ? formatRelativeTime(chat.timestamp) : 'Just now'}
                       </span>
                     </div>
                   </div>
@@ -245,22 +251,14 @@ export default function ChatPage() {
               >
                 <Menu className="h-5 w-5" />
               </Button>
-              <div className="relative">
-                <Avatar className="h-10 w-10 bg-gradient-to-r from-red-500 to-red-600">
-                  <AvatarFallback>
-                    <Bot className="h-6 w-6 text-white" />
-                  </AvatarFallback>
-                </Avatar>
-                <div className="absolute -bottom-1 -right-1 h-3 w-3 bg-green-500 rounded-full border-2 border-white" />
-              </div>
-              <div>
-                <h1 className="text-lg font-semibold">AI Assistant</h1>
-                <p className="text-xs text-muted-foreground">Online • Ready to help</p>
-              </div>
+              <h1 className="text-xl font-bold text-foreground">AI Chat</h1>
             </div>
-            <Button variant="ghost" size="icon" onClick={clearChat} className="h-9 w-9 rounded-xl hover:bg-red-50 hover:text-red-600">
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            <Link href="/profile">
+              <Avatar className="h-10 w-10 cursor-pointer hover:ring-2 hover:ring-red-500 transition-all">
+                <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=Saif" />
+                <AvatarFallback>S</AvatarFallback>
+              </Avatar>
+            </Link>
           </div>
         </div>
 

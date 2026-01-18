@@ -26,11 +26,11 @@ class MLService:
             base_path = Path(__file__).parent.parent.parent.parent
             model_path = os.getenv(
                 "ML_MODEL_PATH",
-                str(base_path / "server/models/final_model_uncertainty.cbm")
+                str(base_path / "server/models/catboost/final_model_uncertainty.cbm")
             )
             calibration_path = os.getenv(
                 "ML_CALIBRATION_PATH",
-                str(base_path / "server/models/calibration_info.json")
+                str(base_path / "server/models/catboost/calibration_info.json")
             )
             
             # Load model

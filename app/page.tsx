@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, TrendingUp, Bell, Star, MapPin, Gauge, Heart, Car } from "lucide-react";
+import { Plus, TrendingUp, Bell, Star, MapPin, Gauge, Heart, Car, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -176,10 +176,12 @@ export default function Home() {
           <div>
             <h1 className="text-xl font-bold text-foreground">CarWatch</h1>
           </div>
-          <Avatar className="h-10 w-10">
-            <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=Saif" />
-            <AvatarFallback>S</AvatarFallback>
-          </Avatar>
+          <Link href="/profile">
+            <Avatar className="h-10 w-10 cursor-pointer hover:ring-2 hover:ring-red-500 transition-all">
+              <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=Saif" />
+              <AvatarFallback>S</AvatarFallback>
+            </Avatar>
+          </Link>
         </div>
       </div>
 

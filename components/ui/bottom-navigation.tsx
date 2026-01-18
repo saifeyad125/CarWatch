@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Home, List, MessageCircle, User } from "lucide-react";
+import { Home, List, MessageCircle, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -15,9 +15,9 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { icon: Home, label: "Home", href: "/" },
+  { icon: Search, label: "Browse", href: "/browse" },
   { icon: List, label: "Watchlist", href: "/watchlist", badge: 3 },
   { icon: MessageCircle, label: "AI Chat", href: "/chat" },
-  { icon: User, label: "Profile", href: "/profile" },
 ];
 
 export function BottomNavigation() {

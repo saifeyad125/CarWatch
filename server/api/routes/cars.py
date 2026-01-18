@@ -1,86 +1,130 @@
 """
-Car listings endpoints
+Car listings endpoints (Summary + Detail)
 """
 from fastapi import APIRouter, HTTPException, Query
-from typing import Optional, List
+from typing import Optional, List, Literal
 from pydantic import BaseModel
+from models.schemas import CarListingSummary, CarListingDetail, Seller, MarketAnalysis, PricePoint, SimilarListing
+
 
 router = APIRouter()
 
+# ---------------------------
+# Temporary in-memory data
+# (replace with DB later)
+# ---------------------------
+LISTINGS: dict[int, CarListingDetail] = {
+    1: CarListingDetail(
+        id=1,
+        make="Toyota",
+        model="Camry",
+        year=2022,
+        price="$24,500",
+        predictedPrice="$26,800",
+        dealLabel="Good Deal",
+        mileage="15,000 mi",
+        location="Los Angeles, CA",
+        image="https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=800&h=600&fit=crop",
+        description="Well-maintained 2022 Toyota Camry with low mileage. Single owner, garage kept. Regular maintenance records available.",
+        seller=Seller(
+            name="Mike Chen",
+            rating=4.8,
+            totalSales=23,
+            memberSince="2019",
+            verified=True,
+            avatar="https://api.dicebear.com/7.x/avataaars/svg?seed=Mike",
+            phone="+1 (555) 123-4567",
+            type="Private Seller"
+        ),
+        features=[
+            "Backup Camera", "Bluetooth Connectivity", "Cruise Control", "USB Ports",
+            "Air Conditioning", "Power Windows", "Keyless Entry", "Safety Sense 2.0"
+        ],
+        marketAnalysis=MarketAnalysis(
+            depreciation={"oneYear": 12, "threeYear": 32, "fiveYear": 55},
+            marketTrend="stable",
+            priceHistory=[
+                PricePoint(month="Jan", averagePrice=27500),
+                PricePoint(month="Feb", averagePrice=27200),
+                PricePoint(month="Mar", averagePrice=26900),
+                PricePoint(month="Apr", averagePrice=26700),
+                PricePoint(month="May", averagePrice=26500),
+                PricePoint(month="Jun", averagePrice=26800),
+            ],
+            similarListings=[
+                SimilarListing(price="$25,200", mileage="18,000 mi", daysOnMarket=12),
+                SimilarListing(price="$23,800", mileage="22,000 mi", daysOnMarket=8),
+                SimilarListing(price="$26,100", mileage="12,000 mi", daysOnMarket=24),
+            ],
+        ),
+    )
+}
 
-class CarListing(BaseModel):
-    """Car listing model."""
-    id: Optional[str] = None
-    brand: str
-    model: str
-    year: int
-    price: float
-    mileage: int
-    fuel_type: Optional[str] = None
-    body_type: Optional[str] = None
-    trim: Optional[str] = None
-    url: Optional[str] = None
+
+# ---------------------------
+# Helpers
+# ---------------------------
+def to_summary(detail: CarListingDetail) -> CarListingSummary:
+    return CarListingSummary(
+        id=detail.id,
+        make=detail.make,
+        model=detail.model,
+        year=detail.year,
+        price=detail.price,
+        predictedPrice=detail.predictedPrice,
+        dealLabel=detail.dealLabel,
+        mileage=detail.mileage,
+        location=detail.location,
+        image=detail.image,
+    )
 
 
-class CarSearchParams(BaseModel):
-    """Search parameters for filtering cars."""
-    brand: Optional[str] = None
-    model: Optional[str] = None
-    min_year: Optional[int] = None
-    max_year: Optional[int] = None
-    min_price: Optional[float] = None
-    max_price: Optional[float] = None
-    max_mileage: Optional[int] = None
-
-
-@router.get("/")
-async def get_cars(
-    brand: Optional[str] = Query(None, description="Filter by brand"),
+# ---------------------------
+# Routes
+# ---------------------------
+@router.get("/", response_model=List[CarListingSummary])
+async def get_pop_cars(
+    make: Optional[str] = Query(None, description="Filter by make"),
     model: Optional[str] = Query(None, description="Filter by model"),
     min_year: Optional[int] = Query(None, description="Minimum year"),
     max_year: Optional[int] = Query(None, description="Maximum year"),
-    min_price: Optional[float] = Query(None, description="Minimum price"),
-    max_price: Optional[float] = Query(None, description="Maximum price"),
-    limit: int = Query(20, le=100, description="Number of results"),
-    offset: int = Query(0, ge=0, description="Offset for pagination")
+    limit: int = Query(4, ge=1, le=100, description="Number of results"),
+    offset: int = Query(0, ge=0, description="Offset for pagination"),
 ):
     """
-    Get car listings with optional filters.
-    
-    TODO: Implement database/data source integration
+    Browse listings (summary only).
     """
-    return {
-        "message": "Car listings endpoint",
-        "filters": {
-            "brand": brand,
-            "model": model,
-            "min_year": min_year,
-            "max_year": max_year,
-            "min_price": min_price,
-            "max_price": max_price
-        },
-        "pagination": {
-            "limit": limit,
-            "offset": offset
-        },
-        "data": []  # TODO: Implement data fetching
-    }
+    all_listings = list(LISTINGS.values())
+
+    # basic filtering (expand later)
+    if make:
+        all_listings = [l for l in all_listings if l.make.lower() == make.lower()]
+    if model:
+        all_listings = [l for l in all_listings if l.model.lower() == model.lower()]
+    if min_year:
+        all_listings = [l for l in all_listings if l.year >= min_year]
+    if max_year:
+        all_listings = [l for l in all_listings if l.year <= max_year]
+
+    # pagination
+    sliced = all_listings[offset: offset + limit]
+
+    return [to_summary(l) for l in sliced]
 
 
 @router.get("/brands")
 async def get_brands():
-    """Get list of available car brands."""
-    # TODO: Load from data/brands.csv
-    return {
-        "brands": [
-            "Toyota", "Honda", "BMW", "Mercedes-Benz", "Audi",
-            "Nissan", "Ford", "Chevrolet", "Hyundai", "Kia"
-        ]
-    }
+    # Later: load dynamically from DB
+    brands = sorted({l.make for l in LISTINGS.values()})
+    return {"brands": brands}
 
 
-@router.get("/{car_id}")
-async def get_car_by_id(car_id: str):
-    """Get a specific car listing by ID."""
-    # TODO: Implement database lookup
-    raise HTTPException(status_code=404, detail=f"Car with ID {car_id} not found")
+@router.get("/{car_id}", response_model=CarListingDetail)
+async def get_car_by_id(car_id: int):
+    """
+    Get full listing details.
+    """
+    car = LISTINGS.get(car_id)
+    if not car:
+        raise HTTPException(status_code=404, detail=f"Car with ID {car_id} not found")
+    return car

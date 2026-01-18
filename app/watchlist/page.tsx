@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 
 interface WatchlistItem {
@@ -248,13 +249,21 @@ export default function WatchlistPage() {
       <div className="shrink-0 bg-card/80 backdrop-blur-xl border-b border-border/20 px-4 py-4 sticky top-0 z-10">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-bold">Watchlist</h1>
-          <Button
-            size="icon"
-            onClick={() => setShowAddForm(true)}
-            className="h-10 w-10 rounded-2xl bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white transition-all duration-200 active:scale-95 shadow-lg"
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="icon"
+              onClick={() => setShowAddForm(true)}
+              className="h-10 w-10 rounded-2xl bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white transition-all duration-200 active:scale-95 shadow-lg"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+            <Link href="/profile">
+              <Avatar className="h-10 w-10 cursor-pointer hover:ring-2 hover:ring-red-500 transition-all">
+                <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=Saif" />
+                <AvatarFallback>S</AvatarFallback>
+              </Avatar>
+            </Link>
+          </div>
         </div>
 
         {/* Search */}

@@ -32,7 +32,7 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(health.router, tags=["Health"])
+app.include_router(health.router, prefix="/api", tags=["Health"])
 app.include_router(cars.router, prefix="/api/cars", tags=["Cars"])
 app.include_router(predictions.router, prefix="/api/predictions", tags=["Predictions"])
 
