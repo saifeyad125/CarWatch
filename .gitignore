@@ -40,3 +40,36 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+*.egg-info/
+.eggs/
+
+# Data files (large datasets - keep locally)
+data/raw/**/*.csv
+data/processed/**/*.csv
+!data/.gitkeep
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+
+# CatBoost training artifacts
+ai_training/catboost_info/
+
+# Server
+server/__pycache__/
+server/.env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

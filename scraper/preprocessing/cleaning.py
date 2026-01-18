@@ -2,8 +2,10 @@ import pandas as pd
 from pathlib import Path
 
 # ---- Paths ----
-RAW_CSV   = Path("z__dataset/raw/dubicars_partial_320_pages.csv")
-CLEAN_CSV = Path("z__dataset/clean/dubicars_cars_clean.csv")
+# NOTE: These are example paths. Update based on your actual scraped data files.
+# dubicars_partial_320_pages.csv is an OUTPUT from the dubicars scraper.
+RAW_CSV   = Path("data/raw/dubicars/dubicars_partial_320_pages.csv")  # TODO: Update with actual file
+CLEAN_CSV = Path("data/processed/dubicars_cars_clean.csv")
 
 # ---- Brand list ----
 BRANDS = [

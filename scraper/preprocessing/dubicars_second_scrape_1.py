@@ -8,14 +8,15 @@ from bs4 import BeautifulSoup, Tag
 
 # ---- Paths -------------------------------------------------------------
 
-INPUT_CSV = Path("z__dataset/clean/dubicars_cars_clean.csv")
+# NOTE: This script expects dubicars_cars_clean.csv which is created by cleaning.py
+INPUT_CSV = Path("data/processed/dubicars_cars_clean.csv")
 
 # Folder for intermediate checkpoint CSVs
-CHECKPOINT_DIR = Path("z__dataset/clean/dubi/scraper_1")
+CHECKPOINT_DIR = Path("data/processed/dubi/scraper_1")
 CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Final enriched CSV
-FINAL_CSV = Path("z__dataset/clean/dubi/scraper_1/dubicars_second_scrape_1.csv")
+FINAL_CSV = Path("data/processed/dubi/scraper_1/dubicars_second_scrape_1.csv")
 
 # ---- HTTP config -------------------------------------------------------
 

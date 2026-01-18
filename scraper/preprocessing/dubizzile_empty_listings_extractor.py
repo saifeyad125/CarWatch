@@ -3,7 +3,7 @@ import csv
 from pathlib import Path
 
 # ===== CONFIG =====
-INPUT_CSV = Path("/Users/saif/Desktop/University Saif/Y3/dissertion/project/z__dataset/raw/dubizzle_combined_enriched.csv")
+INPUT_CSV = Path("/Users/saif/Desktop/University Saif/Y3/dissertion/project/data/raw/dubizzle_combined_enriched.csv")
 
 ALL_FIELDS = [
     "brand","model","type","price_aed","year","kms","url",

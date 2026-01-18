@@ -1,8 +1,8 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-learn_log = pd.read_csv("catboost_info/learn_error.tsv", sep="\t")
-test_log  = pd.read_csv("catboost_info/test_error.tsv", sep="\t")
+learn_log = pd.read_csv("ai_training/catboost_info/learn_error.tsv", sep="\t")
+test_log  = pd.read_csv("ai_training/catboost_info/test_error.tsv", sep="\t")
 
 
 print(learn_log.head())

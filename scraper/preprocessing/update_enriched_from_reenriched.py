@@ -3,8 +3,8 @@ import csv
 from pathlib import Path
 
 # ===== CONFIG =====
-REENRICHED_CSV = Path("/Users/saif/Desktop/University Saif/Y3/dissertion/project/z__dataset/raw/dubizzle_combined_enriched_EMPTY_LISTINGS_REENRICHED.csv")
-MAIN_ENRICHED_CSV = Path("/Users/saif/Desktop/University Saif/Y3/dissertion/project/z__dataset/raw/dubizzle_combined_enriched.csv")
+REENRICHED_CSV = Path("/Users/saif/Desktop/University Saif/Y3/dissertion/project/data/raw/dubizzle_combined_enriched_EMPTY_LISTINGS_REENRICHED.csv")
+MAIN_ENRICHED_CSV = Path("/Users/saif/Desktop/University Saif/Y3/dissertion/project/data/raw/dubizzle_combined_enriched.csv")
 OUTPUT_CSV = MAIN_ENRICHED_CSV.with_name(MAIN_ENRICHED_CSV.stem + "_UPDATED.csv")
 
 ALL_FIELDS = [

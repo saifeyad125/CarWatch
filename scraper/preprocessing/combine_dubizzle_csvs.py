@@ -2,8 +2,8 @@ import pandas as pd
 from pathlib import Path
 
 # ---- Paths ----
-INPUT_DIR = Path("/Users/saif/Desktop/University Saif/Y3/dissertion/project/z__dataset/raw/dubuzzile")
-OUTPUT_CSV = Path("/Users/saif/Desktop/University Saif/Y3/dissertion/project/z__dataset/raw/dubizzle_combined.csv")
+INPUT_DIR = Path("/Users/saif/Desktop/University Saif/Y3/dissertion/project/data/raw/dubuzzile")
+OUTPUT_CSV = Path("/Users/saif/Desktop/University Saif/Y3/dissertion/project/data/raw/dubizzle_combined.csv")
 
 def combine_csv_files():
     print(f"[+] Combining CSV files from part 1 to 72...")

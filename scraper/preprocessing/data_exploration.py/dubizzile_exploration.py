@@ -6,10 +6,10 @@ import pandas as pd
 # ------------------------
 # Input path
 input_path = Path(
-    "/Users/saif/Desktop/University Saif/Y3/dissertion/project/z__dataset/raw/dubuzzile/dubizzile_final_raw.csv"
+    "/Users/saif/Desktop/University Saif/Y3/dissertion/project/data/raw/dubuzzile/dubizzile_final_raw.csv"
 )
 output_path = Path(
-    "/Users/saif/Desktop/University Saif/Y3/dissertion/project/z__dataset/raw/dubuzzile/listings_with_missing_values.csv"
+    "/Users/saif/Desktop/University Saif/Y3/dissertion/project/data/raw/dubuzzile/listings_with_missing_values.csv"
 )
 
 df = pd.read_csv(input_path)
