@@ -1,0 +1,48 @@
+{
+  "calibration_method": "K-fold validation (all folds)",
+  "calibration_factor_from_kfold": 1.5790395283472078,
+  "calibration_factor_from_test": 1.520187883782441,
+  "recommended_for_production": 1.5790395283472078,
+  "kfold_validation_samples": 27292,
+  "test_set_size": 6824,
+  "stage2_config": {
+    "luxury_threshold_aed": 800000,
+    "sigmoid_tau": 0.3,
+    "sigma_inflation_beta": 0.4,
+    "stage2_features": [
+      "brand",
+      "model",
+      "vehicle_age",
+      "kms_per_year",
+      "horsepower_mid",
+      "engine_cc_mid",
+      "fuel_type",
+      "body_type",
+      "regional_specs",
+      "trim",
+      "mu_log_stage1",
+      "sigma_log_stage1"
+    ]
+  },
+  "stage1_only_metrics": {
+    "RMSE_log": 0.2424305857699072,
+    "MAE_log": 0.16931464056741943,
+    "R2_log": 0.9584962951837539,
+    "MAE_price": 50262.27343942651,
+    "RMSE_price": 442724.9960924307,
+    "R2_price": 0.6704459575252449,
+    "MedAPE": 12.157454789841433
+  },
+  "twostage_metrics": {
+    "RMSE_log": 0.24081244168246735,
+    "MAE_log": 0.16950710495143692,
+    "R2_log": 0.9590484931859663,
+    "MAE_price": 48873.17357916403,
+    "RMSE_price": 328156.7686986942,
+    "R2_price": 0.8189405107350332,
+    "MedAPE": 12.362365874833097,
+    "Mean_sigma_log": 0.2347758956788235,
+    "Median_sigma_log": 0.22205914616758815,
+    "Coverage_90pct_%": 91.1928487690504
+  }
+}

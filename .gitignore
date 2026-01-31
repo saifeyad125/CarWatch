@@ -64,6 +64,13 @@ data/processed/**/*.csv
 # CatBoost training artifacts
 ai_training/catboost_info/
 
+# AI Training outputs (large model files - keep locally)
+ai_training/outputs/*.cbm
+ai_training/outputs/*.csv
+ai_training/outputs/*.png
+ai_training/outputs/*.txt
+!ai_training/outputs/calibration_info.json
+
 # Server
 server/__pycache__/
 server/.env

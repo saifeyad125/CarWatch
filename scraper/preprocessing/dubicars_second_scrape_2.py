@@ -8,7 +8,6 @@ from bs4 import BeautifulSoup, Tag
 
 # ---- Paths -------------------------------------------------------------
 
-# NOTE: This script expects dubicars_cars_clean.csv which is created by cleaning.py
 INPUT_CSV = Path("data/processed/dubicars_cars_clean.csv")
 
 # Folder for intermediate checkpoint CSVs

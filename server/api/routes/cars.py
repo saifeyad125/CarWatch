@@ -26,12 +26,9 @@ LISTINGS: dict[int, CarListingDetail] = {
         location="Los Angeles, CA",
         image="https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=800&h=600&fit=crop",
         description="Well-maintained 2022 Toyota Camry with low mileage. Single owner, garage kept. Regular maintenance records available.",
+        url="https://example.com/listing/1",
         seller=Seller(
             name="Mike Chen",
-            rating=4.8,
-            totalSales=23,
-            memberSince="2019",
-            verified=True,
             avatar="https://api.dicebear.com/7.x/avataaars/svg?seed=Mike",
             phone="+1 (555) 123-4567",
             type="Private Seller"

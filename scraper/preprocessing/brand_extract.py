@@ -2,9 +2,6 @@ import re
 import pandas as pd
 from pathlib import Path
 
-# NOTE: This script expects dubicars_cars_clean.csv which is an OUTPUT file.
-# It will be created by running cleaning.py on dubicars raw data.
-# For now, using relative paths that work from project root.
 INPUT_CSV         = Path("data/processed/dubicars_cars_clean.csv")
 OUTPUT_CSV        = Path("data/processed/dubicars_cars_clean_extracted.csv")
 MODEL_COUNTS_CSV  = Path("data/processed/dubicars_model_counts.csv")

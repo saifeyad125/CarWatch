@@ -8,11 +8,28 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { API_ENDPOINTS, apiRequest } from "@/lib/api";
+
+interface CarListing {
+  id: number;
+  make: string;
+  model: string;
+  year: number;
+  price: string;
+  predictedPrice?: string;
+  dealLabel?: "Good Deal" | "Fair" | "Overpriced";
+  mileage: string;
+  location: string;
+  image: string;
+}
 
 export default function Home() {
   const router = useRouter();
   const [favorites, setFavorites] = useState<number[]>([]);
   const [showAllListings, setShowAllListings] = useState(false);
+  const [popularListings, setPopularListings] = useState<CarListing[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Load favorites from localStorage on component mount
   useEffect(() => {
@@ -20,6 +37,25 @@ export default function Home() {
     if (savedFavorites) {
       setFavorites(JSON.parse(savedFavorites));
     }
+  }, []);
+
+  // Fetch popular listings from API
+  useEffect(() => {
+    const fetchListings = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const data = await apiRequest<CarListing[]>(`${API_ENDPOINTS.cars.list}?limit=8`);
+        setPopularListings(data);
+      } catch (err) {
+        console.error('Failed to fetch listings:', err);
+        setError('Failed to load listings. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchListings();
   }, []);
 
   const toggleFavorite = (carId: number) => {
@@ -35,105 +71,6 @@ export default function Home() {
     { label: "Active Alerts", value: "12", icon: Bell, color: "text-primary" },
     { label: "New Matches", value: "3", icon: TrendingUp, color: "text-primary" },
     { label: "Favorites", value: favorites.length.toString(), icon: Heart, color: "text-red-500", clickable: true },
-  ];
-
-  const popularListings = [
-    {
-      id: 1,
-      make: "Toyota",
-      model: "Camry",
-      year: 2022,
-      price: "$24,500",
-      predictedPrice: "$26,800",
-      mileage: "15,000 mi",
-      location: "Los Angeles, CA",
-      condition: "Used",
-      image: "https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=400&h=300&fit=crop",
-    },
-    {
-      id: 2,
-      make: "Honda",
-      model: "Civic",
-      year: 2023,
-      price: "$28,900",
-      predictedPrice: "$31,200",
-      mileage: "8,500 mi",
-      location: "San Diego, CA",
-      condition: "Certified Pre-Owned",
-      image: "https://images.unsplash.com/photo-1590362891991-f776e747a588?w=400&h=300&fit=crop",
-    },
-    {
-      id: 3,
-      make: "Tesla",
-      model: "Model 3",
-      year: 2023,
-      price: "$42,000",
-      predictedPrice: "$39,500",
-      mileage: "12,000 mi",
-      location: "San Francisco, CA",
-      condition: "Used",
-      image: "https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=400&h=300&fit=crop",
-    },
-    {
-      id: 4,
-      make: "Ford",
-      model: "F-150",
-      year: 2024,
-      price: "$52,900",
-      predictedPrice: "$54,700",
-      mileage: "New",
-      location: "Austin, TX",
-      condition: "New",
-      image: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=400&h=300&fit=crop",
-    },
-    {
-      id: 5,
-      make: "BMW",
-      model: "X3",
-      year: 2023,
-      price: "$48,500",
-      predictedPrice: "$46,200",
-      mileage: "18,000 mi",
-      location: "Chicago, IL",
-      condition: "Used",
-      image: "https://images.unsplash.com/photo-1555215695-3004980ad54e?w=400&h=300&fit=crop",
-    },
-    {
-      id: 6,
-      make: "Mazda",
-      model: "CX-5",
-      year: 2022,
-      price: "$29,800",
-      predictedPrice: "$32,100",
-      mileage: "22,000 mi",
-      location: "Phoenix, AZ",
-      condition: "Used",
-      image: "https://images.unsplash.com/photo-1494976235849-72d2820cac2c?w=400&h=300&fit=crop",
-    },
-    {
-      id: 7,
-      make: "Audi",
-      model: "A4",
-      year: 2024,
-      price: "$45,900",
-      predictedPrice: "$44,500",
-      mileage: "5,000 mi",
-      location: "Miami, FL",
-      condition: "Certified Pre-Owned",
-      image: "https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=400&h=300&fit=crop",
-    },
-    {
-      id: 8,
-      make: "Subaru",
-      model: "Outback",
-      year: 2023,
-      price: "$34,200",
-      predictedPrice: "$35,800",
-      mileage: "14,000 mi",
-      location: "Seattle, WA",
-      condition: "Used",
-      image: "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop",
-    },
   ];
 
   // Show only first 4 listings initially, then all if showAllListings is true
@@ -245,114 +182,133 @@ export default function Home() {
               </h3>
             </div>
 
-            <div className="grid grid-cols-1 gap-4">
-              {displayedListings.map((car) => (
-                <Card
-                  key={car.id}
-                  className="overflow-hidden shadow-xl border border-border/50 bg-card/50 backdrop-blur-sm rounded-2xl hover:shadow-2xl hover:border-primary/40 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] relative"
-                >
-                  <div className="relative">
-                    <img
-                      src={car.image}
-                      alt={`${car.year} ${car.make} ${car.model}`}
-                      className="w-full h-48 object-cover"
-                    />
-                    {/* Favorite Heart Icon */}
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="absolute top-4 right-4 h-10 w-10 rounded-full bg-white/80 hover:bg-white backdrop-blur-sm shadow-lg transition-all duration-200 active:scale-95"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        toggleFavorite(car.id);
-                      }}
-                    >
-                      <Heart 
-                        className={`h-5 w-5 transition-colors duration-200 ${
-                          favorites.includes(car.id) 
-                            ? 'text-red-500 fill-red-500' 
-                            : 'text-gray-600 hover:text-red-500'
-                        }`} 
-                      />
-                    </Button>
-                  </div>
-                  <div className="p-5 space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h4 className="font-bold text-lg text-foreground">
-                          {car.year} {car.make} {car.model}
-                        </h4>
-                        <div className="mt-1 space-y-1">
-                          <p className="text-2xl font-bold text-primary">{car.price}</p>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-muted-foreground">AI Predicted:</span>
-                            <span className="text-sm text-muted-foreground line-through decoration-2 decoration-muted-foreground/60">
-                              {car.predictedPrice}
-                            </span>
-                            {parseInt(car.price.replace(/[$,]/g, '')) < parseInt(car.predictedPrice.replace(/[$,]/g, '')) && (
-                              <Badge variant="default" className="text-xs bg-green-100 text-green-800 border-green-200">
-                                Good Deal
-                              </Badge>
-                            )}
-                            {parseInt(car.price.replace(/[$,]/g, '')) > parseInt(car.predictedPrice.replace(/[$,]/g, '')) && (
-                              <Badge variant="destructive" className="text-xs">
-                                Above Market
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <Badge variant="secondary" className="text-xs rounded-full px-3">
-                        {car.condition}
-                      </Badge>
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                      <span className="inline-flex items-center gap-1">
-                        <Gauge className="h-4 w-4" />
-                        {car.mileage}
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <MapPin className="h-4 w-4" />
-                        {car.location}
-                      </span>
-                    </div>
-
-                    <Link href={`/listing/${car.id}`}>
-                      <Button variant="outline" className="w-full rounded-xl h-11 font-medium border-cyan-500/40 text-cyan-600 hover:bg-cyan-500 hover:text-white hover:border-cyan-500 transition-all">
-                        View Details
-                      </Button>
-                    </Link>
-                  </div>
-                </Card>
-              ))}
-            </div>
-
-            {/* Load More Button */}
-            {!showAllListings && popularListings.length > 4 && (
-              <div className="mt-6 text-center">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowAllListings(true)}
-                  className="rounded-2xl h-12 px-8 font-medium shadow-lg hover:shadow-xl border-cyan-500/40 text-cyan-600 hover:bg-cyan-500 hover:text-white transition-all duration-200 active:scale-95"
-                >
-                  Load More Cars ({popularListings.length - 4} more)
-                </Button>
+            {/* Loading State */}
+            {isLoading && (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center space-y-3">
+                  <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  <p className="text-muted-foreground">Loading listings...</p>
+                </div>
               </div>
             )}
 
-            {/* Show Less Button */}
-            {showAllListings && (
-              <div className="mt-6 text-center">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowAllListings(false)}
-                  className="rounded-2xl h-12 px-8 font-medium shadow-lg hover:shadow-xl border-cyan-500/40 text-cyan-600 hover:bg-cyan-500 hover:text-white transition-all duration-200 active:scale-95"
-                >
-                  Show Less
-                </Button>
-              </div>
+            {/* Error State */}
+            {error && (
+              <Card className="p-6 bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900">
+                <p className="text-red-800 dark:text-red-300 text-center">{error}</p>
+              </Card>
+            )}
+
+            {/* Listings Grid */}
+            {!isLoading && !error && (
+              <>
+                <div className="grid grid-cols-1 gap-4">
+                  {displayedListings.map((car) => (
+                    <Card
+                      key={car.id}
+                      className="overflow-hidden shadow-xl border border-border/50 bg-card/50 backdrop-blur-sm rounded-2xl hover:shadow-2xl hover:border-primary/40 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] relative"
+                    >
+                      <div className="relative">
+                        <img
+                          src={car.image}
+                          alt={`${car.year} ${car.make} ${car.model}`}
+                          className="w-full h-48 object-cover"
+                        />
+                        {/* Favorite Heart Icon */}
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="absolute top-4 right-4 h-10 w-10 rounded-full bg-white/80 hover:bg-white backdrop-blur-sm shadow-lg transition-all duration-200 active:scale-95"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleFavorite(car.id);
+                          }}
+                        >
+                          <Heart 
+                            className={`h-5 w-5 transition-colors duration-200 ${
+                              favorites.includes(car.id) 
+                                ? 'text-red-500 fill-red-500' 
+                                : 'text-gray-600 hover:text-red-500'
+                            }`} 
+                          />
+                        </Button>
+                      </div>
+                      <div className="p-5 space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h4 className="font-bold text-lg text-foreground">
+                              {car.year} {car.make} {car.model}
+                            </h4>
+                            <div className="mt-1 space-y-1">
+                              <p className="text-2xl font-bold text-primary">{car.price}</p>
+                              {car.predictedPrice && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm text-muted-foreground">AI Predicted:</span>
+                                  <span className="text-sm text-muted-foreground line-through decoration-2 decoration-muted-foreground/60">
+                                    {car.predictedPrice}
+                                  </span>
+                                  {car.dealLabel && (
+                                    <Badge 
+                                      variant={car.dealLabel === "Good Deal" ? "default" : car.dealLabel === "Overpriced" ? "destructive" : "secondary"}
+                                      className={car.dealLabel === "Good Deal" ? "text-xs bg-green-100 text-green-800 border-green-200" : "text-xs"}
+                                    >
+                                      {car.dealLabel}
+                                    </Badge>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                          <span className="inline-flex items-center gap-1">
+                            <Gauge className="h-4 w-4" />
+                            {car.mileage}
+                          </span>
+                          <span className="inline-flex items-center gap-1">
+                            <MapPin className="h-4 w-4" />
+                            {car.location}
+                          </span>
+                        </div>
+
+                        <Link href={`/listing/${car.id}`}>
+                          <Button variant="outline" className="w-full rounded-xl h-11 font-medium border-cyan-500/40 text-cyan-600 hover:bg-cyan-500 hover:text-white hover:border-cyan-500 transition-all">
+                            View Details
+                          </Button>
+                        </Link>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+
+                {/* Load More Button */}
+                {!showAllListings && popularListings.length > 4 && (
+                  <div className="mt-6 text-center">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setShowAllListings(true)}
+                      className="rounded-2xl h-12 px-8 font-medium shadow-lg hover:shadow-xl border-cyan-500/40 text-cyan-600 hover:bg-cyan-500 hover:text-white transition-all duration-200 active:scale-95"
+                    >
+                      Load More Cars ({popularListings.length - 4} more)
+                    </Button>
+                  </div>
+                )}
+
+                {/* Show Less Button */}
+                {showAllListings && (
+                  <div className="mt-6 text-center">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setShowAllListings(false)}
+                      className="rounded-2xl h-12 px-8 font-medium shadow-lg hover:shadow-xl border-cyan-500/40 text-cyan-600 hover:bg-cyan-500 hover:text-white transition-all duration-200 active:scale-95"
+                    >
+                      Show Less
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
 

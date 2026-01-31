@@ -15,10 +15,6 @@ class CarListingSummary(BaseModel):
 
 class Seller(BaseModel):
     name: str
-    rating: float
-    totalSales: int
-    memberSince: str
-    verified: bool
     avatar: str
     phone: str
     type: str
@@ -41,5 +37,6 @@ class MarketAnalysis(BaseModel):
 class CarListingDetail(CarListingSummary):
     description: str
     seller: Seller
+    url: str
     features: List[str]
     marketAnalysis: MarketAnalysis
