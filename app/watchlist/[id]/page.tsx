@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
-import { ArrowLeft, MapPin, Gauge, Calendar, Bell, BellOff, Settings, Filter, Star } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { ArrowLeft, MapPin, Bell, BellOff, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import { use } from "react";
 import Link from "next/link";
+import { API_ENDPOINTS, apiRequest } from "@/lib/api";
 
 interface CarListing {
   id: number;
@@ -16,164 +16,163 @@ interface CarListing {
   model: string;
   year: number;
   price: string;
-  predictedPrice: string;
+  predictedPrice?: string;
+  dealLabel?: "Good Deal" | "Fair" | "Overpriced";
   mileage: string;
   location: string;
-  condition: string;
   image: string;
-  daysOnMarket: number;
-  matchScore: number;
 }
 
-interface WatchlistDetails {
+interface WatchlistMatch {
+  isNew: boolean;
+  isGoodDeal: boolean | null;
+  listing: CarListing;
+}
+
+interface WatchlistCard {
   id: number;
   title: string;
-  make: string;
-  model: string;
-  yearRange: string;
-  priceRange: string;
-  location: string;
+  subtitle: string;
+  locationLabel: string;
+  updatedLabel: string;
+  tags: string[];
   isActive: boolean;
-  lastChecked: string;
-  conditions: string[];
+  alertsEnabled: boolean;
+  newCount: number;
   totalMatches: number;
-  newMatches: number;
-  listings: CarListing[];
 }
 
-// Mock data - in real app this would come from an API
-const getWatchlistDetails = (id: string): WatchlistDetails => {
-  const watchlists: Record<string, WatchlistDetails> = {
-    "1": {
-      id: 1,
-      title: "Toyota Camry 2020-2023",
-      make: "Toyota",
-      model: "Camry",
-      yearRange: "2020-2023",
-      priceRange: "$20,000 - $28,000",
-      location: "Los Angeles Area",
-      isActive: true,
-      lastChecked: "2 hours ago",
-      conditions: ["Used", "Certified Pre-Owned"],
-      totalMatches: 8,
-      newMatches: 3,
-      listings: [
-        {
-          id: 1,
-          make: "Toyota",
-          model: "Camry",
-          year: 2022,
-          price: "$24,500",
-          predictedPrice: "$26,800",
-          mileage: "15,000 mi",
-          location: "Los Angeles, CA",
-          condition: "Used",
-          image: "https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=400&h=300&fit=crop",
-          daysOnMarket: 5,
-          matchScore: 95
-        },
-        {
-          id: 5,
-          make: "Toyota",
-          model: "Camry",
-          year: 2021,
-          price: "$22,900",
-          predictedPrice: "$24,500",
-          mileage: "28,000 mi",
-          location: "Pasadena, CA",
-          condition: "Used",
-          image: "https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=400&h=300&fit=crop",
-          daysOnMarket: 12,
-          matchScore: 88
-        },
-        {
-          id: 6,
-          make: "Toyota",
-          model: "Camry",
-          year: 2023,
-          price: "$27,200",
-          predictedPrice: "$28,900",
-          mileage: "12,000 mi",
-          location: "Long Beach, CA",
-          condition: "Certified Pre-Owned",
-          image: "https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=400&h=300&fit=crop",
-          daysOnMarket: 8,
-          matchScore: 92
-        }
-      ]
-    },
-    "2": {
-      id: 2,
-      title: "Honda Accord Sport",
-      make: "Honda",
-      model: "Accord",
-      yearRange: "2021-2024",
-      priceRange: "$22,000 - $30,000",
-      location: "San Diego",
-      isActive: true,
-      lastChecked: "1 hour ago",
-      conditions: ["Used"],
-      totalMatches: 5,
-      newMatches: 1,
-      listings: [
-        {
-          id: 2,
-          make: "Honda",
-          model: "Accord",
-          year: 2023,
-          price: "$28,900",
-          predictedPrice: "$31,200",
-          mileage: "8,500 mi",
-          location: "San Diego, CA",
-          condition: "Used",
-          image: "https://images.unsplash.com/photo-1590362891991-f776e747a588?w=400&h=300&fit=crop",
-          daysOnMarket: 3,
-          matchScore: 96
-        }
-      ]
-    },
-    "3": {
-      id: 3,
-      title: "Tesla Model 3",
-      make: "Tesla",
-      model: "Model 3",
-      yearRange: "2022-2024",
-      priceRange: "$35,000 - $45,000",
-      location: "Bay Area",
-      isActive: true,
-      lastChecked: "30 minutes ago",
-      conditions: ["Used", "New"],
-      totalMatches: 0,
-      newMatches: 0,
-      listings: []
-    },
-    // Add more watchlists as needed
-  };
+interface WatchlistStats {
+  totalMatches: number;
+  newToday: number;
+  avgMatch: number;
+}
 
-  return watchlists[id] || watchlists["1"];
-};
+interface WatchlistDetailResponse {
+  watchlist: WatchlistCard;
+  stats: WatchlistStats;
+}
+
+interface WatchlistMatchesResponse {
+  watchlistId: number;
+  matches: WatchlistMatch[];
+}
 
 export default function WatchlistDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const { id } = use(params);
-  const watchlist = getWatchlistDetails(id);
-  const [sortBy, setSortBy] = useState<"match" | "price" | "days">("match");
+  const [watchlist, setWatchlist] = useState<WatchlistCard | null>(null);
+  const [stats, setStats] = useState<WatchlistStats | null>(null);
+  const [matches, setMatches] = useState<WatchlistMatch[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isScanning, setIsScanning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<"best_match" | "price" | "newest">("best_match");
   
-  const sortedListings = [...watchlist.listings].sort((a, b) => {
-    switch (sortBy) {
-      case "match":
-        return b.matchScore - a.matchScore;
-      case "price":
-        return parseInt(a.price.replace(/[$,]/g, '')) - parseInt(b.price.replace(/[$,]/g, ''));
-      case "days":
-        return a.daysOnMarket - b.daysOnMarket;
-      default:
-        return 0;
+  // Fetch watchlist details
+  useEffect(() => {
+    const fetchWatchlistDetail = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const detailData = await apiRequest<WatchlistDetailResponse>(
+          API_ENDPOINTS.watchlists.detail(parseInt(id))
+        );
+        setWatchlist(detailData.watchlist);
+        setStats(detailData.stats);
+        
+        // Fetch matches
+        const matchesData = await apiRequest<WatchlistMatchesResponse>(
+          API_ENDPOINTS.watchlists.matches(parseInt(id), sortBy)
+        );
+        setMatches(matchesData.matches);
+      } catch (err) {
+        console.error('Failed to fetch watchlist details:', err);
+        setError('Failed to load watchlist details. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchWatchlistDetail();
+  }, [id, sortBy]);
+
+  // Run scan
+  const handleScan = async () => {
+    try {
+      setIsScanning(true);
+      await apiRequest(API_ENDPOINTS.watchlists.scan(parseInt(id)));
+      
+      // Refresh the data
+      const detailData = await apiRequest<WatchlistDetailResponse>(
+        API_ENDPOINTS.watchlists.detail(parseInt(id))
+      );
+      setWatchlist(detailData.watchlist);
+      setStats(detailData.stats);
+      
+      const matchesData = await apiRequest<WatchlistMatchesResponse>(
+        API_ENDPOINTS.watchlists.matches(parseInt(id), sortBy)
+      );
+      setMatches(matchesData.matches);
+    } catch (err) {
+      console.error('Failed to scan watchlist:', err);
+    } finally {
+      setIsScanning(false);
     }
-  });
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex flex-col h-full bg-background">
+        <div className="shrink-0 bg-card/80 backdrop-blur-xl border-b border-border/20 px-4 py-4">
+          <div className="flex items-center justify-between">
+            <Button variant="ghost" size="icon" onClick={() => router.back()} className="h-10 w-10">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-lg font-semibold">Watchlist Details</h1>
+            <div className="w-20"></div>
+          </div>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center space-y-3">
+            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <p className="text-muted-foreground">Loading watchlist...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !watchlist || !stats) {
+    return (
+      <div className="flex flex-col h-full bg-background">
+        <div className="shrink-0 bg-card/80 backdrop-blur-xl border-b border-border/20 px-4 py-4">
+          <div className="flex items-center justify-between">
+            <Button variant="ghost" size="icon" onClick={() => router.back()} className="h-10 w-10">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-lg font-semibold">Watchlist Details</h1>
+            <div className="w-20"></div>
+          </div>
+        </div>
+        <div className="flex-1 flex items-center justify-center px-4">
+          <Card className="p-6 bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900">
+            <p className="text-red-800 dark:text-red-300 text-center">
+              {error || 'Watchlist not found'}
+            </p>
+            <Button onClick={() => router.back()} className="w-full mt-4">
+              Go Back
+            </Button>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className="flex flex-col h-screen bg-background overflow-hidden">
       {/* Header */}
       <div className="shrink-0 bg-card/80 backdrop-blur-xl border-b border-border/20 px-4 py-4 sticky top-0 z-10">
         <div className="flex items-center justify-between mb-4">
@@ -191,15 +190,17 @@ export default function WatchlistDetailPage({ params }: { params: Promise<{ id: 
               variant="ghost"
               size="icon"
               className="h-10 w-10"
+              onClick={handleScan}
+              disabled={isScanning}
             >
-              <Settings className="h-5 w-5" />
+              <RefreshCw className={`h-5 w-5 ${isScanning ? 'animate-spin' : ''}`} />
             </Button>
             <Button
               variant="ghost"
               size="icon"
               className="h-10 w-10"
             >
-              {watchlist.isActive ? (
+              {watchlist.alertsEnabled ? (
                 <Bell className="h-5 w-5 text-primary" />
               ) : (
                 <BellOff className="h-5 w-5 text-muted-foreground" />
@@ -215,9 +216,7 @@ export default function WatchlistDetailPage({ params }: { params: Promise<{ id: 
               <div>
                 <h2 className="text-xl font-bold text-foreground">{watchlist.title}</h2>
                 <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                  <span className="font-medium">{watchlist.yearRange}</span>
-                  <span>•</span>
-                  <span className="font-medium">{watchlist.priceRange}</span>
+                  <span className="font-medium">{watchlist.subtitle}</span>
                 </div>
               </div>
               <div className={`w-3 h-3 rounded-full ${watchlist.isActive ? "bg-green-500" : "bg-gray-400"}`} />
@@ -226,23 +225,23 @@ export default function WatchlistDetailPage({ params }: { params: Promise<{ id: 
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
                 <MapPin className="h-4 w-4" />
-                {watchlist.location}
+                {watchlist.locationLabel}
               </span>
               <span>•</span>
-              <span>Updated {watchlist.lastChecked}</span>
+              <span>{watchlist.updatedLabel}</span>
             </div>
 
             <div className="flex items-center justify-between">
               <div className="flex gap-2">
-                {watchlist.conditions.map((condition) => (
-                  <Badge key={condition} variant="secondary" className="text-xs rounded-full">
-                    {condition}
+                {watchlist.tags.map((tag) => (
+                  <Badge key={tag} variant="secondary" className="text-xs rounded-full">
+                    {tag}
                   </Badge>
                 ))}
               </div>
-              {watchlist.newMatches > 0 && (
+              {watchlist.newCount > 0 && (
                 <Badge variant="default" className="text-xs bg-red-500 text-white rounded-full px-3">
-                  {watchlist.newMatches} new
+                  {watchlist.newCount} new
                 </Badge>
               )}
             </div>
@@ -252,154 +251,114 @@ export default function WatchlistDetailPage({ params }: { params: Promise<{ id: 
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto scrollbar-hide">
-        <div className="px-4 py-6 space-y-6 pb-safe">
+        <div className="p-4 space-y-6 pb-safe">
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4">
-            <Card className="text-center p-4 border-0 bg-card/50 backdrop-blur-sm rounded-2xl shadow-lg">
-              <div className="text-2xl font-bold text-primary">{watchlist.totalMatches}</div>
-              <div className="text-sm text-muted-foreground">Total Matches</div>
+            <Card className="text-center p-4 border-0 bg-card/50 backdrop-blur-sm rounded-2xl">
+              <div className="text-2xl font-bold text-primary">{stats.totalMatches}</div>
+              <div className="text-xs text-muted-foreground">Total Matches</div>
             </Card>
-            <Card className="text-center p-4 border-0 bg-card/50 backdrop-blur-sm rounded-2xl shadow-lg">
-              <div className="text-2xl font-bold text-green-600">{watchlist.newMatches}</div>
-              <div className="text-sm text-muted-foreground">New Today</div>
+            <Card className="text-center p-4 border-0 bg-card/50 backdrop-blur-sm rounded-2xl">
+              <div className="text-2xl font-bold text-primary">{stats.newToday}</div>
+              <div className="text-xs text-muted-foreground">New Today</div>
             </Card>
-            <Card className="text-center p-4 border-0 bg-card/50 backdrop-blur-sm rounded-2xl shadow-lg">
-              <div className="text-2xl font-bold text-blue-600">
-                {watchlist.listings.length > 0 ? Math.round(watchlist.listings.reduce((sum, item) => sum + item.matchScore, 0) / watchlist.listings.length) : 0}%
-              </div>
-              <div className="text-sm text-muted-foreground">Avg Match</div>
+            <Card className="text-center p-4 border-0 bg-card/50 backdrop-blur-sm rounded-2xl">
+              <div className="text-2xl font-bold text-primary">{stats.avgMatch}%</div>
+              <div className="text-xs text-muted-foreground">Avg Match</div>
             </Card>
           </div>
 
           {/* Sort Controls */}
-          <Card className="p-4 bg-card/50 backdrop-blur-sm rounded-2xl">
-            <div className="flex items-center justify-between">
-              <span className="font-medium text-foreground">Sort by:</span>
-              <div className="flex gap-2">
-                {[
-                  { key: "match", label: "Best Match" },
-                  { key: "price", label: "Price" },
-                  { key: "days", label: "Newest" }
-                ].map((option) => (
-                  <Button
-                    key={option.key}
-                    variant={sortBy === option.key ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setSortBy(option.key as any)}
-                    className="text-xs rounded-xl"
-                  >
-                    {option.label}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </Card>
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            <Button
+              variant={sortBy === "best_match" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSortBy("best_match")}
+              className="rounded-full"
+            >
+              Best Match
+            </Button>
+            <Button
+              variant={sortBy === "price" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSortBy("price")}
+              className="rounded-full"
+            >
+              Lowest Price
+            </Button>
+            <Button
+              variant={sortBy === "newest" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSortBy("newest")}
+              className="rounded-full"
+            >
+              Newest
+            </Button>
+          </div>
 
           {/* Listings */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-              <Star className="h-5 w-5 text-primary fill-primary" />
-              Matching Listings ({sortedListings.length})
-            </h3>
-            
-            {sortedListings.map((car) => {
-              const isGoodDeal = parseInt(car.price.replace(/[$,]/g, '')) < parseInt(car.predictedPrice.replace(/[$,]/g, ''));
-              
-              return (
-                <Card
-                  key={car.id}
-                  className="overflow-hidden shadow-xl border border-border/30 bg-card/50 backdrop-blur-sm rounded-2xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
-                >
-                  <div className="relative">
-                    <img
-                      src={car.image}
-                      alt={`${car.year} ${car.make} ${car.model}`}
-                      className="w-full h-48 object-cover"
-                    />
-                    <div className="absolute top-4 left-4 flex gap-2">
-                      <Badge className="bg-primary text-white text-xs rounded-full px-3">
-                        {car.matchScore}% match
-                      </Badge>
-                      {isGoodDeal && (
-                        <Badge className="bg-green-500 text-white text-xs rounded-full">
-                          Good Deal
-                        </Badge>
-                      )}
-                      {car.daysOnMarket <= 7 && (
-                        <Badge variant="secondary" className="text-xs rounded-full">
-                          New
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="p-5 h-[280px] flex flex-col">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-bold text-lg text-foreground truncate">
-                          {car.year} {car.make} {car.model}
-                        </h4>
-                        <div className="mt-1 space-y-1">
-                          <p className="text-2xl font-bold text-primary">{car.price}</p>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm text-muted-foreground">AI Predicted:</span>
-                            <span className="text-sm text-muted-foreground line-through decoration-2 decoration-muted-foreground/60">
-                              {car.predictedPrice}
-                            </span>
-                            {isGoodDeal && (
-                              <Badge variant="default" className="text-xs bg-green-100 text-green-800 border-green-200">
-                                Good Deal
-                              </Badge>
+            {matches.length > 0 ? (
+              matches.map((match) => (
+                <Link key={match.listing.id} href={`/listing/${match.listing.id}`}>
+                  <Card className="overflow-hidden border-2 border-border/50 bg-card/60 backdrop-blur-sm rounded-2xl hover:shadow-xl hover:border-primary/30 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer">
+                    <div className="flex gap-4 p-4">
+                      <div className="relative w-32 h-24 rounded-xl overflow-hidden shrink-0">
+                        <img
+                          src={match.listing.image}
+                          alt={`${match.listing.year} ${match.listing.make} ${match.listing.model}`}
+                          className="w-full h-full object-cover"
+                        />
+                        {match.isNew && (
+                          <Badge className="absolute top-2 right-2 text-xs bg-red-500 text-white">
+                            NEW
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="font-bold text-foreground">
+                              {match.listing.year} {match.listing.make} {match.listing.model}
+                            </h3>
+                            <p className="text-sm text-muted-foreground flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {match.listing.location}
+                            </p>
+                          </div>
+                          {match.isGoodDeal && (
+                            <Badge variant="default" className="bg-green-500 text-white text-xs">
+                              Good Deal
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-lg font-bold text-primary">{match.listing.price}</div>
+                            {match.listing.predictedPrice && (
+                              <div className="text-xs text-muted-foreground line-through">
+                                {match.listing.predictedPrice}
+                              </div>
                             )}
                           </div>
+                          <div className="text-sm text-muted-foreground">{match.listing.mileage}</div>
                         </div>
                       </div>
-                      <Badge variant="secondary" className="text-xs rounded-full px-3 ml-2 shrink-0">
-                        {car.condition}
-                      </Badge>
                     </div>
-                    
-                    <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-4 flex-1">
-                      <span className="inline-flex items-center gap-1">
-                        <Gauge className="h-4 w-4 shrink-0" />
-                        <span className="truncate">{car.mileage}</span>
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <MapPin className="h-4 w-4 shrink-0" />
-                        <span className="truncate">{car.location}</span>
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <Calendar className="h-4 w-4 shrink-0" />
-                        <span className="truncate">{car.daysOnMarket} days on market</span>
-                      </span>
-                    </div>
-
-                    <div className="mt-auto">
-                      <Link href={`/listing/${car.id}`}>
-                        <Button variant="outline" className="w-full rounded-xl h-11 font-medium">
-                          View Details
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
+                  </Card>
+                </Link>
+              ))
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">No matches found yet</p>
+                <Button onClick={handleScan} className="mt-4" disabled={isScanning}>
+                  {isScanning ? 'Scanning...' : 'Scan for Matches'}
+                </Button>
+              </div>
+            )}
           </div>
-
-          {sortedListings.length === 0 && (
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">🔍</div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">No matches yet</h3>
-              <p className="text-muted-foreground mb-4">
-                We're actively searching for cars that match your criteria. New listings are checked every hour.
-              </p>
-              <Button variant="outline" className="rounded-2xl">
-                <Bell className="h-4 w-4 mr-2" />
-                Get Notified
-              </Button>
-            </div>
-          )}
         </div>
       </div>
     </div>

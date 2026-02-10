@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Plus, Search, Filter, Car, MapPin, DollarSign, Bell, Settings, Trash2, Play, Pause } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,78 +8,57 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
+import { API_ENDPOINTS, apiRequest } from "@/lib/api";
 
 interface WatchlistItem {
   id: number;
   title: string;
-  make: string;
-  model: string;
-  yearRange: string;
-  priceRange: string;
-  location: string;
-  matches: number;
+  subtitle: string;
+  locationLabel: string;
+  updatedLabel: string;
+  tags: string[];
   isActive: boolean;
-  lastChecked: string;
-  conditions: string[];
+  alertsEnabled: boolean;
+  newCount: number;
+  totalMatches: number;
+}
+
+interface WatchlistsResponse {
+  summary: {
+    active: number;
+    matches: number;
+    withAlerts: number;
+  };
+  watchlists: WatchlistItem[];
 }
 
 export default function WatchlistPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
-  const [watchlistItems, setWatchlistItems] = useState<WatchlistItem[]>([
-    {
-      id: 1,
-      title: "Toyota Camry 2020-2023",
-      make: "Toyota",
-      model: "Camry",
-      yearRange: "2020-2023",
-      priceRange: "$20,000 - $28,000",
-      location: "Los Angeles Area",
-      matches: 3,
-      isActive: true,
-      lastChecked: "2 hours ago",
-      conditions: ["Used", "Certified Pre-Owned"],
-    },
-    {
-      id: 2,
-      title: "Honda Accord Sport",
-      make: "Honda",
-      model: "Accord",
-      yearRange: "2021-2024",
-      priceRange: "$22,000 - $30,000",
-      location: "San Diego",
-      matches: 1,
-      isActive: true,
-      lastChecked: "1 hour ago",
-      conditions: ["Used"],
-    },
-    {
-      id: 3,
-      title: "Tesla Model 3",
-      make: "Tesla",
-      model: "Model 3",
-      yearRange: "2022-2024",
-      priceRange: "$35,000 - $45,000",
-      location: "Bay Area",
-      matches: 0,
-      isActive: true,
-      lastChecked: "30 minutes ago",
-      conditions: ["Used", "New"],
-    },
-    {
-      id: 4,
-      title: "Ford F-150 Lightning",
-      make: "Ford",
-      model: "F-150 Lightning",
-      yearRange: "2023-2024",
-      priceRange: "$50,000 - $70,000",
-      location: "Austin",
-      matches: 2,
-      isActive: false,
-      lastChecked: "1 day ago",
-      conditions: ["New"],
-    },
-  ]);
+  const [watchlistItems, setWatchlistItems] = useState<WatchlistItem[]>([]);
+  const [summary, setSummary] = useState({ active: 0, matches: 0, withAlerts: 0 });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch watchlists from API
+  useEffect(() => {
+    const fetchWatchlists = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const data = await apiRequest<WatchlistsResponse>(API_ENDPOINTS.watchlists.list);
+        setWatchlistItems(data.watchlists);
+        setSummary(data.summary);
+      } catch (err) {
+        console.error('Failed to fetch watchlists:', err);
+        setError('Failed to load watchlists. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchWatchlists();
+  }, []);
 
   const toggleWatchlistStatus = (id: number) => {
     setWatchlistItems(prev => {
@@ -101,8 +80,7 @@ export default function WatchlistPage() {
   const filteredItems = watchlistItems
     .filter(item =>
       item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.make.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.model.toLowerCase().includes(searchQuery.toLowerCase())
+      item.locationLabel.toLowerCase().includes(searchQuery.toLowerCase())
     )
     .sort((a, b) => {
       // Sort by active status only - active items at top
@@ -243,6 +221,39 @@ export default function WatchlistPage() {
     );
   }
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex flex-col h-full bg-background">
+        <div className="shrink-0 bg-card/80 backdrop-blur-xl border-b border-border/20 px-4 py-4">
+          <h1 className="text-xl font-bold">Watchlist</h1>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center space-y-3">
+            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <p className="text-muted-foreground">Loading watchlists...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex flex-col h-full bg-background">
+        <div className="shrink-0 bg-card/80 backdrop-blur-xl border-b border-border/20 px-4 py-4">
+          <h1 className="text-xl font-bold">Watchlist</h1>
+        </div>
+        <div className="flex-1 flex items-center justify-center px-4">
+          <Card className="p-6 bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900">
+            <p className="text-red-800 dark:text-red-300 text-center">{error}</p>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden">
       {/* Header with blur effect */}
@@ -288,19 +299,19 @@ export default function WatchlistPage() {
           <div className="grid grid-cols-3 gap-4">
             <Card className="text-center p-4 border-0 bg-card/50 backdrop-blur-sm rounded-2xl shadow-lg">
               <div className="text-2xl font-bold text-primary">
-                {watchlistItems.filter(item => item.isActive).length}
+                {summary.active}
               </div>
               <div className="text-sm text-muted-foreground">Active</div>
             </Card>
             <Card className="text-center p-4 border-0 bg-card/50 backdrop-blur-sm rounded-2xl shadow-lg">
               <div className="text-2xl font-bold text-primary">
-                {watchlistItems.reduce((sum, item) => sum + item.matches, 0)}
+                {summary.matches}
               </div>
               <div className="text-sm text-muted-foreground">Matches</div>
             </Card>
             <Card className="text-center p-4 border-0 bg-card/50 backdrop-blur-sm rounded-2xl shadow-lg">
               <div className="text-2xl font-bold text-primary">
-                {watchlistItems.filter(item => item.matches > 0).length}
+                {summary.withAlerts}
               </div>
               <div className="text-sm text-muted-foreground">With Alerts</div>
             </Card>
@@ -374,18 +385,16 @@ export default function WatchlistPage() {
                           <div>
                             <h3 className="font-bold text-lg text-foreground">{item.title}</h3>
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <span className="font-medium">{item.yearRange}</span>
-                              <span>•</span>
-                              <span className="font-semibold text-primary">{item.priceRange}</span>
+                              <span className="font-medium">{item.subtitle}</span>
                             </div>
                           </div>
                         </div>
                       </div>
                       
                       <div className="flex items-center gap-3">
-                        {item.matches > 0 && (
+                        {item.newCount > 0 && (
                           <Badge variant="default" className="text-xs rounded-full px-3 bg-red-500 text-white">
-                            {item.matches} new
+                            {item.newCount} new
                           </Badge>
                         )}
                         <Button 
@@ -434,17 +443,17 @@ export default function WatchlistPage() {
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <MapPin className="h-4 w-4" />
-                          {item.location}
+                          {item.locationLabel}
                         </span>
                         <span>•</span>
-                        <span>Updated {item.lastChecked}</span>
+                        <span>{item.updatedLabel}</span>
                       </div>
 
                       <div className="flex items-center justify-between">
                         <div className="flex gap-2">
-                          {item.conditions.map((condition) => (
-                            <Badge key={condition} variant="outline" className="text-xs rounded-full px-3 border-border/60">
-                              {condition}
+                          {item.tags.map((tag: string) => (
+                            <Badge key={tag} variant="outline" className="text-xs rounded-full px-3 border-border/60">
+                              {tag}
                             </Badge>
                           ))}
                         </div>
@@ -469,13 +478,13 @@ export default function WatchlistPage() {
                     {/* Status Bar */}
                     <div className="pt-3 border-t border-border/30">
                       <div className="flex items-center justify-between text-sm">
-                        {item.matches > 0 ? (
+                        {item.totalMatches > 0 ? (
                           <span className="text-primary font-medium">
-                            {item.matches} new {item.matches === 1 ? "match" : "matches"} found
+                            {item.totalMatches} {item.totalMatches === 1 ? "match" : "matches"} found
                           </span>
                         ) : (
                           <span className="text-muted-foreground">
-                            No new matches
+                            No matches yet
                           </span>
                         )}
                         

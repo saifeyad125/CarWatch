@@ -19,6 +19,15 @@ export const API_ENDPOINTS = {
     uncertainty: `${API_BASE_URL}/api/predictions/uncertainty`,
   },
   
+  // Watchlist endpoints
+  watchlists: {
+    list: `${API_BASE_URL}/api/watchlists`,
+    detail: (id: number) => `${API_BASE_URL}/api/watchlists/${id}`,
+    matches: (id: number, sort?: string) => 
+      `${API_BASE_URL}/api/watchlists/${id}/matches${sort ? `?sort=${sort}` : ''}`,
+    scan: (id: number) => `${API_BASE_URL}/api/watchlists/${id}/scan`,
+  },
+  
   // Health check
   health: `${API_BASE_URL}/api/health`,
 } as const;

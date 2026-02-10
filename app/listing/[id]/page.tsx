@@ -7,7 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { use } from "react";
+import { use, useEffect, useState } from "react";
+import { API_ENDPOINTS, apiRequest } from "@/lib/api";
 
 interface CarListing {
   id: number;
@@ -15,21 +16,18 @@ interface CarListing {
   model: string;
   year: number;
   price: string;
-  predictedPrice: string;
+  predictedPrice?: string;
+  dealLabel?: "Good Deal" | "Fair" | "Overpriced";
   mileage: string;
   location: string;
-  condition: string;
   image: string;
   description: string;
-  vin: string;
+  url: string;
   seller: {
     name: string;
-    rating: number;
-    totalSales: number;
-    memberSince: string;
-    verified: boolean;
     avatar: string;
     phone: string;
+    type: string;
   };
   features: string[];
   marketAnalysis: {
@@ -38,7 +36,7 @@ interface CarListing {
       threeYear: number;
       fiveYear: number;
     };
-    marketTrend: "rising" | "stable" | "declining";
+    marketTrend: string;
     priceHistory: Array<{
       month: string;
       averagePrice: number;
@@ -51,196 +49,107 @@ interface CarListing {
   };
 }
 
-// Mock data - in real app this would come from an API
-const getCarListing = (id: string): CarListing => {
-  const listings: Record<string, CarListing> = {
-    "1": {
-      id: 1,
-      make: "Toyota",
-      model: "Camry",
-      year: 2022,
-      price: "$24,500",
-      predictedPrice: "$26,800",
-      mileage: "15,000 mi",
-      location: "Los Angeles, CA",
-      condition: "Used",
-      image: "https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=800&h=600&fit=crop",
-      description: "Well-maintained 2022 Toyota Camry with low mileage. Single owner, garage kept. Regular maintenance records available. This reliable sedan offers excellent fuel economy and Toyota's renowned reliability.",
-      vin: "4T1C11AK8NU123456",
-      seller: {
-        name: "Mike Chen",
-        rating: 4.8,
-        totalSales: 23,
-        memberSince: "2019",
-        verified: true,
-        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Mike",
-        phone: "+1 (555) 123-4567"
-      },
-      features: [
-        "Backup Camera", "Bluetooth Connectivity", "Cruise Control", "USB Ports",
-        "Air Conditioning", "Power Windows", "Keyless Entry", "Safety Sense 2.0"
-      ],
-      marketAnalysis: {
-        depreciation: { oneYear: 12, threeYear: 32, fiveYear: 55 },
-        marketTrend: "stable",
-        priceHistory: [
-          { month: "Jan", averagePrice: 27500 },
-          { month: "Feb", averagePrice: 27200 },
-          { month: "Mar", averagePrice: 26900 },
-          { month: "Apr", averagePrice: 26700 },
-          { month: "May", averagePrice: 26500 },
-          { month: "Jun", averagePrice: 26800 }
-        ],
-        similarListings: [
-          { price: "$25,200", mileage: "18,000 mi", daysOnMarket: 12 },
-          { price: "$23,800", mileage: "22,000 mi", daysOnMarket: 8 },
-          { price: "$26,100", mileage: "12,000 mi", daysOnMarket: 24 }
-        ]
-      }
-    },
-    "2": {
-      id: 2,
-      make: "Honda",
-      model: "Civic",
-      year: 2023,
-      price: "$28,900",
-      predictedPrice: "$31,200",
-      mileage: "8,500 mi",
-      location: "San Diego, CA",
-      condition: "Certified Pre-Owned",
-      image: "https://images.unsplash.com/photo-1590362891991-f776e747a588?w=800&h=600&fit=crop",
-      description: "Honda Certified Pre-Owned Civic with low mileage and extended warranty. This sporty compact sedan features Honda Sensing safety suite and excellent fuel efficiency. Perfect for daily commuting.",
-      vin: "2HGFC2F59NH123456",
-      seller: {
-        name: "Sarah Johnson",
-        rating: 4.9,
-        totalSales: 34,
-        memberSince: "2018",
-        verified: true,
-        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
-        phone: "+1 (555) 234-5678"
-      },
-      features: [
-        "Honda Sensing", "Apple CarPlay", "Android Auto", "Heated Seats",
-        "Sunroof", "Alloy Wheels", "LED Headlights", "Remote Start"
-      ],
-      marketAnalysis: {
-        depreciation: { oneYear: 15, threeYear: 35, fiveYear: 58 },
-        marketTrend: "rising",
-        priceHistory: [
-          { month: "Jan", averagePrice: 29500 },
-          { month: "Feb", averagePrice: 30200 },
-          { month: "Mar", averagePrice: 30800 },
-          { month: "Apr", averagePrice: 31000 },
-          { month: "May", averagePrice: 31200 },
-          { month: "Jun", averagePrice: 31500 }
-        ],
-        similarListings: [
-          { price: "$29,800", mileage: "12,000 mi", daysOnMarket: 5 },
-          { price: "$27,900", mileage: "15,000 mi", daysOnMarket: 18 },
-          { price: "$30,500", mileage: "6,000 mi", daysOnMarket: 3 }
-        ]
-      }
-    },
-    "3": {
-      id: 3,
-      make: "Tesla",
-      model: "Model 3",
-      year: 2023,
-      price: "$42,000",
-      predictedPrice: "$39,500",
-      mileage: "12,000 mi",
-      location: "San Francisco, CA",
-      condition: "Used",
-      image: "https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=800&h=600&fit=crop",
-      description: "Tesla Model 3 Standard Range Plus in excellent condition. Autopilot included, over-the-air updates, and access to Supercharger network. Clean title, no accidents. Premium interior upgrade package.",
-      vin: "5YJ3E1EA4NF123456",
-      seller: {
-        name: "David Rodriguez",
-        rating: 4.7,
-        totalSales: 12,
-        memberSince: "2020",
-        verified: true,
-        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=David",
-        phone: "+1 (555) 345-6789"
-      },
-      features: [
-        "Autopilot", "Premium Audio", "Glass Roof", "Wireless Charging",
-        "Heated Seats", "Navigation", "Mobile Connector", "Supercharging"
-      ],
-      marketAnalysis: {
-        depreciation: { oneYear: 20, threeYear: 45, fiveYear: 65 },
-        marketTrend: "declining",
-        priceHistory: [
-          { month: "Jan", averagePrice: 44500 },
-          { month: "Feb", averagePrice: 43200 },
-          { month: "Mar", averagePrice: 41800 },
-          { month: "Apr", averagePrice: 40500 },
-          { month: "May", averagePrice: 39800 },
-          { month: "Jun", averagePrice: 39200 }
-        ],
-        similarListings: [
-          { price: "$41,500", mileage: "15,000 mi", daysOnMarket: 21 },
-          { price: "$43,200", mileage: "8,000 mi", daysOnMarket: 14 },
-          { price: "$40,800", mileage: "18,000 mi", daysOnMarket: 32 }
-        ]
-      }
-    },
-    "4": {
-      id: 4,
-      make: "Ford",
-      model: "F-150",
-      year: 2024,
-      price: "$52,900",
-      predictedPrice: "$54,700",
-      mileage: "New",
-      location: "Austin, TX",
-      condition: "New",
-      image: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&h=600&fit=crop",
-      description: "Brand new 2024 Ford F-150 XLT SuperCrew. America's best-selling truck with advanced towing capabilities and Ford Co-Pilot360 safety features. Factory warranty included.",
-      vin: "1FTFW1E59NFE12345",
-      seller: {
-        name: "Austin Ford Dealership",
-        rating: 4.6,
-        totalSales: 156,
-        memberSince: "2015",
-        verified: true,
-        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Ford",
-        phone: "+1 (555) 456-7890"
-      },
-      features: [
-        "Co-Pilot360", "SYNC 4", "Pro Trailer Backup", "4WD",
-        "Bed Liner", "Running Boards", "Tow Package", "Remote Start"
-      ],
-      marketAnalysis: {
-        depreciation: { oneYear: 18, threeYear: 40, fiveYear: 62 },
-        marketTrend: "stable",
-        priceHistory: [
-          { month: "Jan", averagePrice: 53500 },
-          { month: "Feb", averagePrice: 54000 },
-          { month: "Mar", averagePrice: 54200 },
-          { month: "Apr", averagePrice: 54500 },
-          { month: "May", averagePrice: 54700 },
-          { month: "Jun", averagePrice: 54800 }
-        ],
-        similarListings: [
-          { price: "$53,800", mileage: "0 mi", daysOnMarket: 7 },
-          { price: "$51,900", mileage: "2,500 mi", daysOnMarket: 15 },
-          { price: "$55,200", mileage: "0 mi", daysOnMarket: 4 }
-        ]
-      }
-    }
-  };
-
-  return listings[id] || listings["1"];
-};
-
 export default function ListingDetail({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const { id } = use(params);
-  const car = getCarListing(id);
+  const [car, setCar] = useState<CarListing | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isFavorite, setIsFavorite] = useState(false);
 
-  const isGoodDeal = parseInt(car.price.replace(/[$,]/g, '')) < parseInt(car.predictedPrice.replace(/[$,]/g, ''));
+  // Fetch car details from API
+  useEffect(() => {
+    const fetchCarDetails = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const data = await apiRequest<CarListing>(API_ENDPOINTS.cars.detail(parseInt(id)));
+        setCar(data);
+      } catch (err) {
+        console.error('Failed to fetch car details:', err);
+        setError('Failed to load car details. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCarDetails();
+  }, [id]);
+
+  // Check if car is in favorites
+  useEffect(() => {
+    const savedFavorites = localStorage.getItem('carFavorites');
+    if (savedFavorites) {
+      const favorites = JSON.parse(savedFavorites);
+      setIsFavorite(favorites.includes(parseInt(id)));
+    }
+  }, [id]);
+
+  const toggleFavorite = () => {
+    const savedFavorites = localStorage.getItem('carFavorites');
+    let favorites = savedFavorites ? JSON.parse(savedFavorites) : [];
+    
+    if (isFavorite) {
+      favorites = favorites.filter((fav: number) => fav !== parseInt(id));
+    } else {
+      favorites.push(parseInt(id));
+    }
+    
+    localStorage.setItem('carFavorites', JSON.stringify(favorites));
+    setIsFavorite(!isFavorite);
+  };
+
+  // Loading State
+  if (isLoading) {
+    return (
+      <div className="flex flex-col h-full bg-background">
+        <div className="shrink-0 bg-card/80 backdrop-blur-xl border-b border-border/20 px-4 py-4">
+          <div className="flex items-center justify-between">
+            <Button variant="ghost" size="icon" onClick={() => router.back()} className="h-10 w-10">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-lg font-semibold text-foreground">Car Details</h1>
+            <div className="w-20"></div>
+          </div>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center space-y-3">
+            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <p className="text-muted-foreground">Loading car details...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error State
+  if (error || !car) {
+    return (
+      <div className="flex flex-col h-full bg-background">
+        <div className="shrink-0 bg-card/80 backdrop-blur-xl border-b border-border/20 px-4 py-4">
+          <div className="flex items-center justify-between">
+            <Button variant="ghost" size="icon" onClick={() => router.back()} className="h-10 w-10">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-lg font-semibold text-foreground">Car Details</h1>
+            <div className="w-20"></div>
+          </div>
+        </div>
+        <div className="flex-1 flex items-center justify-center px-4">
+          <Card className="p-6 bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900">
+            <p className="text-red-800 dark:text-red-300 text-center">
+              {error || 'Car not found'}
+            </p>
+            <Button onClick={() => router.back()} className="w-full mt-4">
+              Go Back
+            </Button>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  const isGoodDeal = car.dealLabel === "Good Deal";
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -257,8 +166,19 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
           </Button>
           <h1 className="text-lg font-semibold text-foreground">Car Details</h1>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-10 w-10">
-              <Heart className="h-5 w-5" />
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-10 w-10"
+              onClick={toggleFavorite}
+            >
+              <Heart 
+                className={`h-5 w-5 transition-colors duration-200 ${
+                  isFavorite 
+                    ? 'text-red-500 fill-red-500' 
+                    : 'text-gray-600'
+                }`} 
+              />
             </Button>
             <Button variant="ghost" size="icon" className="h-10 w-10">
               <Share2 className="h-5 w-5" />
@@ -310,23 +230,32 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-3xl font-bold text-primary">{car.price}</span>
-                    <Badge variant="secondary">{car.condition}</Badge>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">AI Predicted:</span>
-                    <span className="text-sm text-muted-foreground line-through decoration-2">
-                      {car.predictedPrice}
-                    </span>
-                    {isGoodDeal ? (
-                      <span className="text-green-600 text-sm font-medium">
-                        ${parseInt(car.predictedPrice.replace(/[$,]/g, '')) - parseInt(car.price.replace(/[$,]/g, ''))} below market
-                      </span>
-                    ) : (
-                      <span className="text-red-600 text-sm font-medium">
-                        ${parseInt(car.price.replace(/[$,]/g, '')) - parseInt(car.predictedPrice.replace(/[$,]/g, ''))} above market
-                      </span>
+                    {car.dealLabel && (
+                      <Badge 
+                        variant={car.dealLabel === "Good Deal" ? "default" : car.dealLabel === "Overpriced" ? "destructive" : "secondary"}
+                        className={car.dealLabel === "Good Deal" ? "bg-green-100 text-green-800 border-green-200" : ""}
+                      >
+                        {car.dealLabel}
+                      </Badge>
                     )}
                   </div>
+                  {car.predictedPrice && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">AI Predicted:</span>
+                      <span className="text-sm text-muted-foreground line-through decoration-2">
+                        {car.predictedPrice}
+                      </span>
+                      {isGoodDeal ? (
+                        <span className="text-green-600 text-sm font-medium">
+                          ${parseInt(car.predictedPrice.replace(/[$,]/g, '')) - parseInt(car.price.replace(/[$,]/g, ''))} below market
+                        </span>
+                      ) : car.dealLabel === "Overpriced" ? (
+                        <span className="text-red-600 text-sm font-medium">
+                          ${parseInt(car.price.replace(/[$,]/g, '')) - parseInt(car.predictedPrice.replace(/[$,]/g, ''))} above market
+                        </span>
+                      ) : null}
+                    </div>
+                  )}
                 </div>
               </Card>
             </div>
@@ -344,9 +273,9 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
                 <div className="text-xs text-muted-foreground">Miles</div>
               </Card>
               <Card className="p-4 text-center bg-card/50 backdrop-blur-sm">
-                <Shield className="h-5 w-5 mx-auto mb-2 text-primary" />
-                <div className="text-lg font-bold text-foreground">{car.condition}</div>
-                <div className="text-xs text-muted-foreground">Condition</div>
+                <MapPin className="h-5 w-5 mx-auto mb-2 text-primary" />
+                <div className="text-lg font-bold text-foreground">{car.location.split(',')[0]}</div>
+                <div className="text-xs text-muted-foreground">Location</div>
               </Card>
             </div>
 
@@ -429,11 +358,12 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
             <Card className="p-5 bg-card/50 backdrop-blur-sm">
               <h3 className="text-lg font-semibold text-foreground mb-3">Description</h3>
               <p className="text-muted-foreground leading-relaxed">{car.description}</p>
-              <div className="mt-4 pt-4 border-t border-border">
+              {/* TODO: Add VIN field to backend schema */}
+              {/* <div className="mt-4 pt-4 border-t border-border">
                 <div className="text-sm text-muted-foreground">
-                  <span className="font-medium">VIN:</span> {car.vin}
+                  <span className="font-medium">VIN:</span> MOCK_VIN_NUMBER
                 </div>
-              </div>
+              </div> */}
             </Card>
 
             {/* Seller Info */}
@@ -447,19 +377,16 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <h4 className="font-semibold text-foreground">{car.seller.name}</h4>
-                    {car.seller.verified && (
-                      <CheckCircle className="h-4 w-4 text-blue-500" />
-                    )}
+                    {/* TODO: Add verified, rating, totalSales, memberSince to backend seller schema */}
+                    <CheckCircle className="h-4 w-4 text-blue-500" />
                   </div>
                   <div className="flex items-center gap-1 mt-1">
-                    <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                    <span className="text-sm font-medium">{car.seller.rating}</span>
-                    <span className="text-sm text-muted-foreground">
-                      • {car.seller.totalSales} sales
-                    </span>
+                    <Badge variant="secondary" className="text-xs">
+                      {car.seller.type}
+                    </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Member since {car.seller.memberSince}
+                    Phone: {car.seller.phone}
                   </p>
                 </div>
               </div>

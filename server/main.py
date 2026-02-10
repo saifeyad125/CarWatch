@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Import routers
-from api.routes import cars, predictions, health
+from api.routes import cars, predictions, health, watchlists
 
 app = FastAPI(
     title="CarWatch API",
@@ -35,6 +35,8 @@ app.add_middleware(
 app.include_router(health.router, prefix="/api", tags=["Health"])
 app.include_router(cars.router, prefix="/api/cars", tags=["Cars"])
 app.include_router(predictions.router, prefix="/api/predictions", tags=["Predictions"])
+app.include_router(watchlists.router, prefix="/api/watchlists", tags=["Watchlists"])
+
 
 
 if __name__ == "__main__":
