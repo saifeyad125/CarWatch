@@ -11,13 +11,18 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+# Import DB wiring (must come after dotenv so DATABASE_URL is set)
+from db.database import engine, Base, SessionLocal
+from db import models as db_models          # registers ORM models with Base
+
 # Import routers
 from api.routes import cars, predictions, health, watchlists
+from api.services.watchlists_service import initialize_watchlists
 
 app = FastAPI(
     title="CarWatch API",
     description="Backend API for CarWatch - UAE Used Car Price Predictor",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 # CORS middleware for Next.js frontend
@@ -38,6 +43,19 @@ app.include_router(predictions.router, prefix="/api/predictions", tags=["Predict
 app.include_router(watchlists.router, prefix="/api/watchlists", tags=["Watchlists"])
 
 
+@app.on_event("startup")
+async def startup_event():
+    # Create tables if they don't exist (Alembic takes over for production)
+    db_models.Base.metadata.create_all(bind=engine)
+    print("✓ Database tables ready")
+
+    # Initialize watchlist matches
+    db = SessionLocal()
+    try:
+        initialize_watchlists(db)
+    finally:
+        db.close()
+
 
 if __name__ == "__main__":
     import uvicorn
@@ -45,5 +63,5 @@ if __name__ == "__main__":
         "main:app",
         host=os.getenv("API_HOST", "0.0.0.0"),
         port=int(os.getenv("API_PORT", "8000")),
-        reload=os.getenv("DEBUG", "true").lower() == "true"
+        reload=os.getenv("DEBUG", "true").lower() == "true",
     )

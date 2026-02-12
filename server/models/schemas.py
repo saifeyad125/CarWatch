@@ -1,12 +1,19 @@
+"""
+Pydantic schemas for API request / response bodies.
+Kept separate from SQLAlchemy models in db/models.py.
+"""
 from pydantic import BaseModel
 from typing import List, Optional, Literal
+
+
+# ───────────────────────── Listings ─────────────────────────
 
 class CarListingSummary(BaseModel):
     id: int
     make: str
     model: str
     year: int
-    price: str
+    price: str                                              # "$52,000"
     predictedPrice: Optional[str] = None
     dealLabel: Optional[Literal["Good Deal", "Fair", "Overpriced"]] = None
     mileage: str
@@ -41,56 +48,63 @@ class CarListingDetail(CarListingSummary):
     features: List[str]
     marketAnalysis: MarketAnalysis
 
+
+# ───────────────────────── Watchlists ─────────────────────────
+
 class WatchlistSearchCriteria(BaseModel):
     """Search parameters for filtering car listings"""
-    make: Optional[str] = None                  # e.g. "Toyota"
-    models: Optional[List[str]] = None          # e.g. ["Camry", "Accord"]
-    year_min: Optional[int] = None              # e.g. 2020
-    year_max: Optional[int] = None              # e.g. 2023
-    price_min: Optional[int] = None             # in dollars, e.g. 20000
-    price_max: Optional[int] = None             # in dollars, e.g. 30000
-    mileage_min: Optional[int] = None           # in miles, e.g. 0
-    mileage_max: Optional[int] = None  
-    '''         # in miles, e.g. 50000
-    search_radius: Optional[int] = None         # in miles, e.g. 50
-    '''
+    make: Optional[str] = None
+    models: Optional[List[str]] = None
+    year_min: Optional[int] = None
+    year_max: Optional[int] = None
+    price_min: Optional[int] = None         # AED
+    price_max: Optional[int] = None
+    mileage_min: Optional[int] = None
+    mileage_max: Optional[int] = None
 
 class WatchlistCard(BaseModel):
     id: int
     title: str
-    subtitle: str                 # e.g. "2020–2023 • $20,000–$28,000"
-    locationLabel: str            # e.g. "Los Angeles Area"
-    updatedLabel: str             # e.g. "Updated 2 hours ago"
-    tags: List[str]               # e.g. ["Used", "Certified Pre-Owned"]
+    subtitle: str
+    locationLabel: str
+    updatedLabel: str
+    tags: List[str]
     isActive: bool
     alertsEnabled: bool
     newCount: int
     totalMatches: int
-    searchCriteria: WatchlistSearchCriteria     # The parameters used to filter listings
-
+    searchCriteria: WatchlistSearchCriteria
 
 class WatchlistsListResponse(BaseModel):
-    summary: dict                 # {"active": 3, "matches": 6, "withAlerts": 3}
-    watchlists: List[WatchlistCard] # all the cards of the watchlists
-
+    summary: dict
+    watchlists: List[WatchlistCard]
 
 class WatchlistStats(BaseModel):
     totalMatches: int
     newToday: int
-    avgMatch: int                 # percentage integer, e.g. 92
-
+    avgMatch: int
 
 class WatchlistDetailResponse(BaseModel):
     watchlist: WatchlistCard
     stats: WatchlistStats
-
 
 class WatchlistMatch(BaseModel):
     isNew: bool
     isGoodDeal: Optional[bool] = None
     listing: CarListingSummary
 
-
 class WatchlistMatchesResponse(BaseModel):
     watchlistId: int
     matches: List[WatchlistMatch]
+
+
+# ───────────────────────── Create / Update ─────────────────────────
+
+class WatchlistCreate(BaseModel):
+    title: str
+    subtitle: Optional[str] = None
+    locationLabel: Optional[str] = None
+    tags: List[str] = []
+    isActive: bool = True
+    alertsEnabled: bool = False
+    searchCriteria: WatchlistSearchCriteria

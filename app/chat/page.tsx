@@ -282,7 +282,7 @@ export default function ChatPage() {
                   }`}>
                     <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
                   </Card>
-                  <p className={`text-xs text-muted-foreground mt-1 ${message.type === "user" ? "text-right" : ""}`}>
+                  <p className={`text-xs text-muted-foreground mt-1 ${message.type === "user" ? "text-right" : ""}`} suppressHydrationWarning>
                     {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                   </p>
                 </div>
