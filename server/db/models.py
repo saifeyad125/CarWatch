@@ -55,7 +55,7 @@ class Watchlist(Base):
     subtitle = Column(String(300), nullable=True)
     location_label = Column(String(200), nullable=True)
     tags = Column(JSON, default=list)                     # e.g. ["Used", "Certified"]
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Boolean, default=False)   # inactive until user explicitly activates
     alerts_enabled = Column(Boolean, default=False)
 
     # Search criteria stored as JSONB

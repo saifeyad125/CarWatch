@@ -13,7 +13,6 @@ from models.schemas import (
     Seller, 
     MarketAnalysis, 
     PricePoint, 
-    SimilarListing
 )
 
 
@@ -31,6 +30,90 @@ def _fmt_mileage(kms: Optional[int]) -> str:
         return "N/A"
     return f"{kms:,} km"
 
+
+def _to_float(val) -> Optional[float]:
+    """
+    Convert a value to float for numeric comparison.
+    - int/float → cast directly
+    - Range strings like '100 - 199 HP' or '2,000 - 2,999 cc' → midpoint
+    - Single-number strings like '4 door' → first number found
+    """
+    if val is None:
+        return None
+    if isinstance(val, (int, float)):
+        return float(val)
+    import re
+    nums = [float(n.replace(",", "")) for n in re.findall(r"[\d,]+(?:\.\d+)?", str(val))]
+    if not nums:
+        return None
+    if len(nums) >= 2:
+        return (nums[0] + nums[1]) / 2   # midpoint of range
+    return nums[0]
+
+
+def _norm_diff(a, b, scale: float) -> float:
+    """Normalised absolute difference between two values. Returns 0 if either is None or non-numeric."""
+    fa, fb = _to_float(a), _to_float(b)
+    if fa is None or fb is None:
+        return 0.0
+    return abs(fa - fb) / scale
+
+
+def _similarity_score(target: Listing, cand: Listing) -> float:
+    """
+    Compute a similarity score between two listings.
+    Higher is more similar. Used to rank similar-listing candidates.
+    """
+    score = 0.0
+
+    # Model match — dominant signal: a same-model result always beats a different-model one
+    if target.model and cand.model and target.model.lower() == cand.model.lower():
+        score += 10.0
+
+    # Trim match (only meaningful when model already matches)
+    if target.trim and cand.trim and target.trim.lower() == cand.trim.lower():
+        score += 1.5
+
+    # Categorical matches
+    if target.body_type and cand.body_type and target.body_type == cand.body_type:
+        score += 1.0
+    if target.fuel_type and cand.fuel_type and target.fuel_type == cand.fuel_type:
+        score += 1.0
+    if target.regional_specs and cand.regional_specs == target.regional_specs:
+        score += 0.5
+
+    # Numeric closeness (penalties for divergence)
+    score -= 2.0 * _norm_diff(target.year,       cand.year,       5)
+    score -= 2.5 * _norm_diff(target.price,      cand.price,      50_000)
+    score -= 1.8 * _norm_diff(target.kms,        cand.kms,        50_000)
+    score -= 1.0 * _norm_diff(target.horsepower, cand.horsepower, 100)
+    score -= 0.8 * _norm_diff(target.cylinders,  cand.cylinders,  2)
+
+    return score
+
+
+def _get_similar_listings(row: Listing, db: Session) -> List[CarListingSummary]:
+    """
+    Return the 3 most similar listings to `row` using a scoring function.
+    Pulls all same-brand listings (up to 300), scores each, returns top 3.
+    The SQL filter narrows to same brand; Python scoring handles the rest.
+    """
+    candidates = (
+        db.query(Listing)
+        .filter(
+            Listing.id != row.id,
+            Listing.brand == row.brand,
+        )
+        .limit(300)
+        .all()
+    )
+
+    if not candidates:
+        return []
+
+    top3 = sorted(candidates, key=lambda c: _similarity_score(row, c), reverse=True)[:3]
+    return [_listing_to_summary(r) for r in top3]
+
 def _listing_to_summary(row: Listing) -> CarListingSummary:
     return CarListingSummary(
         id=row.id,
@@ -46,8 +129,8 @@ def _listing_to_summary(row: Listing) -> CarListingSummary:
     )
 
 
-def _listing_to_detail(row: Listing) -> CarListingDetail:
-    """Convert DB Listing to full CarListingDetail with mock data for missing fields."""
+def _listing_to_detail(row: Listing, db: Session) -> CarListingDetail:
+    """Convert DB Listing to full CarListingDetail with similar listings from DB."""
     
     # Generate features from DB fields
     features = []
@@ -94,7 +177,7 @@ def _listing_to_detail(row: Listing) -> CarListingDetail:
         description += f" {row.regional_specs} specifications."
     description += " Excellent condition, ready for immediate delivery."
     
-    # Mock market analysis (TODO: integrate with CatBoost predictions)
+    # Market analysis (without similarListings now)
     base_price = row.price
     market_analysis = MarketAnalysis(
         depreciation={
@@ -111,27 +194,12 @@ def _listing_to_detail(row: Listing) -> CarListingDetail:
             PricePoint(month="May", averagePrice=int(base_price * 1.02)),
             PricePoint(month="Jun", averagePrice=int(base_price * 1.01)),
         ],
-        similarListings=[
-            SimilarListing(
-                price=_fmt_price(int(base_price * 1.05)),
-                mileage=_fmt_mileage(row.kms + 10000 if row.kms else 50000),
-                daysOnMarket=12
-            ),
-            SimilarListing(
-                price=_fmt_price(int(base_price * 0.98)),
-                mileage=_fmt_mileage(row.kms + 20000 if row.kms else 60000),
-                daysOnMarket=8
-            ),
-            SimilarListing(
-                price=_fmt_price(int(base_price * 1.02)),
-                mileage=_fmt_mileage(row.kms - 5000 if row.kms and row.kms > 5000 else 30000),
-                daysOnMarket=5
-            ),
-        ]
     )
     
+    # Find the 3 most similar listings using scored similarity
+    similar_listings = _get_similar_listings(row, db)
+    
     return CarListingDetail(
-        # From summary
         id=row.id,
         make=row.brand,
         model=row.model,
@@ -142,12 +210,12 @@ def _listing_to_detail(row: Listing) -> CarListingDetail:
         mileage=_fmt_mileage(row.kms),
         location=row.location or "Dubai, UAE",
         image=row.image or "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&h=600&fit=crop",
-        # Detail fields
         description=description,
         seller=seller,
         url=row.url,
         features=features,
         marketAnalysis=market_analysis,
+        similarListings=similar_listings,
     )
 
 
@@ -189,9 +257,22 @@ def get_brands(db: Session = Depends(get_db)):
     return {"brands": [r[0] for r in rows]}
 
 
+@router.get("/brands/{brand}/models")
+def get_models_for_brand(brand: str, db: Session = Depends(get_db)):
+    """Return distinct model names for a given brand (case-insensitive)."""
+    rows = (
+        db.query(Listing.model)
+        .filter(Listing.brand.ilike(brand.strip()))
+        .distinct()
+        .order_by(Listing.model)
+        .all()
+    )
+    return {"models": [r[0] for r in rows]}
+
+
 @router.get("/{car_id}", response_model=CarListingDetail)
 def get_car_by_id(car_id: int, db: Session = Depends(get_db)):
     row = db.query(Listing).filter(Listing.id == car_id).first()
     if not row:
         raise HTTPException(status_code=404, detail=f"Car with ID {car_id} not found")
-    return _listing_to_detail(row)
+    return _listing_to_detail(row, db)

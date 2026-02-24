@@ -1,6 +1,7 @@
 """
 Watchlist business logic – all queries go through SQLAlchemy.
 """
+import re
 from datetime import datetime, timezone
 from typing import List
 
@@ -12,10 +13,12 @@ from db.models import Listing, Watchlist, WatchlistMatch as WatchlistMatchDB
 from models.schemas import (
     CarListingSummary,
     WatchlistCard,
+    WatchlistCreate,
     WatchlistDetailResponse,
     WatchlistMatch,
     WatchlistMatchesResponse,
     WatchlistSearchCriteria,
+    WatchlistStatusUpdate,
     WatchlistsListResponse,
     WatchlistStats,
 )
@@ -82,6 +85,8 @@ def _build_criteria_query(db: Session, criteria: WatchlistSearchCriteria):
         q = q.filter(Listing.kms >= criteria.mileage_min)
     if criteria.mileage_max:
         q = q.filter(Listing.kms <= criteria.mileage_max)
+    if criteria.locations:
+        q = q.filter(Listing.location.in_(criteria.locations))
 
     return q
 
@@ -153,6 +158,33 @@ def get_watchlist_detail(db: Session, watchlist_id: int) -> WatchlistDetailRespo
 
     stats = WatchlistStats(totalMatches=total, newToday=new_today, avgMatch=avg_match)
     return WatchlistDetailResponse(watchlist=card, stats=stats)
+
+
+MAX_ACTIVE_WATCHLISTS = 2
+
+def set_watchlist_status(db: Session, watchlist_id: int, payload: WatchlistStatusUpdate) -> WatchlistCard:
+    """Toggle active/inactive. Enforces a limit of MAX_ACTIVE_WATCHLISTS active at once."""
+    w = _get_watchlist_or_404(db, watchlist_id)
+
+    if payload.isActive and not w.is_active:
+        # Count how many are currently active (excluding this one)
+        active_count = (
+            db.query(func.count(Watchlist.id))
+            .filter(Watchlist.is_active == True, Watchlist.id != watchlist_id)
+            .scalar() or 0
+        )
+        if active_count >= MAX_ACTIVE_WATCHLISTS:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Free trial limited to {MAX_ACTIVE_WATCHLISTS} active watchlists. "
+                       "Pause another watchlist first or upgrade.",
+            )
+
+    w.is_active = payload.isActive
+    w.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(w)
+    return _watchlist_to_card(w, db)
 
 
 def get_watchlist_matches(
@@ -228,6 +260,70 @@ def run_watchlist_scan(db: Session, watchlist_id: int) -> dict:
         "existingMatches": len(existing_ids),
         "newMatches": new_matches,
     }
+
+
+# ─────────── normalisation helpers ───────────
+
+def _normalise(value: str) -> str:
+    """Collapse whitespace, strip, and title-case a brand/model string."""
+    return re.sub(r"\s+", " ", value.strip()).title()
+
+
+def create_watchlist(db: Session, payload: WatchlistCreate) -> WatchlistCard:
+    """Validate, normalise, persist a new watchlist, run initial scan, return card."""
+    criteria = payload.searchCriteria
+
+    # Normalise make (strip + title-case) – DB uses ilike so matching is safe
+    if criteria.make:
+        criteria.make = _normalise(criteria.make)
+
+    # Normalise model list
+    if criteria.models:
+        criteria.models = [_normalise(m) for m in criteria.models]
+
+    # Build a title from criteria if the caller didn't provide a meaningful one
+    title = payload.title.strip()
+    if not title:
+        parts = []
+        if criteria.make:
+            parts.append(criteria.make)
+        if criteria.models:
+            parts.append(", ".join(criteria.models[:2]))
+        title = " ".join(parts) or "My Watchlist"
+
+    location_label = ", ".join(
+        loc.replace(", UAE", "") for loc in (criteria.locations or [])
+    ) or "UAE"
+
+    # Build tags from criteria for quick display
+    tags: list[str] = []
+    if criteria.year_min and criteria.year_max:
+        tags.append(f"{criteria.year_min}–{criteria.year_max}")
+    elif criteria.year_min:
+        tags.append(f"From {criteria.year_min}")
+    elif criteria.year_max:
+        tags.append(f"Up to {criteria.year_max}")
+    if criteria.price_max:
+        tags.append(f"≤ AED {criteria.price_max:,}")
+
+    w = Watchlist(
+        title=title,
+        subtitle=payload.subtitle or "",
+        location_label=location_label,
+        tags=tags,
+        is_active=payload.isActive,
+        alerts_enabled=payload.alertsEnabled,
+        criteria_json=criteria.model_dump(exclude_none=True),
+    )
+    db.add(w)
+    db.flush()          # get w.id without committing
+
+    # Run initial scan so matches appear immediately
+    run_watchlist_scan(db, w.id)
+
+    db.commit()
+    db.refresh(w)
+    return _watchlist_to_card(w, db)
 
 
 def initialize_watchlists(db: Session):

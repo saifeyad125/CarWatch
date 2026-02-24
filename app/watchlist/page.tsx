@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Plus, Search, Filter, Car, MapPin, DollarSign, Bell, Settings, Trash2, Play, Pause } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Plus, Search, Filter, Car, MapPin, DollarSign, Bell, Settings, Trash2, Play, Pause, X, Check, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,66 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { API_ENDPOINTS, apiRequest } from "@/lib/api";
+
+// ── Limit-reached modal ──────────────────────────────────────────────────────
+function LimitModal({ onClose }: { onClose: () => void }) {
+  // Close on backdrop click
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center p-4"
+      onClick={onClose}
+    >
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+
+      {/* Card — same style as the popular-listing cards */}
+      <div
+        className="relative w-full max-w-sm overflow-hidden shadow-2xl border border-border/50 bg-card/95 backdrop-blur-sm rounded-2xl animate-in slide-in-from-bottom-4 duration-300"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Top accent bar */}
+        <div className="h-1 w-full bg-gradient-to-r from-red-500 to-red-600" />
+
+        <div className="p-6 space-y-5">
+          {/* Icon + heading */}
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-red-100 dark:bg-red-950/40 flex items-center justify-center shrink-0">
+              <AlertCircle className="h-6 w-6 text-red-500" />
+            </div>
+            <div>
+              <h3 className="font-bold text-lg text-foreground">Watchlist Limit Reached</h3>
+              <p className="text-sm text-muted-foreground">Free trial</p>
+            </div>
+          </div>
+
+          {/* Body */}
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            You can have up to <span className="font-semibold text-foreground">2 active watchlists</span> on
+            the free plan. Pause one of your active watchlists first, or upgrade for unlimited monitoring.
+          </p>
+
+          {/* Buttons */}
+          <div className="flex gap-3 pt-1">
+            <Button
+              variant="outline"
+              className="flex-1 rounded-xl border-border/60 text-muted-foreground hover:bg-muted/50"
+              onClick={onClose}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="flex-1 rounded-xl bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg"
+              onClick={onClose}
+            >
+              Upgrade
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 interface WatchlistItem {
   id: number;
@@ -39,6 +99,158 @@ export default function WatchlistPage() {
   const [summary, setSummary] = useState({ active: 0, matches: 0, withAlerts: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showLimitModal, setShowLimitModal] = useState(false);
+
+  // ── Add-form state ──
+  const [formMake, setFormMake] = useState("");
+  const [formModel, setFormModel] = useState("");
+  const [formYearFrom, setFormYearFrom] = useState("");
+  const [formYearTo, setFormYearTo] = useState("");
+  const [formPriceMin, setFormPriceMin] = useState("");
+  const [formPriceMax, setFormPriceMax] = useState("");
+  const [formLocations, setFormLocations] = useState<string[]>([]);
+  const [formTitle, setFormTitle] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Brand / model autocomplete
+  const [allBrands, setAllBrands] = useState<string[]>([]);
+  const [brandSuggestions, setBrandSuggestions] = useState<string[]>([]);
+  const [showBrandDropdown, setShowBrandDropdown] = useState(false);
+  const [allModels, setAllModels] = useState<string[]>([]);
+  const [modelSuggestions, setModelSuggestions] = useState<string[]>([]);
+  const [showModelDropdown, setShowModelDropdown] = useState(false);
+  const [selectedModels, setSelectedModels] = useState<string[]>([]);
+  const brandRef = useRef<HTMLDivElement>(null);
+  const modelRef = useRef<HTMLDivElement>(null);
+
+  const UAE_LOCATIONS = [
+    "Dubai, UAE",
+    "Abu Dhabi, UAE",
+    "Sharjah, UAE",
+    "Ajman, UAE",
+    "Ras Al Khaimah, UAE",
+    "Fujairah, UAE",
+    "Al Ain, UAE",
+  ];
+
+  // Fetch brands once
+  useEffect(() => {
+    apiRequest<{ brands: string[] }>(API_ENDPOINTS.cars.brands)
+      .then((d) => setAllBrands(d.brands))
+      .catch(() => {});
+  }, []);
+
+  // Fetch models when brand changes
+  useEffect(() => {
+    if (!formMake.trim()) {
+      setAllModels([]);
+      return;
+    }
+    // Only fetch when we have a full brand match
+    const match = allBrands.find(
+      (b) => b.toLowerCase() === formMake.trim().toLowerCase()
+    );
+    if (match) {
+      apiRequest<{ models: string[] }>(API_ENDPOINTS.cars.models(match))
+        .then((d) => setAllModels(d.models))
+        .catch(() => setAllModels([]));
+    }
+  }, [formMake, allBrands]);
+
+  // Filter brand suggestions
+  useEffect(() => {
+    if (!formMake.trim()) {
+      setBrandSuggestions(allBrands.slice(0, 8));
+    } else {
+      const q = formMake.trim().toLowerCase();
+      setBrandSuggestions(
+        allBrands.filter((b) => b.toLowerCase().includes(q)).slice(0, 8)
+      );
+    }
+  }, [formMake, allBrands]);
+
+  // Filter model suggestions
+  useEffect(() => {
+    if (!formModel.trim()) {
+      setModelSuggestions(allModels.filter((m) => !selectedModels.includes(m)).slice(0, 8));
+    } else {
+      const q = formModel.trim().toLowerCase();
+      setModelSuggestions(
+        allModels.filter((m) => m.toLowerCase().includes(q) && !selectedModels.includes(m)).slice(0, 8)
+      );
+    }
+  }, [formModel, allModels, selectedModels]);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (brandRef.current && !brandRef.current.contains(e.target as Node)) {
+        setShowBrandDropdown(false);
+      }
+      if (modelRef.current && !modelRef.current.contains(e.target as Node)) {
+        setShowModelDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const toggleLocation = (loc: string) => {
+    setFormLocations((prev) =>
+      prev.includes(loc) ? prev.filter((l) => l !== loc) : [...prev, loc]
+    );
+  };
+
+  const resetForm = () => {
+    setFormMake("");
+    setFormModel("");
+    setFormYearFrom("");
+    setFormYearTo("");
+    setFormPriceMin("");
+    setFormPriceMax("");
+    setFormLocations([]);
+    setFormTitle("");
+    setSelectedModels([]);
+    setShowAddForm(false);
+  };
+
+  const handleSubmitWatchlist = async () => {
+    if (!formMake.trim()) {
+      alert("Please select a make.");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const body = {
+        title: formTitle.trim() || `${formMake}${selectedModels.length ? " " + selectedModels.join(", ") : ""}`,
+        searchCriteria: {
+          make: formMake.trim(),
+          ...(selectedModels.length > 0 && { models: selectedModels }),
+          ...(formYearFrom && { year_min: parseInt(formYearFrom, 10) }),
+          ...(formYearTo && { year_max: parseInt(formYearTo, 10) }),
+          ...(formPriceMin && { price_min: parseInt(formPriceMin.replace(/,/g, ""), 10) }),
+          ...(formPriceMax && { price_max: parseInt(formPriceMax.replace(/,/g, ""), 10) }),
+          ...(formLocations.length > 0 && { locations: formLocations }),
+        },
+        isActive: false,   // inactive by default — user activates via the play button
+        alertsEnabled: false,
+      };
+      await apiRequest(API_ENDPOINTS.watchlists.create, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      // Re-fetch the list
+      const data = await apiRequest<WatchlistsResponse>(API_ENDPOINTS.watchlists.list);
+      setWatchlistItems(data.watchlists);
+      setSummary(data.summary);
+      resetForm();
+    } catch (err) {
+      console.error("Failed to create watchlist:", err);
+      alert("Failed to create watchlist. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   // Fetch watchlists from API
   useEffect(() => {
@@ -60,21 +272,35 @@ export default function WatchlistPage() {
     fetchWatchlists();
   }, []);
 
-  const toggleWatchlistStatus = (id: number) => {
-    setWatchlistItems(prev => {
-      const activeCount = prev.filter(item => item.isActive).length;
-      const targetItem = prev.find(item => item.id === id);
-      
-      // If trying to activate and already at limit, prevent activation
-      if (targetItem && !targetItem.isActive && activeCount >= 2) {
-        alert("Free trial limited to 2 active watchlists. Please upgrade or pause another watchlist first.");
-        return prev;
-      }
-      
-      return prev.map(item => 
-        item.id === id ? { ...item, isActive: !item.isActive } : item
+  const toggleWatchlistStatus = async (id: number, currentlyActive: boolean) => {
+    const newStatus = !currentlyActive;
+
+    // Optimistic update
+    setWatchlistItems(prev =>
+      prev.map(item => item.id === id ? { ...item, isActive: newStatus } : item)
+    );
+
+    try {
+      await apiRequest(API_ENDPOINTS.watchlists.setStatus(id), {
+        method: "PATCH",
+        body: JSON.stringify({ isActive: newStatus }),
+      });
+      // Re-fetch to get authoritative state + updated summary
+      const data = await apiRequest<WatchlistsResponse>(API_ENDPOINTS.watchlists.list);
+      setWatchlistItems(data.watchlists);
+      setSummary(data.summary);
+    } catch (err: any) {
+      // Roll back optimistic update
+      setWatchlistItems(prev =>
+        prev.map(item => item.id === id ? { ...item, isActive: currentlyActive } : item)
       );
-    });
+      // Show the styled modal for the limit error, plain alert for anything else
+      if (err?.message?.includes("409")) {
+        setShowLimitModal(true);
+      } else {
+        alert("Failed to update watchlist status.");
+      }
+    }
   };
 
   const filteredItems = watchlistItems
@@ -98,7 +324,7 @@ export default function WatchlistPage() {
           <div className="flex items-center justify-between">
             <Button
               variant="ghost"
-              onClick={() => setShowAddForm(false)}
+              onClick={resetForm}
               className="p-2"
             >
               ← Back
@@ -111,6 +337,22 @@ export default function WatchlistPage() {
         {/* Scrollable Form Content */}
         <div className="flex-1 overflow-y-auto">
           <div className="p-4 space-y-6 pb-32">
+
+          {/* Title (optional) */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Watchlist Name (optional)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Input
+                placeholder="e.g., Family SUV Hunt"
+                value={formTitle}
+                onChange={(e) => setFormTitle(e.target.value)}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Vehicle Details */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -119,50 +361,173 @@ export default function WatchlistPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Make</label>
-                  <Input placeholder="e.g., Toyota" className="mt-1" />
+              {/* Brand autocomplete */}
+              <div ref={brandRef} className="relative">
+                <label className="text-sm font-medium text-muted-foreground">Make *</label>
+                <div className="relative mt-1">
+                  <Input
+                    placeholder="Search brand..."
+                    value={formMake}
+                    onChange={(e) => {
+                      setFormMake(e.target.value);
+                      setShowBrandDropdown(true);
+                      // Clear models when brand changes
+                      setSelectedModels([]);
+                      setFormModel("");
+                    }}
+                    onFocus={() => setShowBrandDropdown(true)}
+                  />
+                  {formMake && (
+                    <button
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      onClick={() => {
+                        setFormMake("");
+                        setSelectedModels([]);
+                        setFormModel("");
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Model</label>
-                  <Input placeholder="e.g., Camry" className="mt-1" />
-                </div>
+                {showBrandDropdown && brandSuggestions.length > 0 && (
+                  <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                    {brandSuggestions.map((brand) => (
+                      <button
+                        key={brand}
+                        className={`w-full text-left px-4 py-2.5 text-sm hover:bg-primary/10 transition-colors ${
+                          brand.toLowerCase() === formMake.trim().toLowerCase()
+                            ? "bg-primary/5 font-medium text-primary"
+                            : ""
+                        }`}
+                        onClick={() => {
+                          setFormMake(brand);
+                          setShowBrandDropdown(false);
+                          setSelectedModels([]);
+                          setFormModel("");
+                        }}
+                      >
+                        {brand}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
+
+              {/* Model autocomplete */}
+              <div ref={modelRef} className="relative">
+                <label className="text-sm font-medium text-muted-foreground">Model</label>
+                {selectedModels.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-1 mb-2">
+                    {selectedModels.map((m) => (
+                      <Badge
+                        key={m}
+                        variant="default"
+                        className="text-xs rounded-full px-3 py-1 flex items-center gap-1 bg-primary/10 text-primary border border-primary/20"
+                      >
+                        {m}
+                        <button
+                          onClick={() =>
+                            setSelectedModels((prev) => prev.filter((x) => x !== m))
+                          }
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                <div className="relative mt-1">
+                  <Input
+                    placeholder={allModels.length ? "Search model..." : "Select a make first"}
+                    value={formModel}
+                    onChange={(e) => {
+                      setFormModel(e.target.value);
+                      setShowModelDropdown(true);
+                    }}
+                    onFocus={() => setShowModelDropdown(true)}
+                    disabled={allModels.length === 0}
+                  />
+                </div>
+                {showModelDropdown && modelSuggestions.length > 0 && (
+                  <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                    {modelSuggestions.map((model) => (
+                      <button
+                        key={model}
+                        className="w-full text-left px-4 py-2.5 text-sm hover:bg-primary/10 transition-colors"
+                        onClick={() => {
+                          setSelectedModels((prev) => [...prev, model]);
+                          setFormModel("");
+                          setShowModelDropdown(false);
+                        }}
+                      >
+                        {model}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Year From</label>
-                  <Input placeholder="2020" className="mt-1" />
+                  <Input
+                    placeholder="2020"
+                    type="number"
+                    className="mt-1"
+                    value={formYearFrom}
+                    onChange={(e) => setFormYearFrom(e.target.value)}
+                  />
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Year To</label>
-                  <Input placeholder="2023" className="mt-1" />
+                  <Input
+                    placeholder="2025"
+                    type="number"
+                    className="mt-1"
+                    value={formYearTo}
+                    onChange={(e) => setFormYearTo(e.target.value)}
+                  />
                 </div>
               </div>
             </CardContent>
           </Card>
 
+          {/* Price Range */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <DollarSign className="h-5 w-5" />
-                Price Range
+                Price Range (AED)
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Min Price</label>
-                  <Input placeholder="$20,000" className="mt-1" />
+                  <Input
+                    placeholder="e.g. 50000"
+                    type="number"
+                    className="mt-1"
+                    value={formPriceMin}
+                    onChange={(e) => setFormPriceMin(e.target.value)}
+                  />
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Max Price</label>
-                  <Input placeholder="$30,000" className="mt-1" />
+                  <Input
+                    placeholder="e.g. 200000"
+                    type="number"
+                    className="mt-1"
+                    value={formPriceMax}
+                    onChange={(e) => setFormPriceMax(e.target.value)}
+                  />
                 </div>
               </div>
             </CardContent>
           </Card>
 
+          {/* Location – UAE emirate buttons */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -171,48 +536,58 @@ export default function WatchlistPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <Input placeholder="e.g., Los Angeles, CA" />
-              <div className="mt-2">
-                <label className="text-sm font-medium text-muted-foreground">Search Radius</label>
-                <div className="flex gap-2 mt-2">
-                  {["25 miles", "50 miles", "100 miles", "200 miles"].map((radius) => (
-                    <Button key={radius} variant="outline" size="sm" className="text-xs">
-                      {radius}
+              <p className="text-sm text-muted-foreground mb-3">Select one or more emirates</p>
+              <div className="flex flex-wrap gap-2">
+                {UAE_LOCATIONS.map((loc) => {
+                  const label = loc.replace(", UAE", "");
+                  const isSelected = formLocations.includes(loc);
+                  return (
+                    <Button
+                      key={loc}
+                      variant={isSelected ? "default" : "outline"}
+                      size="sm"
+                      className={`text-xs rounded-full transition-all ${
+                        isSelected
+                          ? "bg-primary text-primary-foreground shadow-md"
+                          : "border-border/60 hover:border-primary/40 hover:bg-primary/5"
+                      }`}
+                      onClick={() => toggleLocation(loc)}
+                    >
+                      {isSelected && <Check className="h-3 w-3 mr-1" />}
+                      {label}
                     </Button>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
+              {formLocations.length === 0 && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  No selection = all emirates
+                </p>
+              )}
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
-                Condition & Features
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Condition</label>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {["New", "Used", "Certified Pre-Owned"].map((condition) => (
-                    <Button key={condition} variant="outline" size="sm" className="text-xs border-cyan-500/40 text-cyan-600 hover:bg-cyan-500 hover:text-white">
-                      {condition}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
+          {/* Action buttons */}
           <div className="flex gap-3 pt-4">
-            <Button variant="outline" className="flex-1 border-cyan-500/40 text-cyan-600 hover:bg-cyan-500 hover:text-white rounded-2xl" onClick={() => setShowAddForm(false)}>
+            <Button
+              variant="outline"
+              className="flex-1 border-cyan-500/40 text-cyan-600 hover:bg-cyan-500 hover:text-white rounded-2xl"
+              onClick={resetForm}
+              disabled={isSubmitting}
+            >
               Cancel
             </Button>
-            <Button className="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg rounded-2xl">
-              <Plus className="h-4 w-4 mr-2" />
-              Add to Watchlist
+            <Button
+              className="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg rounded-2xl"
+              onClick={handleSubmitWatchlist}
+              disabled={isSubmitting || !formMake.trim()}
+            >
+              {isSubmitting ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+              ) : (
+                <Plus className="h-4 w-4 mr-2" />
+              )}
+              {isSubmitting ? "Creating..." : "Add to Watchlist"}
             </Button>
           </div>
           </div>
@@ -256,6 +631,9 @@ export default function WatchlistPage() {
 
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden">
+      {/* Limit modal – rendered above everything */}
+      {showLimitModal && <LimitModal onClose={() => setShowLimitModal(false)} />}
+
       {/* Header with blur effect */}
       <div className="shrink-0 bg-card/80 backdrop-blur-xl border-b border-border/20 px-4 py-4 sticky top-0 z-10">
         <div className="flex items-center justify-between mb-4">
@@ -403,22 +781,14 @@ export default function WatchlistPage() {
                           className={`h-9 w-9 rounded-xl transition-all duration-200 ${
                             item.isActive 
                               ? "text-orange-600 hover:text-orange-700 hover:bg-orange-50" 
-                              : watchlistItems.filter(w => w.isActive).length >= 2
-                                ? "text-gray-400 cursor-not-allowed"
-                                : "text-green-600 hover:text-green-700 hover:bg-green-50"
+                              : "text-green-600 hover:text-green-700 hover:bg-green-50"
                           }`}
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            toggleWatchlistStatus(item.id);
+                            toggleWatchlistStatus(item.id, item.isActive);
                           }}
-                          title={
-                            item.isActive 
-                              ? "Pause watchlist" 
-                              : watchlistItems.filter(w => w.isActive).length >= 2
-                                ? "Free trial limit reached - upgrade or pause another watchlist"
-                                : "Resume watchlist"
-                          }
+                          title={item.isActive ? "Pause watchlist" : "Resume watchlist"}
                         >
                           {item.isActive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                         </Button>

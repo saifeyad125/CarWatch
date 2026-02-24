@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { API_ENDPOINTS, apiRequest } from "@/lib/api";
 
 interface CarListing {
   id: number;
@@ -15,90 +16,71 @@ interface CarListing {
   model: string;
   year: number;
   price: string;
-  predictedPrice: string;
+  predictedPrice?: string;
+  dealLabel?: string;
   mileage: string;
   location: string;
-  condition: string;
+  condition?: string;
   image: string;
 }
-
-const allListings: CarListing[] = [
-  {
-    id: 1,
-    make: "Toyota",
-    model: "Camry",
-    year: 2022,
-    price: "$24,500",
-    predictedPrice: "$26,800",
-    mileage: "15,000 mi",
-    location: "Los Angeles, CA",
-    condition: "Used",
-    image: "https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=400&h=300&fit=crop",
-  },
-  {
-    id: 2,
-    make: "Honda",
-    model: "Civic",
-    year: 2023,
-    price: "$28,900",
-    predictedPrice: "$31,200",
-    mileage: "8,500 mi",
-    location: "San Diego, CA",
-    condition: "Certified Pre-Owned",
-    image: "https://images.unsplash.com/photo-1590362891991-f776e747a588?w=400&h=300&fit=crop",
-  },
-  {
-    id: 3,
-    make: "Tesla",
-    model: "Model 3",
-    year: 2023,
-    price: "$42,000",
-    predictedPrice: "$39,500",
-    mileage: "12,000 mi",
-    location: "San Francisco, CA",
-    condition: "Used",
-    image: "https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=400&h=300&fit=crop",
-  },
-  {
-    id: 4,
-    make: "Ford",
-    model: "F-150",
-    year: 2024,
-    price: "$52,900",
-    predictedPrice: "$54,700",
-    mileage: "New",
-    location: "Austin, TX",
-    condition: "New",
-    image: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=400&h=300&fit=crop",
-  },
-];
 
 export default function FavoritesPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
-  const [favorites, setFavorites] = useState<number[]>([]);
+  const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
+  const [favoriteListings, setFavoriteListings] = useState<CarListing[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Load favorites from localStorage on component mount
+  // Load favorite IDs from localStorage, then fetch each car from the API
   useEffect(() => {
     const savedFavorites = localStorage.getItem('carFavorites');
-    if (savedFavorites) {
-      setFavorites(JSON.parse(savedFavorites));
+    const ids: number[] = savedFavorites ? JSON.parse(savedFavorites) : [];
+    setFavoriteIds(ids);
+
+    if (ids.length === 0) {
+      setIsLoading(false);
+      return;
     }
+
+    setIsLoading(true);
+    Promise.all(
+      ids.map((id) =>
+        apiRequest<CarListing>(API_ENDPOINTS.cars.detail(id)).catch(() => null)
+      )
+    ).then((results) => {
+      setFavoriteListings(results.filter((r): r is CarListing => r !== null));
+      setIsLoading(false);
+    });
   }, []);
 
   const removeFavorite = (carId: number) => {
-    const newFavorites = favorites.filter(id => id !== carId);
-    setFavorites(newFavorites);
-    localStorage.setItem('carFavorites', JSON.stringify(newFavorites));
+    const newIds = favoriteIds.filter(id => id !== carId);
+    setFavoriteIds(newIds);
+    setFavoriteListings(prev => prev.filter(car => car.id !== carId));
+    localStorage.setItem('carFavorites', JSON.stringify(newIds));
   };
-
-  const favoriteListings = allListings.filter(car => favorites.includes(car.id));
 
   const filteredListings = favoriteListings.filter(car =>
     car.make.toLowerCase().includes(searchQuery.toLowerCase()) ||
     car.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
     `${car.year}`.includes(searchQuery)
   );
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col h-full bg-background">
+        <div className="shrink-0 bg-card/80 backdrop-blur-xl border-b border-border/20 px-4 py-4">
+          <h1 className="text-lg font-semibold text-foreground">My Favorites</h1>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center space-y-3">
+            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-muted-foreground">Loading favorites...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -168,7 +150,10 @@ export default function FavoritesPage() {
               </h3>
               
               {filteredListings.map((car) => {
-                const isGoodDeal = parseInt(car.price.replace(/[$,]/g, '')) < parseInt(car.predictedPrice.replace(/[$,]/g, ''));
+                const rawPrice = car.price ? parseInt(car.price.replace(/[^0-9]/g, '')) : 0;
+                const rawPredicted = car.predictedPrice ? parseInt(car.predictedPrice.replace(/[^0-9]/g, '')) : 0;
+                const isGoodDeal = car.dealLabel === "Good Deal" ||
+                  (!!car.price && !!car.predictedPrice && rawPrice < rawPredicted);
                 
                 return (
                   <Card
@@ -214,10 +199,14 @@ export default function FavoritesPage() {
                           <div className="mt-1 space-y-1">
                             <p className="text-2xl font-bold text-primary">{car.price}</p>
                             <div className="flex items-center gap-2">
-                              <span className="text-sm text-muted-foreground">AI Predicted:</span>
-                              <span className="text-sm text-muted-foreground line-through decoration-2 decoration-muted-foreground/60">
-                                {car.predictedPrice}
-                              </span>
+                              {car.predictedPrice && (
+                                <>
+                                  <span className="text-sm text-muted-foreground">AI Predicted:</span>
+                                  <span className="text-sm text-muted-foreground line-through decoration-2 decoration-muted-foreground/60">
+                                    {car.predictedPrice}
+                                  </span>
+                                </>
+                              )}
                               {isGoodDeal && (
                                 <Badge variant="default" className="text-xs bg-green-100 text-green-800 border-green-200">
                                   Good Deal

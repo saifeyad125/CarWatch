@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   User, 
   Bell, 
@@ -38,6 +38,19 @@ interface ProfileSetting {
 export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const [favoritesCount, setFavoritesCount] = useState(0);
+
+  // Read favorites count from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('carFavorites');
+    if (saved) {
+      try {
+        setFavoritesCount(JSON.parse(saved).length);
+      } catch {
+        setFavoritesCount(0);
+      }
+    }
+  }, []);
   
   const [userInfo, setUserInfo] = useState({
     name: "Saif",
@@ -208,10 +221,10 @@ export default function ProfilePage() {
               <div className="text-sm text-muted-foreground">Alerts Sent</div>
             </Card>
           </Link>
-          <Link href="/profile/deals">
+          <Link href="/favorites">
             <Card className="text-center p-4 border-0 bg-card/50 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 cursor-pointer hover:border-2 hover:border-primary/30">
-              <div className="text-2xl font-bold text-primary">8</div>
-              <div className="text-sm text-muted-foreground">Deals Found</div>
+              <div className="text-2xl font-bold text-primary">{favoritesCount}</div>
+              <div className="text-sm text-muted-foreground">Favorites</div>
             </Card>
           </Link>
         </div>

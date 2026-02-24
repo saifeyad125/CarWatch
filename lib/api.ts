@@ -11,6 +11,7 @@ export const API_ENDPOINTS = {
     list: `${API_BASE_URL}/api/cars`,
     detail: (id: number) => `${API_BASE_URL}/api/cars/${id}`,
     brands: `${API_BASE_URL}/api/cars/brands`,
+    models: (brand: string) => `${API_BASE_URL}/api/cars/brands/${encodeURIComponent(brand)}/models`,
   },
   
   // Prediction endpoints
@@ -22,7 +23,9 @@ export const API_ENDPOINTS = {
   // Watchlist endpoints
   watchlists: {
     list: `${API_BASE_URL}/api/watchlists`,
+    create: `${API_BASE_URL}/api/watchlists`,
     detail: (id: number) => `${API_BASE_URL}/api/watchlists/${id}`,
+    setStatus: (id: number) => `${API_BASE_URL}/api/watchlists/${id}/status`,
     matches: (id: number, sort?: string) => 
       `${API_BASE_URL}/api/watchlists/${id}/matches${sort ? `?sort=${sort}` : ''}`,
     scan: (id: number) => `${API_BASE_URL}/api/watchlists/${id}/scan`,

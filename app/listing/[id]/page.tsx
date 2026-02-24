@@ -1,6 +1,6 @@
 "use client"
 
-import { ArrowLeft, Heart, Share2, MapPin, Gauge, Calendar, Shield, TrendingDown, TrendingUp, Phone, MessageCircle, Star, User, CheckCircle } from "lucide-react";
+import { ArrowLeft, Heart, Share2, MapPin, Gauge, Calendar, Shield, TrendingDown, TrendingUp, Phone, MessageCircle, Star, User, CheckCircle, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -10,7 +10,7 @@ import Link from "next/link";
 import { use, useEffect, useState } from "react";
 import { API_ENDPOINTS, apiRequest } from "@/lib/api";
 
-interface CarListing {
+interface CarListingSummary {
   id: number;
   make: string;
   model: string;
@@ -21,6 +21,9 @@ interface CarListing {
   mileage: string;
   location: string;
   image: string;
+}
+
+interface CarListing extends CarListingSummary {
   description: string;
   url: string;
   seller: {
@@ -41,12 +44,8 @@ interface CarListing {
       month: string;
       averagePrice: number;
     }>;
-    similarListings: Array<{
-      price: string;
-      mileage: string;
-      daysOnMarket: number;
-    }>;
   };
+  similarListings?: CarListingSummary[];
 }
 
 export default function ListingDetail({ params }: { params: Promise<{ id: string }> }) {
@@ -358,13 +357,85 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
             <Card className="p-5 bg-card/50 backdrop-blur-sm">
               <h3 className="text-lg font-semibold text-foreground mb-3">Description</h3>
               <p className="text-muted-foreground leading-relaxed">{car.description}</p>
-              {/* TODO: Add VIN field to backend schema */}
-              {/* <div className="mt-4 pt-4 border-t border-border">
-                <div className="text-sm text-muted-foreground">
-                  <span className="font-medium">VIN:</span> MOCK_VIN_NUMBER
-                </div>
-              </div> */}
             </Card>
+
+            {/* Similar Listings - Horizontally scrollable, matches home page card style */}
+            {car.similarListings && car.similarListings.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-foreground">Similar Listings</h3>
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    Swipe to see more <ChevronRight className="h-3 w-3" />
+                  </span>
+                </div>
+                {/* Negative margin to break out of px-4 padding, peek ~20px of next card */}
+                <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-4 px-4 pb-2">
+                  {car.similarListings.map((similar) => (
+                    <Link
+                      key={similar.id}
+                      href={`/listing/${similar.id}`}
+                      className="snap-start shrink-0 w-[calc(100%-24px)]"
+                    >
+                      <Card className="overflow-hidden shadow-xl border border-border/50 bg-card/50 backdrop-blur-sm rounded-2xl hover:shadow-2xl hover:border-primary/40 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] relative">
+                        <div className="relative">
+                          <img
+                            src={similar.image}
+                            alt={`${similar.year} ${similar.make} ${similar.model}`}
+                            className="w-full h-48 object-cover"
+                          />
+                          {similar.dealLabel && (
+                            <Badge
+                              className={`absolute top-4 left-4 text-xs ${
+                                similar.dealLabel === "Good Deal"
+                                  ? "bg-green-500 text-white"
+                                  : similar.dealLabel === "Overpriced"
+                                  ? "bg-red-500 text-white"
+                                  : "bg-gray-500 text-white"
+                              }`}
+                            >
+                              {similar.dealLabel}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="p-5 space-y-3">
+                          <div>
+                            <h4 className="font-bold text-lg text-foreground">
+                              {similar.year} {similar.make} {similar.model}
+                            </h4>
+                            <div className="mt-1">
+                              <p className="text-2xl font-bold text-primary">{similar.price}</p>
+                              {similar.predictedPrice && (
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="text-sm text-muted-foreground">AI Predicted:</span>
+                                  <span className="text-sm text-muted-foreground line-through decoration-2 decoration-muted-foreground/60">
+                                    {similar.predictedPrice}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                            <span className="inline-flex items-center gap-1">
+                              <Gauge className="h-4 w-4" />
+                              {similar.mileage}
+                            </span>
+                            <span className="inline-flex items-center gap-1">
+                              <MapPin className="h-4 w-4" />
+                              {similar.location}
+                            </span>
+                          </div>
+                          <div className="pt-1">
+                            <Button variant="outline" className="w-full rounded-xl h-11 font-medium border-cyan-500/40 text-cyan-600 hover:bg-cyan-500 hover:text-white hover:border-cyan-500 transition-all">
+                              View Details
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Seller Info */}
             <Card className="p-5 bg-card/50 backdrop-blur-sm">

@@ -30,16 +30,11 @@ class PricePoint(BaseModel):
     month: str
     averagePrice: int
 
-class SimilarListing(BaseModel):
-    price: str
-    mileage: str
-    daysOnMarket: int
 
 class MarketAnalysis(BaseModel):
     depreciation: dict
     marketTrend: str
     priceHistory: List[PricePoint]
-    similarListings: List[SimilarListing]
 
 class CarListingDetail(CarListingSummary):
     description: str
@@ -47,6 +42,7 @@ class CarListingDetail(CarListingSummary):
     url: str
     features: List[str]
     marketAnalysis: MarketAnalysis
+    similarListings: Optional[List[CarListingSummary]] = None
 
 
 # ───────────────────────── Watchlists ─────────────────────────
@@ -61,6 +57,7 @@ class WatchlistSearchCriteria(BaseModel):
     price_max: Optional[int] = None
     mileage_min: Optional[int] = None
     mileage_max: Optional[int] = None
+    locations: Optional[List[str]] = None   # e.g. ["Dubai, UAE", "Abu Dhabi, UAE"]
 
 class WatchlistCard(BaseModel):
     id: int
@@ -105,6 +102,9 @@ class WatchlistCreate(BaseModel):
     subtitle: Optional[str] = None
     locationLabel: Optional[str] = None
     tags: List[str] = []
-    isActive: bool = True
+    isActive: bool = False          # inactive by default until user activates
     alertsEnabled: bool = False
     searchCriteria: WatchlistSearchCriteria
+
+class WatchlistStatusUpdate(BaseModel):
+    isActive: bool
