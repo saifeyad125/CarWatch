@@ -3,8 +3,14 @@ CarWatch Backend API
 FastAPI-based backend for the CarWatch application.
 """
 import os
+import logging
 from pathlib import Path
 from fastapi import FastAPI
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
+)
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
@@ -16,8 +22,9 @@ from db.database import engine, Base, SessionLocal
 from db import models as db_models          # registers ORM models with Base
 
 # Import routers
-from api.routes import cars, predictions, health, watchlists
+from api.routes import cars, predictions, health, watchlists, profile, notifications
 from api.services.watchlists_service import initialize_watchlists
+from api.services.scheduler import start_scheduler, stop_scheduler
 
 app = FastAPI(
     title="CarWatch API",
@@ -41,6 +48,8 @@ app.include_router(health.router, prefix="/api", tags=["Health"])
 app.include_router(cars.router, prefix="/api/cars", tags=["Cars"])
 app.include_router(predictions.router, prefix="/api/predictions", tags=["Predictions"])
 app.include_router(watchlists.router, prefix="/api/watchlists", tags=["Watchlists"])
+app.include_router(profile.router, prefix="/api/profile", tags=["Profile"])
+app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
 
 
 @app.on_event("startup")
@@ -55,6 +64,14 @@ async def startup_event():
         initialize_watchlists(db)
     finally:
         db.close()
+
+    # Start the hourly scraper scheduler
+    start_scheduler()
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    stop_scheduler()
 
 
 if __name__ == "__main__":

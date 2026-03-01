@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { BottomNavigation } from "@/components/ui/bottom-navigation";
+import { DesktopSidebar } from "@/components/ui/desktop-sidebar";
 import { ThemeProvider } from "@/components/theme-provider";
 
 const geistSans = Geist({
@@ -15,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DealWatch - Monitor Your Dream Deals",
+  title: "CarWatch - Monitor Your Dream Deals",
   description: "Track online listings and never miss a great deal",
   viewport: {
     width: "device-width",
@@ -36,13 +37,20 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ThemeProvider>
-          <div className="flex flex-col h-screen overflow-hidden">
+          <div className="flex h-screen overflow-hidden">
+            {/* Desktop sidebar — hidden on mobile */}
+            <DesktopSidebar />
+
             {/* Main content area */}
-            <main className="flex-1 overflow-hidden">
-              {children}
-            </main>
-            {/* Fixed bottom navigation */}
-            <BottomNavigation />
+            <div className="flex flex-col flex-1 overflow-hidden">
+              <main className="flex-1 overflow-hidden">
+                {children}
+              </main>
+              {/* Bottom nav — mobile only */}
+              <div className="md:hidden">
+                <BottomNavigation />
+              </div>
+            </div>
           </div>
         </ThemeProvider>
       </body>

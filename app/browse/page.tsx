@@ -320,7 +320,7 @@ export default function Browse() {
           
           {/* Best Deals Section */}
           <div>
-            <div className="mb-4">
+            <div className="mb-4 sticky top-0 z-[5] bg-background py-3 -mt-3">
               <h3 className="text-3xl font-extrabold text-foreground flex items-center gap-2 mb-2">
                 <Car className="h-7 w-7 text-primary fill-primary" />
                 Best Deals
@@ -330,11 +330,11 @@ export default function Browse() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {displayedBestDeals.map((car) => (
+                <Link key={car.id} href={`/listing/${car.id}`}>
                 <Card
-                  key={car.id}
-                  className="overflow-hidden shadow-xl border border-border/50 bg-card/50 backdrop-blur-sm rounded-2xl hover:shadow-2xl hover:border-primary/40 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] relative"
+                  className="overflow-hidden shadow-xl border border-border/50 bg-card/50 backdrop-blur-sm rounded-2xl hover:shadow-2xl hover:border-primary/40 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] relative cursor-pointer"
                 >
                   <div className="relative">
                     <img
@@ -352,12 +352,12 @@ export default function Browse() {
                         toggleFavorite(car.id);
                       }}
                     >
-                      <Heart 
+                      <Heart
                         className={`h-5 w-5 transition-colors duration-200 ${
-                          favorites.includes(car.id) 
-                            ? 'text-red-500 fill-red-500' 
+                          favorites.includes(car.id)
+                            ? 'text-red-500 fill-red-500'
                             : 'text-gray-600 hover:text-red-500'
-                        }`} 
+                        }`}
                       />
                     </Button>
                   </div>
@@ -376,7 +376,7 @@ export default function Browse() {
                                 {car.predictedPrice}
                               </span>
                               {car.dealLabel && (
-                                <Badge 
+                                <Badge
                                   variant={car.dealLabel === "Good Deal" ? "default" : car.dealLabel === "Overpriced" ? "destructive" : "secondary"}
                                   className={car.dealLabel === "Good Deal" ? "text-xs bg-green-100 text-green-800 border-green-200" : "text-xs"}
                                 >
@@ -388,7 +388,7 @@ export default function Browse() {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                       <span className="inline-flex items-center gap-1">
                         <Gauge className="h-4 w-4" />
@@ -399,14 +399,9 @@ export default function Browse() {
                         {car.location}
                       </span>
                     </div>
-
-                    <Link href={`/listing/${car.id}`}>
-                      <Button variant="outline" className="w-full rounded-xl h-11 font-medium border-cyan-500/40 text-cyan-600 hover:bg-cyan-500 hover:text-white hover:border-cyan-500 transition-all">
-                        View Details
-                      </Button>
-                    </Link>
                   </div>
                 </Card>
+                </Link>
               ))}
             </div>
 
@@ -423,7 +418,7 @@ export default function Browse() {
 
           {/* Recently Added Section */}
           <div>
-            <div className="mb-4">
+            <div className="mb-4 sticky top-0 z-[5] bg-background py-3 -mt-3">
               <h3 className="text-3xl font-extrabold text-foreground flex items-center gap-2 mb-2">
                 <Car className="h-7 w-7 text-primary fill-primary" />
                 Recently Added
@@ -452,11 +447,11 @@ export default function Browse() {
 
             {/* Listings */}
             {!isLoading && !error && (
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {displayedRecentlyAdded.map((car) => (
+                  <Link key={car.id} href={`/listing/${car.id}`}>
                   <Card
-                    key={car.id}
-                    className="overflow-hidden shadow-xl border border-border/50 bg-card/50 backdrop-blur-sm rounded-2xl hover:shadow-2xl hover:border-primary/40 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] relative"
+                    className="overflow-hidden shadow-xl border border-border/50 bg-card/50 backdrop-blur-sm rounded-2xl hover:shadow-2xl hover:border-primary/40 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] relative cursor-pointer"
                   >
                     <div className="relative">
                       <img
@@ -474,12 +469,12 @@ export default function Browse() {
                           toggleFavorite(car.id);
                         }}
                       >
-                        <Heart 
+                        <Heart
                           className={`h-5 w-5 transition-colors duration-200 ${
-                            favorites.includes(car.id) 
-                              ? 'text-red-500 fill-red-500' 
+                            favorites.includes(car.id)
+                              ? 'text-red-500 fill-red-500'
                               : 'text-gray-600 hover:text-red-500'
-                          }`} 
+                          }`}
                         />
                       </Button>
                     </div>
@@ -498,7 +493,7 @@ export default function Browse() {
                                   {car.predictedPrice}
                                 </span>
                                 {car.dealLabel && (
-                                  <Badge 
+                                  <Badge
                                     variant={car.dealLabel === "Good Deal" ? "default" : car.dealLabel === "Overpriced" ? "destructive" : "secondary"}
                                     className={car.dealLabel === "Good Deal" ? "text-xs bg-green-100 text-green-800 border-green-200" : "text-xs"}
                                   >
@@ -510,7 +505,7 @@ export default function Browse() {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                         <span className="inline-flex items-center gap-1">
                           <Gauge className="h-4 w-4" />
@@ -521,14 +516,9 @@ export default function Browse() {
                           {car.location}
                         </span>
                       </div>
-
-                      <Link href={`/listing/${car.id}`}>
-                        <Button variant="outline" className="w-full rounded-xl h-11 font-medium border-cyan-500/40 text-cyan-600 hover:bg-cyan-500 hover:text-white hover:border-cyan-500 transition-all">
-                          View Details
-                        </Button>
-                      </Link>
                     </div>
                   </Card>
+                  </Link>
                 ))}
               </div>
             )}
@@ -536,7 +526,7 @@ export default function Browse() {
 
           {/* Low Mileage Gems Section */}
           <div>
-            <div className="mb-4">
+            <div className="mb-4 sticky top-0 z-[5] bg-background py-3 -mt-3">
               <h3 className="text-3xl font-extrabold text-foreground flex items-center gap-2 mb-2">
                 <Car className="h-7 w-7 text-primary fill-primary" />
                 Low Mileage Gems
@@ -546,11 +536,11 @@ export default function Browse() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {displayedLowMileage.map((car) => (
+                <Link key={car.id} href={`/listing/${car.id}`}>
                 <Card
-                  key={car.id}
-                  className="overflow-hidden shadow-xl border border-border/50 bg-card/50 backdrop-blur-sm rounded-2xl hover:shadow-2xl hover:border-primary/40 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] relative"
+                  className="overflow-hidden shadow-xl border border-border/50 bg-card/50 backdrop-blur-sm rounded-2xl hover:shadow-2xl hover:border-primary/40 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] relative cursor-pointer"
                 >
                   <div className="relative">
                     <img
@@ -568,12 +558,12 @@ export default function Browse() {
                         toggleFavorite(car.id);
                       }}
                     >
-                      <Heart 
+                      <Heart
                         className={`h-5 w-5 transition-colors duration-200 ${
-                          favorites.includes(car.id) 
-                            ? 'text-red-500 fill-red-500' 
+                          favorites.includes(car.id)
+                            ? 'text-red-500 fill-red-500'
                             : 'text-gray-600 hover:text-red-500'
-                        }`} 
+                        }`}
                       />
                     </Button>
                   </div>
@@ -592,7 +582,7 @@ export default function Browse() {
                                 {car.predictedPrice}
                               </span>
                               {car.dealLabel && (
-                                <Badge 
+                                <Badge
                                   variant={car.dealLabel === "Good Deal" ? "default" : car.dealLabel === "Overpriced" ? "destructive" : "secondary"}
                                   className={car.dealLabel === "Good Deal" ? "text-xs bg-green-100 text-green-800 border-green-200" : "text-xs"}
                                 >
@@ -604,7 +594,7 @@ export default function Browse() {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                       <span className="inline-flex items-center gap-1">
                         <Gauge className="h-4 w-4" />
@@ -615,14 +605,9 @@ export default function Browse() {
                         {car.location}
                       </span>
                     </div>
-
-                    <Link href={`/listing/${car.id}`}>
-                      <Button variant="outline" className="w-full rounded-xl h-11 font-medium border-cyan-500/40 text-cyan-600 hover:bg-cyan-500 hover:text-white hover:border-cyan-500 transition-all">
-                        View Details
-                      </Button>
-                    </Link>
                   </div>
                 </Card>
+                </Link>
               ))}
             </div>
 

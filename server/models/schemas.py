@@ -41,6 +41,7 @@ class CarListingDetail(CarListingSummary):
     seller: Seller
     url: str
     features: List[str]
+    images: List[str] = []
     marketAnalysis: MarketAnalysis
     similarListings: Optional[List[CarListingSummary]] = None
 
@@ -108,3 +109,49 @@ class WatchlistCreate(BaseModel):
 
 class WatchlistStatusUpdate(BaseModel):
     isActive: bool
+
+
+# ───────────────────────── Profile ─────────────────────────
+
+class ProfileStats(BaseModel):
+    watchlistsCount: int
+    alertsSent: int
+    dealsFound: int
+
+class ProfileResponse(BaseModel):
+    id: int
+    name: str
+    email: str
+    phone: Optional[str] = None
+    location: Optional[str] = None
+    status: str  # "free" | "premium" | "admin"
+    avatarSeed: str
+    stats: ProfileStats
+
+class ProfileUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    location: Optional[str] = None
+    avatarSeed: Optional[str] = None
+
+
+# ───────────────────────── Notifications ─────────────────────────
+
+class NotificationResponse(BaseModel):
+    id: int
+    watchlistId: int
+    listingId: Optional[int] = None
+    type: str
+    title: str
+    message: str
+    isRead: bool
+    createdAt: str
+    watchlistName: Optional[str] = None
+
+class NotificationsListResponse(BaseModel):
+    notifications: List[NotificationResponse]
+    unreadCount: int
+
+class UnreadCountResponse(BaseModel):
+    unreadCount: int

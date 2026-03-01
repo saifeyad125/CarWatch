@@ -4,10 +4,17 @@ SQLAlchemy ORM models – the actual DB tables.
 from datetime import datetime, timezone
 from sqlalchemy import (
     Column, Integer, String, Float, Boolean, DateTime,
-    ForeignKey, UniqueConstraint, JSON, Text,
+    Enum, ForeignKey, UniqueConstraint, JSON, Text,
 )
 from sqlalchemy.orm import relationship
 from db.database import Base
+import enum
+
+
+class UserStatus(str, enum.Enum):
+    free = "free"
+    premium = "premium"
+    admin = "admin"
 
 
 class Listing(Base):
@@ -33,6 +40,7 @@ class Listing(Base):
     steering_side = Column(String(20), nullable=True)
     regional_specs = Column(String(50), nullable=True)
     image = Column(Text, nullable=True)
+    images = Column(JSON, nullable=True)  # array of image URLs
     location = Column(String(100), nullable=True, default="Dubai, UAE")
 
     # ML-derived fields (populated by prediction service)
@@ -77,6 +85,7 @@ class WatchlistMatch(Base):
     listing_id = Column(Integer, ForeignKey("listings.id", ondelete="CASCADE"), nullable=False)
     is_new = Column(Boolean, default=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    matched_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Prevent duplicate matches
     __table_args__ = (
@@ -86,3 +95,35 @@ class WatchlistMatch(Base):
     # Relationships
     watchlist = relationship("Watchlist", back_populates="matches")
     listing = relationship("Listing", back_populates="watchlist_matches")
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    watchlist_id = Column(Integer, ForeignKey("watchlists.id", ondelete="CASCADE"), nullable=False)
+    listing_id = Column(Integer, ForeignKey("listings.id", ondelete="SET NULL"), nullable=True)
+    type = Column(String(30), nullable=False)  # "new_match", "listing_expired"
+    title = Column(String(200), nullable=False)
+    message = Column(String(500), nullable=False)
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    watchlist = relationship("Watchlist")
+    listing = relationship("Listing")
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    email = Column(String(200), nullable=False)
+    phone = Column(String(50), nullable=True)
+    location = Column(String(200), nullable=True)
+    status = Column(Enum(UserStatus), default=UserStatus.free, nullable=False)
+    avatar_seed = Column(String(100), default="Saif")
+
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
+                        onupdate=lambda: datetime.now(timezone.utc))

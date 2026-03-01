@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, TrendingUp, Bell, Star, MapPin, Gauge, Heart, Car, User } from "lucide-react";
+import { TrendingUp, Bell, Star, MapPin, Gauge, Heart, Car, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -111,7 +111,8 @@ export default function Home() {
       <div className="shrink-0 bg-card/80 backdrop-blur-xl border-b border-border/20 px-4 py-4 sticky top-0 z-10">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-foreground">CarWatch</h1>
+            <h1 className="text-xl font-bold text-foreground md:hidden">CarWatch</h1>
+            <h1 className="hidden md:block text-xl font-bold text-foreground">Dashboard</h1>
           </div>
           <Link href="/profile">
             <Avatar className="h-10 w-10 cursor-pointer hover:ring-2 hover:ring-red-500 transition-all">
@@ -124,10 +125,10 @@ export default function Home() {
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto scrollbar-hide">
-        <div className="px-4 py-6 space-y-6 pb-safe">
+        <div className="max-w-6xl mx-auto px-4 py-6 space-y-6 pb-safe">
           {/* Hero Section */}
           <div className="relative rounded-3xl overflow-hidden shadow-2xl animate-fade-in">
-            <div className="w-full h-52 bg-gradient-to-r from-red-500 via-red-600 to-red-700"></div>
+            <div className="w-full h-52 md:h-64 bg-gradient-to-r from-red-500 via-red-600 to-red-700"></div>
             <div className="absolute inset-0 bg-gradient-to-r from-red-900/60 to-red-800/30 flex items-center">
               <div className="px-6 text-white">
                 <h2 className="text-3xl font-bold mb-2">Hi Saif 👋</h2>
@@ -167,12 +168,6 @@ export default function Home() {
             ))}
           </div>
 
-          {/* Add New Button */}
-          <Button className="w-full h-14 text-base font-semibold shadow-lg rounded-2xl bg-linear-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white transition-all duration-200 active:scale-98">
-            <Plus className="mr-2 h-5 w-5" />
-            Add New Car Listing to Monitor
-          </Button>
-
           {/* Popular Listings */}
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -202,7 +197,7 @@ export default function Home() {
             {/* Listings Grid */}
             {!isLoading && !error && (
               <>
-                <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {displayedListings.map((car) => (
                     <Card
                       key={car.id}
@@ -274,7 +269,7 @@ export default function Home() {
                         </div>
 
                         <Link href={`/listing/${car.id}`}>
-                          <Button variant="outline" className="w-full rounded-xl h-11 font-medium border-cyan-500/40 text-cyan-600 hover:bg-cyan-500 hover:text-white hover:border-cyan-500 transition-all">
+                          <Button variant="outline" className="w-full rounded-xl h-11 font-medium border-primary/30 text-primary hover:bg-primary hover:text-white hover:border-primary transition-all">
                             View Details
                           </Button>
                         </Link>
@@ -289,7 +284,7 @@ export default function Home() {
                     <Button 
                       variant="outline" 
                       onClick={() => setShowAllListings(true)}
-                      className="rounded-2xl h-12 px-8 font-medium shadow-lg hover:shadow-xl border-cyan-500/40 text-cyan-600 hover:bg-cyan-500 hover:text-white transition-all duration-200 active:scale-95"
+                      className="rounded-2xl h-11 px-8 font-medium border-primary/30 text-primary hover:bg-primary hover:text-white transition-all duration-200 active:scale-[0.98]"
                     >
                       Load More Cars ({popularListings.length - 4} more)
                     </Button>
@@ -302,7 +297,7 @@ export default function Home() {
                     <Button 
                       variant="outline" 
                       onClick={() => setShowAllListings(false)}
-                      className="rounded-2xl h-12 px-8 font-medium shadow-lg hover:shadow-xl border-cyan-500/40 text-cyan-600 hover:bg-cyan-500 hover:text-white transition-all duration-200 active:scale-95"
+                      className="rounded-2xl h-11 px-8 font-medium border-primary/30 text-primary hover:bg-primary hover:text-white transition-all duration-200 active:scale-[0.98]"
                     >
                       Show Less
                     </Button>
@@ -317,13 +312,13 @@ export default function Home() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-foreground">Active Monitors</h3>
               <Link href="/watchlist">
-                <Button variant="outline" size="sm" className="rounded-xl border-cyan-500/40 text-cyan-600 hover:bg-cyan-500 hover:text-white">
+                <Button variant="outline" size="sm" className="rounded-xl border-primary/30 text-primary hover:bg-primary hover:text-white">
                   View All
                 </Button>
               </Link>
             </div>
 
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {recentMonitors.map((item) => (
                 <Link key={item.id} href={`/watchlist/${item.id}`}>
                   <Card className="overflow-hidden border-2 border-border/50 bg-card/60 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl hover:border-primary/30 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer">

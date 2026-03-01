@@ -96,6 +96,7 @@ def _watchlist_to_card(w: Watchlist, db: Session) -> WatchlistCard:
         WatchlistMatchDB.watchlist_id == w.id
     ).scalar() or 0
 
+    # Count unseen matches (is_new=True means user hasn't viewed them yet)
     new_count = db.query(func.count(WatchlistMatchDB.id)).filter(
         WatchlistMatchDB.watchlist_id == w.id,
         WatchlistMatchDB.is_new == True,
@@ -215,6 +216,20 @@ def get_watchlist_matches(
     elif sort == "newest":
         matches.sort(key=lambda m: m.isNew, reverse=True)
 
+    # Mark all unseen matches as seen now that the user has viewed them
+    unseen = (
+        db.query(WatchlistMatchDB)
+        .filter(
+            WatchlistMatchDB.watchlist_id == watchlist_id,
+            WatchlistMatchDB.is_new == True,
+        )
+        .all()
+    )
+    for m in unseen:
+        m.is_new = False
+    if unseen:
+        db.commit()
+
     return WatchlistMatchesResponse(watchlistId=watchlist_id, matches=matches)
 
 
@@ -239,15 +254,17 @@ def run_watchlist_scan(db: Session, watchlist_id: int) -> dict:
         .all()
     )
 
-    new_matches = 0
+    new_match_listing_ids: list[int] = []
+    now = datetime.now(timezone.utc)
     for listing in matching_listings:
         if listing.id not in existing_ids:
             db.add(WatchlistMatchDB(
                 watchlist_id=watchlist_id,
                 listing_id=listing.id,
                 is_new=True,
+                matched_at=now,
             ))
-            new_matches += 1
+            new_match_listing_ids.append(listing.id)
 
     # Update watchlist timestamp
     w.updated_at = datetime.now(timezone.utc)
@@ -258,7 +275,8 @@ def run_watchlist_scan(db: Session, watchlist_id: int) -> dict:
         "totalScanned": total_in_db,
         "totalMatches": len(matching_listings),
         "existingMatches": len(existing_ids),
-        "newMatches": new_matches,
+        "newMatches": len(new_match_listing_ids),
+        "newMatchListingIds": new_match_listing_ids,
     }
 
 
@@ -324,6 +342,13 @@ def create_watchlist(db: Session, payload: WatchlistCreate) -> WatchlistCard:
     db.commit()
     db.refresh(w)
     return _watchlist_to_card(w, db)
+
+
+def delete_watchlist(db: Session, watchlist_id: int) -> None:
+    """Delete a watchlist and all its matches (cascade)."""
+    w = _get_watchlist_or_404(db, watchlist_id)
+    db.delete(w)
+    db.commit()
 
 
 def initialize_watchlists(db: Session):

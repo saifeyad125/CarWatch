@@ -14,6 +14,7 @@ from models.schemas import (
 )
 from api.services.watchlists_service import (
     create_watchlist,
+    delete_watchlist,
     list_watchlists,
     get_watchlist_detail,
     get_watchlist_matches,
@@ -54,9 +55,24 @@ def api_get_matches(watchlist_id: int, sort: str = "best_match", db: Session = D
     return get_watchlist_matches(db, watchlist_id, sort)
 
 
+@router.delete("/{watchlist_id}", status_code=204)
+def api_delete_watchlist(watchlist_id: int, db: Session = Depends(get_db)):
+    """Delete a watchlist and all its matches."""
+    delete_watchlist(db, watchlist_id)
+    return None
+
+
 @router.post("/{watchlist_id}/scan")
 def api_run_watchlist_scan(watchlist_id: int, db: Session = Depends(get_db)):
     """Scan all listings and persist matches for this watchlist."""
     return run_watchlist_scan(db, watchlist_id)
+
+
+@router.post("/debug/run-hourly")
+def debug_run_hourly(db: Session = Depends(get_db)):
+    """Debug-only: manually trigger the hourly scrape-and-match job."""
+    from api.services.scheduler import hourly_scrape_and_match
+    hourly_scrape_and_match()
+    return {"ok": True, "message": "Hourly job executed"}
 
 

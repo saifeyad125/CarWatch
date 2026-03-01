@@ -210,6 +210,7 @@ def _listing_to_detail(row: Listing, db: Session) -> CarListingDetail:
         mileage=_fmt_mileage(row.kms),
         location=row.location or "Dubai, UAE",
         image=row.image or "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&h=600&fit=crop",
+        images=row.images or [],
         description=description,
         seller=seller,
         url=row.url,

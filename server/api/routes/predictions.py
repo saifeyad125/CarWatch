@@ -34,6 +34,7 @@ class PredictionResponse(BaseModel):
     confidence_low: float = Field(..., description="Lower bound of confidence interval")
     confidence_high: float = Field(..., description="Upper bound of confidence interval")
     confidence_level: float = Field(0.90, description="Confidence level (e.g., 0.90 for 90%)")
+    gate_weight: float = Field(0.0, description="Sigmoid gate weight (0=budget, 1=luxury)")
 
 
 class DealAnalysis(BaseModel):

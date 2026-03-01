@@ -33,6 +33,7 @@ interface CarListing extends CarListingSummary {
     type: string;
   };
   features: string[];
+  images?: string[];
   marketAnalysis: {
     depreciation: {
       oneYear: number;
@@ -96,6 +97,26 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
     
     localStorage.setItem('carFavorites', JSON.stringify(favorites));
     setIsFavorite(!isFavorite);
+  };
+
+  const [shareText, setShareText] = useState<string | null>(null);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    const title = car ? `${car.year} ${car.make} ${car.model} - ${car.price}` : "Car Listing";
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, url });
+      } catch {
+        // User cancelled or share failed silently
+      }
+    } else {
+      await navigator.clipboard.writeText(url);
+      setShareText("Link copied!");
+      setTimeout(() => setShareText(null), 2000);
+    }
   };
 
   // Loading State
@@ -179,33 +200,82 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
                 }`} 
               />
             </Button>
-            <Button variant="ghost" size="icon" className="h-10 w-10">
-              <Share2 className="h-5 w-5" />
-            </Button>
+            <div className="relative">
+              <Button variant="ghost" size="icon" className="h-10 w-10" onClick={handleShare}>
+                <Share2 className="h-5 w-5" />
+              </Button>
+              {shareText && (
+                <span className="absolute -bottom-8 right-0 text-xs bg-foreground text-background px-2 py-1 rounded whitespace-nowrap">
+                  {shareText}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto scrollbar-hide">
-        <div className="space-y-6 pb-safe">
-          {/* Car Image */}
-          <div className="relative">
-            <img
-              src={car.image}
-              alt={`${car.year} ${car.make} ${car.model}`}
-              className="w-full h-64 object-cover"
-            />
-            <div className="absolute top-4 left-4">
-              {isGoodDeal && (
-                <Badge className="bg-green-500 text-white">
-                  Good Deal
-                </Badge>
-              )}
+        <div className="max-w-6xl mx-auto space-y-6 pb-safe">
+          {/* Desktop: two-column layout */}
+          <div className="md:grid md:grid-cols-2 md:gap-8">
+            {/* Left column: images */}
+            <div>
+          {/* Car Image Gallery */}
+          {(() => {
+            const allImages = car.images && car.images.length > 0
+              ? car.images
+              : [car.image];
+            return (
+              <div className="relative md:rounded-xl md:overflow-hidden md:mt-6 md:mx-4">
+                <div className="overflow-hidden">
+                  <div
+                    className="flex transition-transform duration-300 ease-out"
+                    style={{ transform: `translateX(-${activeImageIndex * 100}%)` }}
+                  >
+                    {allImages.map((img, i) => (
+                      <img
+                        key={i}
+                        src={img}
+                        alt={`${car.year} ${car.make} ${car.model} - Image ${i + 1}`}
+                        className="w-full h-64 md:h-96 object-cover shrink-0"
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className="absolute top-4 left-4">
+                  {isGoodDeal && (
+                    <Badge className="bg-green-500 text-white">
+                      Good Deal
+                    </Badge>
+                  )}
+                </div>
+                {allImages.length > 1 && (
+                  <>
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                      {allImages.map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setActiveImageIndex(i)}
+                          className={`h-2 rounded-full transition-all ${
+                            i === activeImageIndex ? 'w-6 bg-white' : 'w-2 bg-white/50'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <div className="absolute top-4 right-4 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
+                      {activeImageIndex + 1}/{allImages.length}
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })()}
             </div>
-          </div>
 
-          <div className="px-4 space-y-6">
+            {/* Right column: details */}
+            <div>
+          <div className="px-4 space-y-6 md:pt-6">
             {/* Main Info */}
             <div className="space-y-4">
               <div>
@@ -359,22 +429,28 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
               <p className="text-muted-foreground leading-relaxed">{car.description}</p>
             </Card>
 
-            {/* Similar Listings - Horizontally scrollable, matches home page card style */}
+          </div>
+            </div>
+          </div>
+          {/* end two-column grid */}
+
+          <div className="px-4 space-y-6">
+            {/* Similar Listings */}
             {car.similarListings && car.similarListings.length > 0 && (
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-foreground">Similar Listings</h3>
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <span className="text-xs text-muted-foreground flex items-center gap-1 md:hidden">
                     Swipe to see more <ChevronRight className="h-3 w-3" />
                   </span>
                 </div>
-                {/* Negative margin to break out of px-4 padding, peek ~20px of next card */}
-                <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-4 px-4 pb-2">
+                {/* Horizontal scroll on mobile, grid on desktop */}
+                <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-4 px-4 pb-2 md:grid md:grid-cols-2 lg:grid-cols-3 md:mx-0 md:px-0 md:overflow-visible">
                   {car.similarListings.map((similar) => (
                     <Link
                       key={similar.id}
                       href={`/listing/${similar.id}`}
-                      className="snap-start shrink-0 w-[calc(100%-24px)]"
+                      className="snap-start shrink-0 w-[calc(100%-24px)] md:w-auto"
                     >
                       <Card className="overflow-hidden shadow-xl border border-border/50 bg-card/50 backdrop-blur-sm rounded-2xl hover:shadow-2xl hover:border-primary/40 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] relative">
                         <div className="relative">
@@ -425,7 +501,7 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
                             </span>
                           </div>
                           <div className="pt-1">
-                            <Button variant="outline" className="w-full rounded-xl h-11 font-medium border-cyan-500/40 text-cyan-600 hover:bg-cyan-500 hover:text-white hover:border-cyan-500 transition-all">
+                            <Button variant="outline" className="w-full rounded-xl h-11 font-medium border-primary/30 text-primary hover:bg-primary hover:text-white hover:border-primary transition-all">
                               View Details
                             </Button>
                           </div>
@@ -448,7 +524,6 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <h4 className="font-semibold text-foreground">{car.seller.name}</h4>
-                    {/* TODO: Add verified, rating, totalSales, memberSince to backend seller schema */}
                     <CheckCircle className="h-4 w-4 text-blue-500" />
                   </div>
                   <div className="flex items-center gap-1 mt-1">
@@ -468,7 +543,7 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
 
       {/* Bottom Action Bar */}
       <div className="shrink-0 p-4 border-t border-border bg-card/80 backdrop-blur-xl">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="max-w-md mx-auto grid grid-cols-2 gap-3">
           <Button variant="outline" className="h-12 rounded-xl">
             <MessageCircle className="mr-2 h-5 w-5" />
             Message

@@ -303,6 +303,26 @@ export default function WatchlistPage() {
     }
   };
 
+  const deleteWatchlist = async (id: number) => {
+    if (!window.confirm("Delete this watchlist? This cannot be undone.")) return;
+
+    // Optimistic removal
+    const prev = watchlistItems;
+    setWatchlistItems(items => items.filter(item => item.id !== id));
+
+    try {
+      await apiRequest(API_ENDPOINTS.watchlists.delete(id), { method: "DELETE" });
+      // Re-fetch to get updated summary
+      const data = await apiRequest<WatchlistsResponse>(API_ENDPOINTS.watchlists.list);
+      setWatchlistItems(data.watchlists);
+      setSummary(data.summary);
+    } catch {
+      // Roll back
+      setWatchlistItems(prev);
+      alert("Failed to delete watchlist.");
+    }
+  };
+
   const filteredItems = watchlistItems
     .filter(item =>
       item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -336,7 +356,7 @@ export default function WatchlistPage() {
 
         {/* Scrollable Form Content */}
         <div className="flex-1 overflow-y-auto">
-          <div className="p-4 space-y-6 pb-32">
+          <div className="max-w-xl mx-auto p-4 space-y-6 pb-32">
 
           {/* Title (optional) */}
           <Card>
@@ -571,7 +591,7 @@ export default function WatchlistPage() {
           <div className="flex gap-3 pt-4">
             <Button
               variant="outline"
-              className="flex-1 border-cyan-500/40 text-cyan-600 hover:bg-cyan-500 hover:text-white rounded-2xl"
+              className="flex-1 border-primary/30 text-primary hover:bg-primary hover:text-white rounded-2xl"
               onClick={resetForm}
               disabled={isSubmitting}
             >
@@ -672,7 +692,7 @@ export default function WatchlistPage() {
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto scrollbar-hide">
-        <div className="p-4 space-y-6 pb-safe">
+        <div className="max-w-5xl mx-auto p-4 space-y-6 pb-safe">
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4">
             <Card className="text-center p-4 border-0 bg-card/50 backdrop-blur-sm rounded-2xl shadow-lg">
@@ -741,14 +761,14 @@ export default function WatchlistPage() {
                   </div>
                 </div>
               </div>
-              <Button variant="outline" size="sm" className="rounded-xl border-cyan-500/40 text-cyan-600 hover:bg-cyan-500 hover:text-white shadow-md">
+              <Button variant="outline" size="sm" className="rounded-xl border-primary/30 text-primary hover:bg-primary hover:text-white shadow-md">
                 Upgrade
               </Button>
             </div>
           </Card>
 
           {/* Watchlist Items */}
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredItems.map((item) => (
               <Link key={item.id} href={`/watchlist/${item.id}`}>
                 <Card className="overflow-hidden border-2 border-border/50 bg-card/60 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl hover:border-primary/30 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer">
@@ -799,7 +819,7 @@ export default function WatchlistPage() {
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            // Handle delete
+                            deleteWatchlist(item.id);
                           }}
                           title="Delete watchlist"
                         >

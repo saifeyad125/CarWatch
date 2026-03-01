@@ -25,12 +25,24 @@ export const API_ENDPOINTS = {
     list: `${API_BASE_URL}/api/watchlists`,
     create: `${API_BASE_URL}/api/watchlists`,
     detail: (id: number) => `${API_BASE_URL}/api/watchlists/${id}`,
+    delete: (id: number) => `${API_BASE_URL}/api/watchlists/${id}`,
     setStatus: (id: number) => `${API_BASE_URL}/api/watchlists/${id}/status`,
     matches: (id: number, sort?: string) => 
       `${API_BASE_URL}/api/watchlists/${id}/matches${sort ? `?sort=${sort}` : ''}`,
     scan: (id: number) => `${API_BASE_URL}/api/watchlists/${id}/scan`,
   },
   
+  // Notifications
+  notifications: {
+    list: `${API_BASE_URL}/api/notifications`,
+    unreadCount: `${API_BASE_URL}/api/notifications/unread-count`,
+    markRead: (id: number) => `${API_BASE_URL}/api/notifications/${id}/read`,
+    markAllRead: `${API_BASE_URL}/api/notifications/read-all`,
+  },
+
+  // Profile
+  profile: `${API_BASE_URL}/api/profile`,
+
   // Health check
   health: `${API_BASE_URL}/api/health`,
 } as const;
@@ -53,6 +65,10 @@ export async function apiRequest<T>(
 
     if (!response.ok) {
       throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    }
+
+    if (response.status === 204 || response.headers.get('content-length') === '0') {
+      return undefined as T;
     }
 
     return await response.json();
