@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
+from sqlalchemy import create_engine, engine_from_config
 from sqlalchemy import pool
 from dotenv import load_dotenv
 
@@ -22,11 +22,8 @@ from db import models as _models  # noqa: F401  – registers tables
 # access to the values within the .ini file in use.
 config = context.config
 
-# Override alembic.ini sqlalchemy.url with env var
-# Use escape for configparser (% -> %%) to avoid interpolation errors
+# Read DATABASE_URL from env (avoids configparser % interpolation issues)
 db_url = os.getenv("DATABASE_URL")
-if db_url:
-    config.set_main_option("sqlalchemy.url", db_url.replace("%", "%%"))
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
@@ -74,11 +71,14 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
+    if db_url:
+        connectable = create_engine(db_url, poolclass=pool.NullPool)
+    else:
+        connectable = engine_from_config(
+            config.get_section(config.config_ini_section, {}),
+            prefix="sqlalchemy.",
+            poolclass=pool.NullPool,
+        )
 
     with connectable.connect() as connection:
         context.configure(
