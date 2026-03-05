@@ -24,8 +24,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useTheme } from "@/components/theme-provider";
 import { API_ENDPOINTS, apiRequest } from "@/lib/api";
+import { useAuth } from "@/components/auth-provider";
 
 interface ProfileData {
   id: number;
@@ -61,6 +63,15 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 };
 
 export default function ProfilePage() {
+  const { user, loading: authLoading, signOut } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/login");
+    }
+  }, [user, authLoading, router]);
+
   const [isEditing, setIsEditing] = useState(false);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const { theme, toggleTheme } = useTheme();
@@ -176,6 +187,14 @@ export default function ProfilePage() {
 
   const statusInfo = STATUS_LABELS[profile?.status || "free"];
   const avatarSeed = profile?.avatarSeed || "Saif";
+
+  if (authLoading || !user) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden">
@@ -459,9 +478,10 @@ export default function ProfilePage() {
               <Button
                 variant="outline"
                 className="w-full justify-start text-red-600 border-red-200 hover:bg-red-50"
-                onClick={() => {
+                onClick={async () => {
                   if (confirm("Are you sure you want to sign out?")) {
-                    alert("Signed out (demo)");
+                    await signOut();
+                    router.push("/login");
                   }
                 }}
               >

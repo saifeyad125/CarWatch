@@ -8,7 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { API_ENDPOINTS, apiRequest } from "@/lib/api";
+import { useAuth } from "@/components/auth-provider";
 
 // ── Limit-reached modal ──────────────────────────────────────────────────────
 function LimitModal({ onClose }: { onClose: () => void }) {
@@ -93,6 +95,15 @@ interface WatchlistsResponse {
 }
 
 export default function WatchlistPage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/login");
+    }
+  }, [user, authLoading, router]);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [watchlistItems, setWatchlistItems] = useState<WatchlistItem[]>([]);
@@ -335,6 +346,14 @@ export default function WatchlistPage() {
       }
       return 0; // Maintain original order within each group
     });
+
+  if (authLoading || !user) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
 
   if (showAddForm) {
     return (
