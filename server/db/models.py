@@ -69,12 +69,15 @@ class Watchlist(Base):
     # Search criteria stored as JSONB
     criteria_json = Column(JSON, nullable=False, default=dict)
 
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
                         onupdate=lambda: datetime.now(timezone.utc))
 
     # Relationships
     matches = relationship("WatchlistMatch", back_populates="watchlist", cascade="all, delete-orphan")
+    user = relationship("User", back_populates="watchlists")
 
 
 class WatchlistMatch(Base):
@@ -103,6 +106,7 @@ class Notification(Base):
     id = Column(Integer, primary_key=True, index=True)
     watchlist_id = Column(Integer, ForeignKey("watchlists.id", ondelete="CASCADE"), nullable=False)
     listing_id = Column(Integer, ForeignKey("listings.id", ondelete="SET NULL"), nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     type = Column(String(30), nullable=False)  # "new_match", "listing_expired"
     title = Column(String(200), nullable=False)
     message = Column(String(500), nullable=False)
@@ -111,12 +115,14 @@ class Notification(Base):
 
     watchlist = relationship("Watchlist")
     listing = relationship("Listing")
+    user = relationship("User", back_populates="notifications")
 
 
 class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
+    supabase_id = Column(String(255), unique=True, nullable=False, index=True)
     name = Column(String(100), nullable=False)
     email = Column(String(200), nullable=False)
     phone = Column(String(50), nullable=True)
@@ -127,3 +133,7 @@ class User(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
                         onupdate=lambda: datetime.now(timezone.utc))
+
+    # Relationships
+    watchlists = relationship("Watchlist", back_populates="user", cascade="all, delete-orphan")
+    notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
