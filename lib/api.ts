@@ -2,6 +2,7 @@
  * API Configuration
  * Single source of truth for all API calls
  */
+import { supabase } from '@/lib/supabase/client';
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -55,12 +56,19 @@ export async function apiRequest<T>(
   options?: RequestInit
 ): Promise<T> {
   try {
+    // Get current session token
+    const { data: { session } } = await supabase.auth.getSession();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(options?.headers as Record<string, string>),
+    };
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`;
+    }
+
     const response = await fetch(url, {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
+      headers,
     });
 
     if (!response.ok) {
