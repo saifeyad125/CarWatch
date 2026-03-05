@@ -1,13 +1,13 @@
 """
-Notification endpoints — list, mark-read, unread count.
+Notification endpoints — authenticated, user-scoped.
 """
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, timezone
 
-from db.deps import get_db
-from db.models import Notification, Watchlist
+from db.deps import get_db, get_current_user
+from db.models import Notification, User
 from models.schemas import NotificationsListResponse, NotificationResponse, UnreadCountResponse
 
 router = APIRouter()
@@ -47,13 +47,17 @@ def _notification_to_response(n: Notification) -> NotificationResponse:
 def list_notifications(
     unread_only: bool = Query(False),
     limit: int = Query(50, ge=1, le=200),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    q = db.query(Notification)
+    q = db.query(Notification).filter(Notification.user_id == current_user.id)
     if unread_only:
         q = q.filter(Notification.is_read == False)
     rows = q.order_by(Notification.created_at.desc()).limit(limit).all()
-    unread = db.query(func.count(Notification.id)).filter(Notification.is_read == False).scalar() or 0
+    unread = db.query(func.count(Notification.id)).filter(
+        Notification.user_id == current_user.id,
+        Notification.is_read == False,
+    ).scalar() or 0
     return NotificationsListResponse(
         notifications=[_notification_to_response(n) for n in rows],
         unreadCount=unread,
@@ -61,14 +65,27 @@ def list_notifications(
 
 
 @router.get("/unread-count", response_model=UnreadCountResponse)
-def get_unread_count(db: Session = Depends(get_db)):
-    count = db.query(func.count(Notification.id)).filter(Notification.is_read == False).scalar() or 0
+def get_unread_count(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    count = db.query(func.count(Notification.id)).filter(
+        Notification.user_id == current_user.id,
+        Notification.is_read == False,
+    ).scalar() or 0
     return UnreadCountResponse(unreadCount=count)
 
 
 @router.patch("/{notification_id}/read")
-def mark_read(notification_id: int, db: Session = Depends(get_db)):
-    n = db.query(Notification).filter(Notification.id == notification_id).first()
+def mark_read(
+    notification_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    n = db.query(Notification).filter(
+        Notification.id == notification_id,
+        Notification.user_id == current_user.id,
+    ).first()
     if n:
         n.is_read = True
         db.commit()
@@ -76,7 +93,13 @@ def mark_read(notification_id: int, db: Session = Depends(get_db)):
 
 
 @router.patch("/read-all")
-def mark_all_read(db: Session = Depends(get_db)):
-    db.query(Notification).filter(Notification.is_read == False).update({"is_read": True})
+def mark_all_read(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    db.query(Notification).filter(
+        Notification.user_id == current_user.id,
+        Notification.is_read == False,
+    ).update({"is_read": True})
     db.commit()
     return {"ok": True}
