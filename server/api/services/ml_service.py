@@ -27,7 +27,7 @@ class MLService:
         self.model_loaded = False
 
         # Defaults (overridden by calibration_info.json)
-        self.calibration_factor = 1.579
+        self.calibration_factor = 1.352
         self.lux_threshold = 800_000
         self.tau = 0.3
         self.beta = 0.4
@@ -235,12 +235,10 @@ class MLService:
             return "0-1"
         if age <= 3:
             return "2-3"
-        if age <= 5:
-            return "4-5"
-        if age <= 7:
-            return "6-7"
+        if age <= 6:
+            return "4-6"
         if age <= 10:
-            return "8-10"
+            return "7-10"
         return "10+"
 
     def get_model_info(self) -> Dict[str, Any]:

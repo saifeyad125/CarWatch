@@ -1,9 +1,12 @@
 """
-APScheduler setup — runs the hourly scrape-and-match job.
+APScheduler setup — runs the periodic scrape-and-match job.
 """
+import os
 import logging
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+
+SCRAPE_INTERVAL_HOURS = int(os.getenv("SCRAPE_INTERVAL_HOURS", "5"))
 
 from db.database import SessionLocal
 from db.models import Watchlist
@@ -122,16 +125,16 @@ def hourly_scrape_and_match():
 
 
 def start_scheduler():
-    """Start the APScheduler with the hourly job."""
+    """Start the APScheduler with the periodic scrape job."""
     scheduler.add_job(
         hourly_scrape_and_match,
-        trigger=IntervalTrigger(hours=1),
+        trigger=IntervalTrigger(hours=SCRAPE_INTERVAL_HOURS),
         id="hourly_scrape_and_match",
-        name="Hourly Dubizzle scrape + watchlist match",
+        name=f"Dubizzle scrape + watchlist match (every {SCRAPE_INTERVAL_HOURS}h)",
         replace_existing=True,
     )
     scheduler.start()
-    logger.info("Scheduler started — hourly job registered")
+    logger.info(f"Scheduler started — scrape job every {SCRAPE_INTERVAL_HOURS} hours")
 
 
 def stop_scheduler():

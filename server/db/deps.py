@@ -6,6 +6,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 import jwt
+from jwt import PyJWKClient
 
 from db.database import SessionLocal
 from db.models import User, UserStatus
@@ -22,7 +23,19 @@ def get_db():
         db.close()
 
 
+SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", "")
+
+# JWKS client for ES256 token verification (caches keys automatically)
+_jwks_client = None
+
+
+def _get_jwks_client():
+    global _jwks_client
+    if _jwks_client is None:
+        jwks_url = f"{SUPABASE_URL}/auth/v1/.well-known/jwks.json"
+        _jwks_client = PyJWKClient(jwks_url)
+    return _jwks_client
 
 
 def get_current_user(
@@ -31,18 +44,32 @@ def get_current_user(
 ) -> User:
     """
     Decode the Supabase JWT, look up or create the local User row.
+    Supports both HS256 (legacy) and ES256 (new) Supabase JWTs.
     """
     token = credentials.credentials
     try:
-        payload = jwt.decode(
-            token,
-            SUPABASE_JWT_SECRET,
-            algorithms=["HS256"],
-            audience="authenticated",
-        )
+        # Try JWKS-based verification first (ES256)
+        if SUPABASE_URL:
+            jwks_client = _get_jwks_client()
+            signing_key = jwks_client.get_signing_key_from_jwt(token)
+            payload = jwt.decode(
+                token,
+                signing_key.key,
+                algorithms=["ES256"],
+                audience="authenticated",
+            )
+        else:
+            # Fallback to legacy HS256
+            payload = jwt.decode(
+                token,
+                SUPABASE_JWT_SECRET,
+                algorithms=["HS256"],
+                audience="authenticated",
+            )
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
-    except jwt.InvalidTokenError:
+    except jwt.InvalidTokenError as e:
+        print(f"[AUTH] FAILED: {e}")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
     supabase_id: str = payload.get("sub", "")
@@ -54,9 +81,11 @@ def get_current_user(
     if not user:
         # Auto-create on first authenticated request
         email = payload.get("email", "")
+        user_meta = payload.get("user_metadata", {})
+        name = user_meta.get("name", email.split("@")[0] if email else "User")
         user = User(
             supabase_id=supabase_id,
-            name=email.split("@")[0] if email else "User",
+            name=name,
             email=email,
             status=UserStatus.free,
         )

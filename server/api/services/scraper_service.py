@@ -43,15 +43,7 @@ HEADERS = {
     "Connection": "close",
 }
 
-BODY_IMAGES = {
-    "SUV": "https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?w=800&h=600&fit=crop",
-    "Sedan": "https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=800&h=600&fit=crop",
-    "Coupe": "https://images.unsplash.com/photo-1584345604476-8ec5f5e8e699?w=800&h=600&fit=crop",
-    "Hatchback": "https://images.unsplash.com/photo-1609521263047-f8f205293f24?w=800&h=600&fit=crop",
-    "Pick Up Truck": "https://images.unsplash.com/photo-1559416523-140ddc3d238c?w=800&h=600&fit=crop",
-    "Convertible": "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=800&h=600&fit=crop",
-    "default": "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&h=600&fit=crop",
-}
+DEFAULT_IMAGE = "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&h=600&fit=crop"
 
 UAE_LOCATIONS = [
     "Dubai, UAE", "Abu Dhabi, UAE", "Sharjah, UAE", "Ajman, UAE",
@@ -106,11 +98,31 @@ def _to_int(s: str | None) -> int | None:
     return int(digits) if digits else None
 
 
-def _pick_image(body_type: str | None) -> str:
-    for key, url in BODY_IMAGES.items():
-        if key.lower() in (body_type or "").lower():
-            return url
-    return BODY_IMAGES["default"]
+def _extract_images(payload: dict | None) -> list[str]:
+    """Extract listing image URLs from __NEXT_DATA__ payload."""
+    if not payload:
+        return []
+    listing = payload.get("listing") or {}
+    images: list[str] = []
+
+    # Try common Dubizzle image keys
+    for key in ("photos", "images", "gallery"):
+        items = listing.get(key)
+        if isinstance(items, list):
+            for item in items:
+                url = None
+                if isinstance(item, str):
+                    url = item
+                elif isinstance(item, dict):
+                    # photos usually have "main", "url", "src", or nested "image"
+                    url = (item.get("main") or item.get("url")
+                           or item.get("src") or item.get("image"))
+                if url and isinstance(url, str) and url.startswith("http"):
+                    images.append(url)
+            if images:
+                break
+
+    return images
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -347,9 +359,9 @@ def _fetch_detail_html(url: str) -> str:
     return ""
 
 
-def _parse_detail_page(html: str) -> dict[str, str | None]:
+def _parse_detail_page(html: str) -> dict[str, Any]:
     """
-    Extract enrichment fields from a detail page.
+    Extract enrichment fields + images from a detail page.
     1) __NEXT_DATA__ JSON (preferred, matching enrich_2.py)
     2) data-testid selectors (fallback, matching enrich_2.py)
     """
@@ -386,7 +398,9 @@ def _parse_detail_page(html: str) -> dict[str, str | None]:
                     "steering_side": "steering_side",
                     "regional_specs": "regional_specs",
                 }
-                return {col: slug_map.get(slug) for col, slug in wanted.items()}
+                result = {col: slug_map.get(slug) for col, slug in wanted.items()}
+                result["_images"] = _extract_images(payload)
+                return result
         except json.JSONDecodeError:
             pass
 
@@ -395,7 +409,14 @@ def _parse_detail_page(html: str) -> dict[str, str | None]:
         el = soup.select_one(f'[data-testid="{testid}"]')
         return _clean(el.get_text()) if el else None
 
-    return {
+    # Try to extract images from og:image meta tags as fallback
+    fallback_images: list[str] = []
+    for meta in soup.select('meta[property="og:image"]'):
+        content = meta.get("content")
+        if content and isinstance(content, str) and content.startswith("http"):
+            fallback_images.append(content)
+
+    result = {
         "trim": _get("overview-motors_trim-value"),
         "horsepower": _get("overview-horsepower-value"),
         "doors": _get("overview-doors-value"),
@@ -408,7 +429,9 @@ def _parse_detail_page(html: str) -> dict[str, str | None]:
         "engine_capacity": _get("overview-engine_capacity_cc-value"),
         "steering_side": _get("listing-steering_side-value"),
         "regional_specs": _get("listing-regional_specs-value"),
+        "_images": fallback_images,
     }
+    return result
 
 
 def _find_listing_payload(obj: Any) -> dict | None:
@@ -493,7 +516,7 @@ def scrape_new_listings(db: Session, pages: int = MAX_PAGES) -> list[Listing]:
         html = _fetch_detail_html(stub["url"])
         details = _parse_detail_page(html) if html else {}
 
-        body_type = details.get("body_type") or None
+        scraped_images = details.get("_images") or []
         listing = Listing(
             brand=stub["brand"],
             model=stub["model"],
@@ -508,12 +531,13 @@ def scrape_new_listings(db: Session, pages: int = MAX_PAGES) -> list[Listing]:
             cylinders=details.get("cylinders"),
             interior_color=details.get("interior_color"),
             exterior_color=details.get("exterior_color"),
-            body_type=body_type,
+            body_type=details.get("body_type"),
             seating_capacity=details.get("seating_capacity"),
             engine_capacity=details.get("engine_capacity"),
             steering_side=details.get("steering_side"),
             regional_specs=details.get("regional_specs"),
-            image=_pick_image(body_type),
+            image=scraped_images[0] if scraped_images else DEFAULT_IMAGE,
+            images=scraped_images if scraped_images else None,
             location=random.choice(UAE_LOCATIONS),
         )
         db.add(listing)
