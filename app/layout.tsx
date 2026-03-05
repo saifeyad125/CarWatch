@@ -4,6 +4,7 @@ import "./globals.css";
 import { BottomNavigation } from "@/components/ui/bottom-navigation";
 import { DesktopSidebar } from "@/components/ui/desktop-sidebar";
 import { ThemeProvider } from "@/components/theme-provider";
+import { AuthProvider } from "@/components/auth-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,21 +38,23 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ThemeProvider>
-          <div className="flex h-screen overflow-hidden">
-            {/* Desktop sidebar — hidden on mobile */}
-            <DesktopSidebar />
+          <AuthProvider>
+            <div className="flex h-screen overflow-hidden">
+              {/* Desktop sidebar — hidden on mobile */}
+              <DesktopSidebar />
 
-            {/* Main content area */}
-            <div className="flex flex-col flex-1 overflow-hidden">
-              <main className="flex-1 overflow-hidden">
-                {children}
-              </main>
-              {/* Bottom nav — mobile only */}
-              <div className="md:hidden">
-                <BottomNavigation />
+              {/* Main content area */}
+              <div className="flex flex-col flex-1 overflow-hidden">
+                <main className="flex-1 overflow-hidden">
+                  {children}
+                </main>
+                {/* Bottom nav — mobile only */}
+                <div className="md:hidden">
+                  <BottomNavigation />
+                </div>
               </div>
             </div>
-          </div>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
