@@ -1,91 +1,81 @@
 """
-Profile endpoint – single-user (no auth), backed by Postgres.
+Profile endpoint — authenticated, backed by Postgres.
 """
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from db.deps import get_db
-from db.models import User, UserStatus, Watchlist, Listing, Notification
+from db.deps import get_db, get_current_user
+from db.models import User, Watchlist, Notification
 from models.schemas import ProfileResponse, ProfileUpdate, ProfileStats
 
 router = APIRouter()
 
 
-def _get_or_create_default_user(db: Session) -> User:
-    """Return the default user, creating one if none exists."""
-    user = db.query(User).first()
-    if not user:
-        user = User(
-            name="Saif",
-            email="saif@example.com",
-            phone="+971 50 123 4567",
-            location="Dubai, UAE",
-            status=UserStatus.free,
-            avatar_seed="Saif",
-        )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-    return user
-
-
-def _build_stats(db: Session) -> ProfileStats:
-    watchlists_count = db.query(func.count(Watchlist.id)).scalar() or 0
+def _build_stats(db: Session, user_id: int) -> ProfileStats:
+    from db.models import Listing
+    watchlists_count = db.query(func.count(Watchlist.id)).filter(
+        Watchlist.user_id == user_id
+    ).scalar() or 0
     deals_found = db.query(func.count(Listing.id)).filter(
         Listing.deal_label == "Good Deal"
     ).scalar() or 0
 
     return ProfileStats(
         watchlistsCount=watchlists_count,
-        alertsSent=db.query(func.count(Notification.id)).scalar() or 0,
+        alertsSent=db.query(func.count(Notification.id)).filter(
+            Notification.user_id == user_id
+        ).scalar() or 0,
         dealsFound=deals_found,
     )
 
 
 @router.get("", response_model=ProfileResponse)
-def get_profile(db: Session = Depends(get_db)):
-    user = _get_or_create_default_user(db)
-    stats = _build_stats(db)
-
+def get_profile(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    stats = _build_stats(db, current_user.id)
     return ProfileResponse(
-        id=user.id,
-        name=user.name,
-        email=user.email,
-        phone=user.phone,
-        location=user.location,
-        status=user.status.value,
-        avatarSeed=user.avatar_seed,
+        id=current_user.id,
+        name=current_user.name,
+        email=current_user.email,
+        phone=current_user.phone,
+        location=current_user.location,
+        status=current_user.status.value,
+        avatarSeed=current_user.avatar_seed,
         stats=stats,
     )
 
 
 @router.patch("", response_model=ProfileResponse)
-def update_profile(body: ProfileUpdate, db: Session = Depends(get_db)):
-    user = _get_or_create_default_user(db)
-
+def update_profile(
+    body: ProfileUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     if body.name is not None:
-        user.name = body.name
+        current_user.name = body.name
     if body.email is not None:
-        user.email = body.email
+        current_user.email = body.email
     if body.phone is not None:
-        user.phone = body.phone
+        current_user.phone = body.phone
     if body.location is not None:
-        user.location = body.location
+        current_user.location = body.location
     if body.avatarSeed is not None:
-        user.avatar_seed = body.avatarSeed
+        current_user.avatar_seed = body.avatarSeed
 
     db.commit()
-    db.refresh(user)
+    db.refresh(current_user)
 
-    stats = _build_stats(db)
+    stats = _build_stats(db, current_user.id)
     return ProfileResponse(
-        id=user.id,
-        name=user.name,
-        email=user.email,
-        phone=user.phone,
-        location=user.location,
-        status=user.status.value,
-        avatarSeed=user.avatar_seed,
+        id=current_user.id,
+        name=current_user.name,
+        email=current_user.email,
+        phone=current_user.phone,
+        location=current_user.location,
+        status=current_user.status.value,
+        avatarSeed=current_user.avatar_seed,
         stats=stats,
     )
