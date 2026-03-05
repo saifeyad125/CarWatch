@@ -1,10 +1,11 @@
 """
-Watchlist endpoints – backed by Postgres.
+Watchlist endpoints — authenticated, backed by Postgres.
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from db.deps import get_db
+from db.deps import get_db, get_current_user
+from db.models import User
 from models.schemas import (
     WatchlistCreate,
     WatchlistDetailResponse,
@@ -26,53 +27,67 @@ router = APIRouter()
 
 
 @router.post("", response_model=WatchlistDetailResponse, status_code=201)
-def api_create_watchlist(body: WatchlistCreate, db: Session = Depends(get_db)):
-    """Create a new watchlist and run an initial scan."""
-    card = create_watchlist(db, body)
-    # Re-use the detail builder so the response includes stats
-    return get_watchlist_detail(db, card.id)
+def api_create_watchlist(
+    body: WatchlistCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    card = create_watchlist(db, body, current_user.id)
+    return get_watchlist_detail(db, card.id, current_user.id)
 
 
 @router.get("", response_model=WatchlistsListResponse)
-def api_list_watchlists(db: Session = Depends(get_db)):
-    return list_watchlists(db)
+def api_list_watchlists(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return list_watchlists(db, current_user.id)
 
 
 @router.get("/{watchlist_id}", response_model=WatchlistDetailResponse)
-def api_get_watchlist_detail(watchlist_id: int, db: Session = Depends(get_db)):
-    return get_watchlist_detail(db, watchlist_id)
+def api_get_watchlist_detail(
+    watchlist_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return get_watchlist_detail(db, watchlist_id, current_user.id)
 
 
 @router.patch("/{watchlist_id}/status", response_model=WatchlistDetailResponse)
-def api_set_watchlist_status(watchlist_id: int, body: WatchlistStatusUpdate, db: Session = Depends(get_db)):
-    """Activate or pause a watchlist. Enforces the 2-active limit."""
-    card = set_watchlist_status(db, watchlist_id, body)
-    return get_watchlist_detail(db, card.id)
+def api_set_watchlist_status(
+    watchlist_id: int,
+    body: WatchlistStatusUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    card = set_watchlist_status(db, watchlist_id, body, current_user.id)
+    return get_watchlist_detail(db, card.id, current_user.id)
 
 
 @router.get("/{watchlist_id}/matches", response_model=WatchlistMatchesResponse)
-def api_get_matches(watchlist_id: int, sort: str = "best_match", db: Session = Depends(get_db)):
-    return get_watchlist_matches(db, watchlist_id, sort)
+def api_get_matches(
+    watchlist_id: int,
+    sort: str = "best_match",
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return get_watchlist_matches(db, watchlist_id, sort, current_user.id)
 
 
 @router.delete("/{watchlist_id}", status_code=204)
-def api_delete_watchlist(watchlist_id: int, db: Session = Depends(get_db)):
-    """Delete a watchlist and all its matches."""
-    delete_watchlist(db, watchlist_id)
+def api_delete_watchlist(
+    watchlist_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    delete_watchlist(db, watchlist_id, current_user.id)
     return None
 
 
 @router.post("/{watchlist_id}/scan")
-def api_run_watchlist_scan(watchlist_id: int, db: Session = Depends(get_db)):
-    """Scan all listings and persist matches for this watchlist."""
+def api_run_watchlist_scan(
+    watchlist_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     return run_watchlist_scan(db, watchlist_id)
-
-
-@router.post("/debug/run-hourly")
-def debug_run_hourly(db: Session = Depends(get_db)):
-    """Debug-only: manually trigger the hourly scrape-and-match job."""
-    from api.services.scheduler import hourly_scrape_and_match
-    hourly_scrape_and_match()
-    return {"ok": True, "message": "Hourly job executed"}
-
-

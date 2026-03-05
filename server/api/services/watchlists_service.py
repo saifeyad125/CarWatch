@@ -130,15 +130,18 @@ def _watchlist_to_card(w: Watchlist, db: Session) -> WatchlistCard:
 
 # ─────────── service API ───────────
 
-def _get_watchlist_or_404(db: Session, watchlist_id: int) -> Watchlist:
-    w = db.query(Watchlist).filter(Watchlist.id == watchlist_id).first()
+def _get_watchlist_or_404(db: Session, watchlist_id: int, user_id: int = None) -> Watchlist:
+    q = db.query(Watchlist).filter(Watchlist.id == watchlist_id)
+    if user_id is not None:
+        q = q.filter(Watchlist.user_id == user_id)
+    w = q.first()
     if not w:
         raise HTTPException(status_code=404, detail="Watchlist not found")
     return w
 
 
-def list_watchlists(db: Session) -> WatchlistsListResponse:
-    rows = db.query(Watchlist).order_by(Watchlist.id).all()
+def list_watchlists(db: Session, user_id: int) -> WatchlistsListResponse:
+    rows = db.query(Watchlist).filter(Watchlist.user_id == user_id).order_by(Watchlist.id).all()
     cards = [_watchlist_to_card(w, db) for w in rows]
 
     summary = {
@@ -149,8 +152,8 @@ def list_watchlists(db: Session) -> WatchlistsListResponse:
     return WatchlistsListResponse(summary=summary, watchlists=cards)
 
 
-def get_watchlist_detail(db: Session, watchlist_id: int) -> WatchlistDetailResponse:
-    w = _get_watchlist_or_404(db, watchlist_id)
+def get_watchlist_detail(db: Session, watchlist_id: int, user_id: int = None) -> WatchlistDetailResponse:
+    w = _get_watchlist_or_404(db, watchlist_id, user_id)
     card = _watchlist_to_card(w, db)
 
     total = card.totalMatches
@@ -163,15 +166,15 @@ def get_watchlist_detail(db: Session, watchlist_id: int) -> WatchlistDetailRespo
 
 MAX_ACTIVE_WATCHLISTS = 2
 
-def set_watchlist_status(db: Session, watchlist_id: int, payload: WatchlistStatusUpdate) -> WatchlistCard:
+def set_watchlist_status(db: Session, watchlist_id: int, payload: WatchlistStatusUpdate, user_id: int) -> WatchlistCard:
     """Toggle active/inactive. Enforces a limit of MAX_ACTIVE_WATCHLISTS active at once."""
-    w = _get_watchlist_or_404(db, watchlist_id)
+    w = _get_watchlist_or_404(db, watchlist_id, user_id)
 
     if payload.isActive and not w.is_active:
         # Count how many are currently active (excluding this one)
         active_count = (
             db.query(func.count(Watchlist.id))
-            .filter(Watchlist.is_active == True, Watchlist.id != watchlist_id)
+            .filter(Watchlist.is_active == True, Watchlist.id != watchlist_id, Watchlist.user_id == user_id)
             .scalar() or 0
         )
         if active_count >= MAX_ACTIVE_WATCHLISTS:
@@ -189,9 +192,9 @@ def set_watchlist_status(db: Session, watchlist_id: int, payload: WatchlistStatu
 
 
 def get_watchlist_matches(
-    db: Session, watchlist_id: int, sort: str = "best_match"
+    db: Session, watchlist_id: int, sort: str = "best_match", user_id: int = None
 ) -> WatchlistMatchesResponse:
-    _get_watchlist_or_404(db, watchlist_id)
+    _get_watchlist_or_404(db, watchlist_id, user_id)
 
     match_rows = (
         db.query(WatchlistMatchDB)
@@ -287,7 +290,7 @@ def _normalise(value: str) -> str:
     return re.sub(r"\s+", " ", value.strip()).title()
 
 
-def create_watchlist(db: Session, payload: WatchlistCreate) -> WatchlistCard:
+def create_watchlist(db: Session, payload: WatchlistCreate, user_id: int) -> WatchlistCard:
     """Validate, normalise, persist a new watchlist, run initial scan, return card."""
     criteria = payload.searchCriteria
 
@@ -332,6 +335,7 @@ def create_watchlist(db: Session, payload: WatchlistCreate) -> WatchlistCard:
         is_active=payload.isActive,
         alerts_enabled=payload.alertsEnabled,
         criteria_json=criteria.model_dump(exclude_none=True),
+        user_id=user_id,
     )
     db.add(w)
     db.flush()          # get w.id without committing
@@ -344,9 +348,9 @@ def create_watchlist(db: Session, payload: WatchlistCreate) -> WatchlistCard:
     return _watchlist_to_card(w, db)
 
 
-def delete_watchlist(db: Session, watchlist_id: int) -> None:
+def delete_watchlist(db: Session, watchlist_id: int, user_id: int) -> None:
     """Delete a watchlist and all its matches (cascade)."""
-    w = _get_watchlist_or_404(db, watchlist_id)
+    w = _get_watchlist_or_404(db, watchlist_id, user_id)
     db.delete(w)
     db.commit()
 
