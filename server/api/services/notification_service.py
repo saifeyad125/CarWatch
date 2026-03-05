@@ -29,6 +29,7 @@ def create_match_notifications(
     n = Notification(
         watchlist_id=watchlist.id,
         listing_id=new_listing_ids[0] if count == 1 else None,
+        user_id=watchlist.user_id,
         type="new_match",
         title=title,
         message=message,
@@ -48,6 +49,7 @@ def create_expiry_notification(
 
     n = Notification(
         watchlist_id=watchlist.id,
+        user_id=watchlist.user_id,
         type="listing_expired",
         title="Listings Expired",
         message=f"{expired_count} listing{'s' if expired_count > 1 else ''} "
