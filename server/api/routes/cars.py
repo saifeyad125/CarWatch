@@ -222,7 +222,7 @@ def _listing_to_detail(row: Listing, db: Session) -> CarListingDetail:
 
 # ───── routes ─────
 
-@router.get("/", response_model=List[CarListingSummary])
+@router.get("", response_model=List[CarListingSummary])
 def get_listings(
     make: Optional[str] = Query(None),
     model: Optional[str] = Query(None),
