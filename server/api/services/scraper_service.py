@@ -510,6 +510,7 @@ def scrape_new_listings(db: Session, pages: int = MAX_PAGES) -> list[Listing]:
         return []
 
     # Step 2: Enrich each new listing via detail page (mobile proxy)
+    BATCH_SIZE = 20
     new_listings: list[Listing] = []
     for i, stub in enumerate(new_stubs):
         logger.info(f"Enriching {i+1}/{len(new_stubs)}: {stub['url']}")
@@ -544,7 +545,15 @@ def scrape_new_listings(db: Session, pages: int = MAX_PAGES) -> list[Listing]:
         new_listings.append(listing)
         time.sleep(SLEEP_BETWEEN)
 
-    db.flush()
+        # Batch commit every BATCH_SIZE listings to keep DB connection alive
+        if (i + 1) % BATCH_SIZE == 0:
+            db.commit()
+            logger.info(f"Committed batch ({i+1}/{len(new_stubs)})")
+
+    # Final commit for any remaining listings
+    if len(new_listings) % BATCH_SIZE != 0:
+        db.commit()
+
     logger.info(f"Inserted {len(new_listings)} new listings")
     return new_listings
 

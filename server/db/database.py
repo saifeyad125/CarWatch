@@ -10,7 +10,12 @@ DATABASE_URL = os.getenv(
     "postgresql://app:app@localhost:5433/carwatch",
 )
 
-engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True)
+engine = create_engine(
+    DATABASE_URL,
+    echo=False,
+    pool_pre_ping=True,
+    pool_recycle=280,
+)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
