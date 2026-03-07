@@ -1,137 +1,239 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Sparkles, Trash2, Menu, Plus, MessageSquare, Clock, X } from "lucide-react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import { Send, Bot, User, Sparkles, Plus, MessageSquare, Clock, X, Menu, Trash2, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { motion, AnimatePresence } from "framer-motion";
+import { API_ENDPOINTS } from "@/lib/api";
+import { supabase } from "@/lib/supabase/client";
+import { useAuth } from "@/components/auth-provider";
 import Link from "next/link";
 
 interface Message {
   id: number;
-  type: "user" | "bot";
+  role: "user" | "assistant";
   content: string;
-  timestamp: Date;
+  createdAt: string;
 }
 
-interface ChatHistory {
-  id: string;
+interface Conversation {
+  id: number;
   title: string;
-  lastMessage: string;
-  timestamp: Date;
+  lastMessage: string | null;
+  updatedAt: string;
+}
+
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (session?.access_token) {
+    headers["Authorization"] = `Bearer ${session.access_token}`;
+  }
+  return headers;
 }
 
 export default function ChatPage() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 1,
-      type: "bot",
-      content: "Hi! I'm your DealWatch AI assistant. I can help you find the perfect car deals, set up watchlists, and answer questions about vehicle pricing and features. What would you like to know?",
-      timestamp: new Date(),
-    },
-  ]);
+  const { user } = useAuth();
+  const userName = user?.user_metadata?.name || user?.email?.split("@")[0] || null;
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConvId, setActiveConvId] = useState<number | null>(null);
   const [inputMessage, setInputMessage] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => { setIsMounted(true); }, []);
 
   useEffect(() => {
-    setIsMounted(true);
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isStreaming]);
+
+  // Load conversations on mount
+  useEffect(() => {
+    fetchConversations();
   }, []);
 
-  // Mock chat history
-  const [chatHistory] = useState<ChatHistory[]>([
-    {
-      id: "1",
-      title: "Tesla Model 3 Search",
-      lastMessage: "Help me set up a Tesla Model 3 watchlist",
-      timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 mins ago
-    },
-    {
-      id: "2",
-      title: "Family Sedan Recommendations",
-      lastMessage: "Find me a reliable family sedan under $30k",
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-    },
-    {
-      id: "3",
-      title: "Honda Civic vs Toyota Corolla",
-      lastMessage: "Compare Honda Civic vs Toyota Corolla",
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-    },
-    {
-      id: "4",
-      title: "Used Car Buying Tips",
-      lastMessage: "What's the best time to buy a used car?",
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2), // 2 days ago
-    },
-    {
-      id: "5",
-      title: "Truck Resale Value",
-      lastMessage: "Show me trucks with good resale value",
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3), // 3 days ago
-    },
-  ]);
-
-  const formatRelativeTime = (date: Date) => {
-    const diff = Date.now() - date.getTime();
-    const minutes = Math.floor(diff / (1000 * 60));
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    return `${days}d ago`;
+  const fetchConversations = async () => {
+    try {
+      const headers = await getAuthHeaders();
+      const res = await fetch(API_ENDPOINTS.chat.conversations, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        setConversations(data);
+      }
+    } catch (err) {
+      console.error("Failed to load conversations:", err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const loadConversation = async (convId: number) => {
+    try {
+      const headers = await getAuthHeaders();
+      const res = await fetch(API_ENDPOINTS.chat.conversation(convId), { headers });
+      if (res.ok) {
+        const data = await res.json();
+        setActiveConvId(convId);
+        setMessages(data.messages);
+        setIsSidebarOpen(false);
+      }
+    } catch (err) {
+      console.error("Failed to load conversation:", err);
+    }
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, isTyping]);
+  const createConversation = async (): Promise<number | null> => {
+    try {
+      const headers = await getAuthHeaders();
+      const res = await fetch(API_ENDPOINTS.chat.conversations, {
+        method: "POST",
+        headers,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setActiveConvId(data.id);
+        setMessages([]);
+        setIsSidebarOpen(false);
+        await fetchConversations();
+        return data.id;
+      }
+    } catch (err) {
+      console.error("Failed to create conversation:", err);
+    }
+    return null;
+  };
 
-  const handleSendMessage = async () => {
-    if (!inputMessage.trim()) return;
+  const deleteConversation = async (convId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const headers = await getAuthHeaders();
+      await fetch(API_ENDPOINTS.chat.conversation(convId), {
+        method: "DELETE",
+        headers,
+      });
+      setConversations((prev) => prev.filter((c) => c.id !== convId));
+      if (activeConvId === convId) {
+        setActiveConvId(null);
+        setMessages([]);
+      }
+    } catch (err) {
+      console.error("Failed to delete conversation:", err);
+    }
+  };
 
-    const userMessage: Message = {
-      id: messages.length + 1,
-      type: "user",
-      content: inputMessage,
-      timestamp: new Date(),
-    };
+  const handleSendMessage = useCallback(async (overrideMessage?: string) => {
+    const content = (overrideMessage ?? inputMessage).trim();
+    if (!content || isStreaming) return;
 
-    setMessages(prev => [...prev, userMessage]);
     setInputMessage("");
-    setIsTyping(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const botResponses = [
-        "I'd be happy to help you with that! Based on your requirements, I can suggest some great options. What's your budget range?",
-        "That's a great choice! The Toyota Camry is known for its reliability. I can set up a watchlist for 2020-2023 models in your area if you'd like.",
-        "Let me check the current market prices for that model. Based on recent listings, you can expect to pay between $25,000-$30,000 for a good condition vehicle.",
-        "I can help you create a custom search alert for that. What specific features are most important to you - fuel efficiency, safety ratings, or something else?",
-        "Great question! I'd recommend looking at certified pre-owned vehicles for the best balance of value and reliability. Would you like me to add that to your watchlist criteria?",
-      ];
-      
-      const randomResponse = botResponses[Math.floor(Math.random() * botResponses.length)];
-      
-      const botMessage: Message = {
-        id: messages.length + 2,
-        type: "bot",
-        content: randomResponse,
-        timestamp: new Date(),
-      };
+    // Ensure we have a conversation
+    let convId = activeConvId;
+    if (!convId) {
+      convId = await createConversation();
+      if (!convId) return;
+    }
 
-      setMessages(prev => [...prev, botMessage]);
-      setIsTyping(false);
-    }, 1000 + Math.random() * 2000); // Random delay between 1-3 seconds
-  };
+    // Optimistically add user message
+    const userMsg: Message = {
+      id: Date.now(),
+      role: "user",
+      content,
+      createdAt: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, userMsg]);
+
+    // Add placeholder bot message
+    const botMsgId = Date.now() + 1;
+    const botMsg: Message = {
+      id: botMsgId,
+      role: "assistant",
+      content: "",
+      createdAt: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, botMsg]);
+    setIsStreaming(true);
+
+    try {
+      const headers = await getAuthHeaders();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      const res = await fetch(API_ENDPOINTS.chat.messages(convId), {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ content }),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        throw new Error(`API error: ${res.status}`);
+      }
+
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      let botText = "";
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        // Keep incomplete last line in buffer
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith("data: {")) {
+            try {
+              const data = JSON.parse(trimmed.slice(6));
+              if (data.text) {
+                botText += data.text;
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  const lastIdx = updated.length - 1;
+                  updated[lastIdx] = { ...updated[lastIdx], content: botText };
+                  return updated;
+                });
+              }
+            } catch {
+              // Skip malformed chunks
+            }
+          }
+        }
+      }
+
+      // Refresh conversation list to update titles and last messages
+      await fetchConversations();
+    } catch (err) {
+      if ((err as Error).name === "AbortError") return;
+      console.error("Stream error:", err);
+      setMessages((prev) => {
+        const updated = [...prev];
+        const lastIdx = updated.length - 1;
+        if (updated[lastIdx]?.role === "assistant" && !updated[lastIdx].content) {
+          updated[lastIdx] = {
+            ...updated[lastIdx],
+            content: "Sorry, something went wrong. Please try again.",
+          };
+        }
+        return updated;
+      });
+    } finally {
+      setIsStreaming(false);
+      abortRef.current = null;
+    }
+  }, [inputMessage, isStreaming, activeConvId]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -140,231 +242,247 @@ export default function ChatPage() {
     }
   };
 
-  const clearChat = () => {
-    setMessages([
-      {
-        id: 1,
-        type: "bot",
-        content: "Hi! I'm your DealWatch AI assistant. I can help you find the perfect car deals, set up watchlists, and answer questions about vehicle pricing and features. What would you like to know?",
-        timestamp: new Date(),
-      },
-    ]);
+  const handleNewChat = async () => {
+    await createConversation();
+  };
+
+  const formatRelativeTime = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    const hrs = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    if (mins < 60) return `${mins}m`;
+    if (hrs < 24) return `${hrs}h`;
+    return `${days}d`;
   };
 
   const quickPrompts = [
-    "Find me a reliable family sedan under $30k",
-    "What's the best time to buy a used car?",
-    "Help me set up a Tesla Model 3 watchlist",
-    "Compare Honda Civic vs Toyota Corolla",
-    "Show me trucks with good resale value",
+    "Find me a reliable sedan under AED 80k",
+    "Best deals available right now?",
+    "Set up a Tesla watchlist",
+    "Compare Civic vs Corolla",
   ];
+
+  const showWelcome = !activeConvId && messages.length === 0;
 
   return (
     <div className="flex h-full bg-background overflow-hidden relative">
       {/* Sidebar */}
-      <div className={`fixed lg:relative inset-y-0 left-0 w-72 bg-[hsl(var(--background))] border-r border-border z-50 transform transition-transform duration-300 ease-in-out ${
-        isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-      } flex flex-col shadow-2xl`}>
-        {/* Sidebar Header */}
-        <div className="p-4 border-b border-border shrink-0 bg-[hsl(var(--background))]">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-foreground">Chat History</h2>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden h-8 w-8"
-              onClick={() => setIsSidebarOpen(false)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-          <Button 
-            className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl"
-            onClick={() => {
-              clearChat();
-              setIsSidebarOpen(false);
-            }}
+      <AnimatePresence>
+        {isSidebarOpen && (
+          <motion.div
+            initial={{ x: -288 }}
+            animate={{ x: 0 }}
+            exit={{ x: -288 }}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed lg:relative inset-y-0 left-0 w-72 border-r border-border z-50 flex flex-col shadow-elevated"
+            style={{ backgroundColor: "hsl(223, 47%, 11%)" }}
           >
-            <Plus className="h-4 w-4 mr-2" />
-            New Chat
-          </Button>
-        </div>
-
-        {/* Chat History List */}
-        <div className="flex-1 overflow-y-auto scrollbar-hide p-2 bg-[hsl(var(--background))]">
-          <div className="space-y-1">
-            {chatHistory.map((chat) => (
-              <button
-                key={chat.id}
-                className="w-full p-3 rounded-xl text-left hover:bg-muted/50 transition-colors group"
-                onClick={() => setIsSidebarOpen(false)}
-              >
-                <div className="flex items-start gap-2">
-                  <MessageSquare className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">
-                      {chat.title}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate mt-0.5">
-                      {chat.lastMessage}
-                    </p>
-                    <div className="flex items-center gap-1 mt-1">
-                      <Clock className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">
-                        {isMounted ? formatRelativeTime(chat.timestamp) : 'Just now'}
-                      </span>
+            <div className="p-4 border-b border-border/40 shrink-0">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-semibold text-foreground">History</h2>
+                <Button variant="ghost" size="icon" className="h-8 w-8 lg:hidden" onClick={() => setIsSidebarOpen(false)}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <Button className="w-full" size="sm" onClick={handleNewChat}>
+                <Plus className="h-3.5 w-3.5 mr-1.5" /> New Chat
+              </Button>
+            </div>
+            <div className="flex-1 overflow-y-auto scrollbar-hide p-2">
+              {isLoading ? (
+                <p className="text-xs text-muted-foreground text-center py-4">Loading...</p>
+              ) : conversations.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-4">No conversations yet</p>
+              ) : (
+                conversations.map((conv) => (
+                  <div
+                    key={conv.id}
+                    role="button"
+                    tabIndex={0}
+                    className={`w-full p-3 rounded-lg text-left transition-colors group cursor-pointer ${
+                      activeConvId === conv.id ? "bg-accent" : "hover:bg-accent/50"
+                    }`}
+                    onClick={() => loadConversation(conv.id)}
+                    onKeyDown={(e) => { if (e.key === "Enter") loadConversation(conv.id); }}
+                  >
+                    <div className="flex items-start gap-2.5">
+                      <MessageSquare className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-foreground truncate">{conv.title}</p>
+                        {conv.lastMessage && (
+                          <p className="text-xs text-muted-foreground truncate mt-0.5">{conv.lastMessage}</p>
+                        )}
+                        <span className="text-[11px] text-muted-foreground flex items-center gap-1 mt-1">
+                          <Clock className="h-3 w-3" />
+                          {isMounted ? formatRelativeTime(conv.updatedAt) : "now"}
+                        </span>
+                      </div>
+                      <button
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-destructive/10 rounded"
+                        onClick={(e) => deleteConversation(conv.id, e)}
+                      >
+                        <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+                      </button>
                     </div>
                   </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
+                ))
+              )}
+            </div>
+            <div className="p-3 border-t border-border/40 shrink-0">
+              <p className="text-[11px] text-muted-foreground text-center">{conversations.length} conversations</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-        {/* Sidebar Footer */}
-        <div className="p-4 border-t border-border shrink-0 bg-[hsl(var(--background))]">
-          <p className="text-xs text-muted-foreground text-center">
-            {chatHistory.length} previous conversations
-          </p>
-        </div>
-      </div>
-
-      {/* Sidebar Overlay - Only covers the chat area */}
+      {/* Sidebar overlay — click anywhere outside to close */}
       {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 left-72 bg-black/50 z-40 lg:hidden"
-          onClick={() => setIsSidebarOpen(false)}
-        />
+        <div className="fixed inset-0 bg-black/30 z-40" onClick={() => setIsSidebarOpen(false)} />
       )}
 
-      {/* Main Chat Area */}
+      {/* Main */}
       <div className="flex flex-col flex-1 h-full overflow-hidden">
-        {/* Transparent Header with Blur */}
-        <div className="shrink-0 bg-card/80 backdrop-blur-xl border-b border-border/20 px-4 py-4 sticky top-0 z-20">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 hover:bg-red-50 hover:text-red-600 rounded-xl"
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-              <h1 className="text-xl font-bold text-foreground">AI Chat</h1>
-            </div>
+        <header className="shrink-0 h-16 border-b border-border/40 bg-card/80 backdrop-blur-nav px-4 flex items-center justify-between sticky top-0 z-20">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
+              <Menu className="h-5 w-5" />
+            </Button>
+            <h1 className="text-lg font-semibold tracking-tight">AI Chat</h1>
+          </div>
+          {user ? (
             <Link href="/profile">
-              <Avatar className="h-10 w-10 cursor-pointer hover:ring-2 hover:ring-red-500 transition-all">
-                <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=Saif" />
-                <AvatarFallback>S</AvatarFallback>
+              <Avatar className="h-9 w-9 cursor-pointer ring-2 ring-border hover:ring-primary/30 transition-all duration-150">
+                <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userName || "User"}`} />
+                <AvatarFallback className="text-xs font-medium">{(userName || "U")[0].toUpperCase()}</AvatarFallback>
               </Avatar>
             </Link>
-          </div>
-        </div>
+          ) : (
+            <Link href="/login">
+              <Button variant="outline" size="sm">
+                <LogIn className="h-3.5 w-3.5 mr-1.5" />
+                Sign In
+              </Button>
+            </Link>
+          )}
+        </header>
 
-        {/* Messages - Scrollable content with top padding */}
+        {/* Messages */}
         <div className="flex-1 overflow-y-auto scrollbar-hide">
-          <div className="px-4 pt-6 space-y-4 pb-safe">
-            {messages.map((message) => (
-              <div key={message.id} className={`flex gap-3 animate-fade-in ${message.type === "user" ? "justify-end" : ""}`}>
-                {message.type === "bot" && (
-                  <Avatar className="h-8 w-8 bg-gradient-to-r from-red-500 to-red-600 shrink-0 mt-1">
-                    <AvatarFallback>
-                      <Bot className="h-5 w-5 text-white" />
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-                
-                <div className={`max-w-[85%] ${message.type === "user" ? "order-first" : ""}`}>
-                  <Card className={`p-4 ${message.type === "user" 
-                    ? "bg-gradient-to-r from-red-500 to-red-600 text-white ml-auto rounded-2xl rounded-br-md shadow-lg" 
-                    : "bg-muted/50 backdrop-blur-sm rounded-2xl rounded-bl-md"
-                  }`}>
-                    <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
-                  </Card>
-                  <p className={`text-xs text-muted-foreground mt-1 ${message.type === "user" ? "text-right" : ""}`} suppressHydrationWarning>
-                    {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                  </p>
+          <div className="max-w-2xl mx-auto px-4 pt-6 space-y-5 pb-safe">
+            {/* Welcome state */}
+            {showWelcome && (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center py-12"
+              >
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
+                  <Bot className="h-8 w-8 text-primary" />
                 </div>
-
-                {message.type === "user" && (
-                  <Avatar className="h-8 w-8 shrink-0 mt-1">
-                    <AvatarFallback className="bg-primary text-primary-foreground">
-                      <User className="h-5 w-5" />
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-              </div>
-            ))}
-
-            {isTyping && (
-              <div className="flex gap-3 animate-fade-in">
-                <Avatar className="h-8 w-8 bg-gradient-to-r from-red-500 to-red-600 shrink-0 mt-1">
-                  <AvatarFallback>
-                    <Bot className="h-5 w-5 text-white" />
-                  </AvatarFallback>
-                </Avatar>
-                <Card className="p-4 bg-muted/50 backdrop-blur-sm rounded-2xl rounded-bl-md">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" style={{ animationDelay: "0.2s" }}></div>
-                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" style={{ animationDelay: "0.4s" }}></div>
-                  </div>
-                </Card>
-              </div>
+                <h2 className="text-xl font-semibold mb-2">CarWatch AI</h2>
+                <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                  Your UAE used car market expert. Ask about listings, deals, pricing, or get help with watchlists.
+                </p>
+              </motion.div>
             )}
 
+            {messages.map((message) => (
+              <motion.div
+                key={message.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                className={`flex gap-3 ${message.role === "user" ? "justify-end" : ""}`}
+              >
+                {message.role === "assistant" && (
+                  <Avatar className="h-8 w-8 shrink-0 mt-1">
+                    <AvatarFallback className="bg-primary text-primary-foreground">
+                      <Bot className="h-4 w-4" />
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+                <div className={`max-w-[85%] ${message.role === "user" ? "order-first" : ""}`}>
+                  <div className={`px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
+                    message.role === "user"
+                      ? "bg-primary text-primary-foreground ml-auto rounded-br-md"
+                      : "bg-muted rounded-bl-md"
+                  }`}>
+                    {message.content || (
+                      <div className="flex items-center gap-2">
+                        <div className="flex space-x-1">
+                          <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-pulse" />
+                          <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-pulse" style={{ animationDelay: "0.15s" }} />
+                          <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-pulse" style={{ animationDelay: "0.3s" }} />
+                        </div>
+                        <span className="text-xs text-muted-foreground animate-pulse">Thinking...</span>
+                      </div>
+                    )}
+                  </div>
+                  <p className={`text-[11px] text-muted-foreground mt-1 ${message.role === "user" ? "text-right" : ""}`} suppressHydrationWarning>
+                    {new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                </div>
+                {message.role === "user" && (
+                  <Avatar className="h-8 w-8 shrink-0 mt-1">
+                    <AvatarFallback className="bg-secondary text-secondary-foreground">
+                      <User className="h-4 w-4" />
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+              </motion.div>
+            ))}
             <div ref={messagesEndRef} />
           </div>
         </div>
 
-        {/* Quick Prompts */}
-        {messages.length === 1 && (
+        {/* Quick prompts */}
+        {(showWelcome || messages.length === 0) && (
           <div className="shrink-0 px-4 pb-2">
-            <div className="flex items-center gap-2 mb-3">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium text-muted-foreground">Quick prompts</span>
-            </div>
-            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
-              {quickPrompts.map((prompt, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  size="sm"
-                  className="whitespace-nowrap text-xs rounded-full bg-muted/50 backdrop-blur-sm border-cyan-500/40 text-cyan-600 hover:bg-cyan-500 hover:text-white transition-all duration-200 active:scale-95"
-                  onClick={() => setInputMessage(prompt)}
-                >
-                  {prompt}
-                </Button>
-              ))}
+            <div className="max-w-2xl mx-auto">
+              <div className="flex items-center gap-1.5 mb-2">
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                <span className="text-xs font-medium text-muted-foreground">Suggestions</span>
+              </div>
+              <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
+                {quickPrompts.map((prompt, i) => (
+                  <Button
+                    key={i}
+                    variant="outline"
+                    size="sm"
+                    className="whitespace-nowrap text-xs rounded-full"
+                    onClick={() => handleSendMessage(prompt)}
+                  >
+                    {prompt}
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
-        {/* Input Section - Fixed at bottom */}
-        <div className="shrink-0 border-t border-border/20 bg-card/80 backdrop-blur-xl p-4">
-          <div className="flex gap-3 items-end">
+        {/* Input */}
+        <div className="shrink-0 border-t border-border/40 bg-card/80 backdrop-blur-nav p-4">
+          <div className="max-w-2xl mx-auto flex gap-2 items-end">
             <div className="flex-1 relative">
               <Textarea
                 ref={textareaRef}
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyDown={handleKeyPress}
-                placeholder="Ask me anything about cars, deals, or pricing..."
-                className="resize-none min-h-0 h-12 py-3 pr-12 rounded-2xl border-border/50 bg-background/50 backdrop-blur-sm focus:bg-background transition-all duration-200"
+                placeholder="Ask about cars, deals, or pricing..."
+                className="resize-none min-h-0 h-11 py-2.5 pr-12 rounded-xl text-sm"
                 rows={1}
               />
-              <div className="absolute bottom-3 right-3 text-xs text-muted-foreground">
-                {inputMessage.length}/500
-              </div>
+              <span className="absolute bottom-2.5 right-3 text-[10px] text-muted-foreground">{inputMessage.length}/500</span>
             </div>
-            <Button 
-              onClick={handleSendMessage} 
-              disabled={!inputMessage.trim() || isTyping}
+            <Button
+              onClick={() => handleSendMessage()}
+              disabled={!inputMessage.trim() || isStreaming}
               size="icon"
-              className="h-12 w-12 shrink-0 rounded-2xl bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white transition-all duration-200 active:scale-95 shadow-lg"
+              className="h-11 w-11 shrink-0 rounded-xl"
             >
-              <Send className="h-5 w-5" />
+              <Send className="h-4 w-4" />
             </Button>
           </div>
         </div>

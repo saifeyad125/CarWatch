@@ -13,12 +13,15 @@ router = APIRouter()
 
 
 def _build_stats(db: Session, user_id: int) -> ProfileStats:
-    from db.models import Listing
+    from db.models import WatchlistMatch
     watchlists_count = db.query(func.count(Watchlist.id)).filter(
         Watchlist.user_id == user_id
     ).scalar() or 0
-    deals_found = db.query(func.count(Listing.id)).filter(
-        Listing.deal_label == "Good Deal"
+
+    # Total matches across all of this user's watchlists
+    user_watchlist_ids = db.query(Watchlist.id).filter(Watchlist.user_id == user_id).subquery()
+    total_matches = db.query(func.count(WatchlistMatch.id)).filter(
+        WatchlistMatch.watchlist_id.in_(user_watchlist_ids)
     ).scalar() or 0
 
     return ProfileStats(
@@ -26,7 +29,7 @@ def _build_stats(db: Session, user_id: int) -> ProfileStats:
         alertsSent=db.query(func.count(Notification.id)).filter(
             Notification.user_id == user_id
         ).scalar() or 0,
-        dealsFound=deals_found,
+        totalMatches=total_matches,
     )
 
 

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Mail, Lock, Eye, EyeOff, User } from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -26,9 +27,7 @@ export default function SignupPage() {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: { name },
-      },
+      options: { data: { name } },
     });
 
     if (error) {
@@ -40,29 +39,37 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-background overflow-y-auto">
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-sm space-y-8">
-          {/* Header */}
+    <div className="flex flex-col h-full bg-background overflow-y-auto bg-grid">
+      <div className="fixed -top-32 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-primary/[0.04] blur-3xl pointer-events-none" />
+
+      <div className="flex-1 flex items-center justify-center p-4 relative">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="w-full max-w-sm space-y-8"
+        >
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-primary">CarWatch</h1>
-            <p className="text-muted-foreground mt-2">Create your account</p>
+            <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center mx-auto mb-4">
+              <span className="text-white font-bold text-lg">CW</span>
+            </div>
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">Create your account</h1>
+            <p className="text-sm text-muted-foreground mt-1">Start tracking your dream car deals</p>
           </div>
 
-          {/* Form */}
-          <Card className="border-0 bg-card/50 backdrop-blur-sm rounded-2xl shadow-lg">
+          <Card>
             <CardContent className="p-6">
               <form onSubmit={handleSignup} className="space-y-4">
                 {error && (
-                  <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/50 text-red-600 dark:text-red-400 text-sm">
+                  <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 text-red-700 dark:text-red-400 text-sm">
                     {error}
                   </div>
                 )}
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Name</label>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-foreground">Name</label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       type="text"
                       placeholder="Your name"
@@ -74,10 +81,10 @@ export default function SignupPage() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Email</label>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-foreground">Email</label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       type="email"
                       placeholder="you@example.com"
@@ -89,10 +96,10 @@ export default function SignupPage() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Password</label>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-foreground">Password</label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       type={showPassword ? "text" : "password"}
                       placeholder="Min 6 characters"
@@ -105,32 +112,34 @@ export default function SignupPage() {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                 </div>
 
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg"
-                >
-                  {loading ? "Creating account..." : "Create Account"}
+                <Button type="submit" disabled={loading} className="w-full h-11">
+                  {loading ? (
+                    <span className="flex items-center gap-2">
+                      <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Creating account...
+                    </span>
+                  ) : (
+                    "Create Account"
+                  )}
                 </Button>
               </form>
             </CardContent>
           </Card>
 
-          {/* Footer */}
           <p className="text-center text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Link href="/login" className="text-primary font-medium hover:underline">
+            <Link href="/login" className="text-primary font-medium hover:underline underline-offset-4">
               Sign in
             </Link>
           </p>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

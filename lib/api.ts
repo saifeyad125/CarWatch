@@ -44,6 +44,13 @@ export const API_ENDPOINTS = {
   // Profile
   profile: `${API_BASE_URL}/api/profile`,
 
+  // Chat
+  chat: {
+    conversations: `${API_BASE_URL}/api/chat/conversations`,
+    conversation: (id: number) => `${API_BASE_URL}/api/chat/conversations/${id}`,
+    messages: (id: number) => `${API_BASE_URL}/api/chat/conversations/${id}/messages`,
+  },
+
   // Health check
   health: `${API_BASE_URL}/api/health`,
 } as const;

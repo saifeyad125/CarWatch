@@ -116,7 +116,7 @@ class WatchlistStatusUpdate(BaseModel):
 class ProfileStats(BaseModel):
     watchlistsCount: int
     alertsSent: int
-    dealsFound: int
+    totalMatches: int
 
 class ProfileResponse(BaseModel):
     id: int
@@ -155,3 +155,25 @@ class NotificationsListResponse(BaseModel):
 
 class UnreadCountResponse(BaseModel):
     unreadCount: int
+
+# ───────────────────────── Chat ─────────────────────────
+
+class ChatMessageResponse(BaseModel):
+    id: int
+    role: str
+    content: str
+    createdAt: str  # ISO timestamp
+
+class ChatConversationSummary(BaseModel):
+    id: int
+    title: str
+    lastMessage: Optional[str] = None
+    updatedAt: str  # ISO timestamp
+
+class ChatConversationDetail(BaseModel):
+    id: int
+    title: str
+    messages: List[ChatMessageResponse]
+
+class ChatSendMessage(BaseModel):
+    content: str

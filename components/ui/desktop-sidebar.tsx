@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/components/auth-provider";
+import { motion } from "framer-motion";
 
 const navItems = [
   { icon: Home, label: "Home", href: "/" },
@@ -19,31 +20,48 @@ export function DesktopSidebar() {
   const { user, signOut } = useAuth();
 
   return (
-    <aside className="hidden md:flex flex-col w-64 shrink-0 border-r border-border/40 bg-card/50 backdrop-blur-sm h-screen sticky top-0">
+    <aside className="hidden md:flex flex-col w-72 shrink-0 border-r border-border/40 bg-card/50 backdrop-blur-sm h-screen sticky top-0">
       {/* Brand */}
-      <div className="px-6 py-6 border-b border-border/20">
-        <h1 className="text-2xl font-bold text-primary">CarWatch</h1>
-        <p className="text-xs text-muted-foreground mt-1">Find your best deal</p>
+      <div className="px-6 py-7 border-b border-border/30">
+        <Link href="/" className="flex items-center gap-2.5">
+          <div className="h-9 w-9 rounded-xl bg-primary flex items-center justify-center">
+            <span className="text-white font-bold text-sm">CW</span>
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-foreground tracking-tight">CarWatch</h1>
+            <p className="text-[11px] text-muted-foreground -mt-0.5">UAE Car Price Intelligence</p>
+          </div>
+        </Link>
       </div>
 
       {/* Nav Items */}
-      <nav className="flex-1 px-3 py-4 space-y-1">
+      <nav className="flex-1 px-3 py-5 space-y-1">
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground px-4 mb-3">
+          Menu
+        </p>
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href;
+          const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
 
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
+                "relative flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
                 isActive
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                  ? "text-primary bg-primary/8"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
               )}
             >
-              <Icon className={cn("h-5 w-5", isActive && "text-primary")} />
+              {isActive && (
+                <motion.div
+                  layoutId="sidebarActiveIndicator"
+                  className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-primary"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+              <Icon className="h-[18px] w-[18px]" strokeWidth={isActive ? 2.25 : 1.75} />
               {item.label}
             </Link>
           );
@@ -51,33 +69,33 @@ export function DesktopSidebar() {
       </nav>
 
       {/* User Section */}
-      <div className="px-3 py-4 border-t border-border/20">
+      <div className="px-3 py-4 border-t border-border/30">
         {user ? (
           <div className="space-y-1">
             <Link
               href="/profile"
               className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
+                "flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
                 pathname === "/profile"
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                  ? "text-primary bg-primary/8"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
               )}
             >
-              <User className="h-5 w-5" />
+              <User className="h-[18px] w-[18px]" />
               Profile
             </Link>
             <button
               onClick={signOut}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all duration-200 w-full"
+              className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-all duration-150 w-full"
             >
-              <LogOut className="h-5 w-5" />
+              <LogOut className="h-[18px] w-[18px]" />
               Sign Out
             </button>
           </div>
         ) : (
           <Link
             href="/login"
-            className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-150"
           >
             Sign In
           </Link>

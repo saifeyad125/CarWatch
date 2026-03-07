@@ -2,21 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  User,
-  Bell,
-  Shield,
-  HelpCircle,
-  Settings,
-  ChevronRight,
-  LogOut,
-  Moon,
-  Sun,
-  Mail,
-  Phone,
-  MapPin,
-  Edit,
-  Trash2,
-  Check
+  User, Bell, Shield, HelpCircle, Settings, ChevronRight,
+  LogOut, Moon, Sun, Mail, Phone, MapPin, Edit, Trash2, Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "@/components/theme-provider";
 import { API_ENDPOINTS, apiRequest } from "@/lib/api";
 import { useAuth } from "@/components/auth-provider";
+import { motion } from "framer-motion";
 
 interface ProfileData {
   id: number;
@@ -37,29 +25,15 @@ interface ProfileData {
   location: string | null;
   status: string;
   avatarSeed: string;
-  stats: {
-    watchlistsCount: number;
-    alertsSent: number;
-    dealsFound: number;
-  };
-}
-
-interface ProfileSetting {
-  id: string;
-  label: string;
-  description: string;
-  icon: React.ElementType;
-  href?: string;
-  action?: () => void;
-  badge?: string;
+  stats: { watchlistsCount: number; alertsSent: number; totalMatches: number };
 }
 
 const AVATAR_SEEDS = ["Saif", "Felix", "Aneka", "Buster", "Patches", "Milo", "Lucky", "Jasper", "Shadow", "Coco"];
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  free: { label: "Free", color: "bg-gray-100 text-gray-700 border-gray-200" },
-  premium: { label: "Premium", color: "bg-red-100 text-red-700 border-red-200" },
-  admin: { label: "Admin", color: "bg-purple-100 text-purple-700 border-purple-200" },
+  free: { label: "Free", color: "bg-secondary text-muted-foreground" },
+  premium: { label: "Premium", color: "bg-primary/10 text-primary" },
+  admin: { label: "Admin", color: "bg-purple-50 text-purple-700 dark:bg-purple-950/30 dark:text-purple-400" },
 };
 
 export default function ProfilePage() {
@@ -67,9 +41,7 @@ export default function ProfilePage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push("/login");
-    }
+    if (!authLoading && !user) router.push("/login");
   }, [user, authLoading, router]);
 
   const [isEditing, setIsEditing] = useState(false);
@@ -79,53 +51,29 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [editForm, setEditForm] = useState({ name: "", email: "", phone: "", location: "" });
 
-  // Fetch profile from API
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const data = await apiRequest<ProfileData>(API_ENDPOINTS.profile);
+    apiRequest<ProfileData>(API_ENDPOINTS.profile)
+      .then((data) => {
         setProfile(data);
-        setEditForm({
-          name: data.name,
-          email: data.email,
-          phone: data.phone || "",
-          location: data.location || "",
-        });
-      } catch (err) {
-        console.error("Failed to fetch profile:", err);
-      }
-    };
-    fetchProfile();
+        setEditForm({ name: data.name, email: data.email, phone: data.phone || "", location: data.location || "" });
+      })
+      .catch(() => {});
   }, []);
 
-  // Read favorites count from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('carFavorites');
-    if (saved) {
-      try {
-        setFavoritesCount(JSON.parse(saved).length);
-      } catch {
-        setFavoritesCount(0);
-      }
-    }
+    const saved = localStorage.getItem("carFavorites");
+    if (saved) try { setFavoritesCount(JSON.parse(saved).length); } catch {}
   }, []);
 
   const handleSaveProfile = async () => {
     try {
       const data = await apiRequest<ProfileData>(API_ENDPOINTS.profile, {
         method: "PATCH",
-        body: JSON.stringify({
-          name: editForm.name,
-          email: editForm.email,
-          phone: editForm.phone || null,
-          location: editForm.location || null,
-        }),
+        body: JSON.stringify({ name: editForm.name, email: editForm.email, phone: editForm.phone || null, location: editForm.location || null }),
       });
       setProfile(data);
       setIsEditing(false);
-    } catch {
-      alert("Failed to save profile.");
-    }
+    } catch { alert("Failed to save profile."); }
   };
 
   const handleAvatarSelect = async (seed: string) => {
@@ -136,54 +84,8 @@ export default function ProfilePage() {
       });
       setProfile(data);
       setShowAvatarPicker(false);
-    } catch {
-      alert("Failed to update avatar.");
-    }
+    } catch { alert("Failed to update avatar."); }
   };
-
-  const accountSettings: ProfileSetting[] = [
-    {
-      id: "notifications",
-      label: "Notifications",
-      description: "Manage your alert preferences",
-      icon: Bell,
-      badge: "3 active"
-    },
-    {
-      id: "privacy",
-      label: "Privacy & Security",
-      description: "Control your data and security settings",
-      icon: Shield
-    },
-    {
-      id: "theme",
-      label: theme === "dark" ? "Light Mode" : "Dark Mode",
-      description: "Switch between light and dark themes",
-      icon: theme === "dark" ? Sun : Moon,
-      action: toggleTheme
-    }
-  ];
-
-  const supportSettings: ProfileSetting[] = [
-    {
-      id: "help",
-      label: "Help Center",
-      description: "Get help and find answers",
-      icon: HelpCircle
-    },
-    {
-      id: "feedback",
-      label: "Send Feedback",
-      description: "Help us improve CarWatch",
-      icon: Mail
-    },
-    {
-      id: "about",
-      label: "About CarWatch",
-      description: "Version 1.0.0",
-      icon: Settings
-    }
-  ];
 
   const statusInfo = STATUS_LABELS[profile?.status || "free"];
   const avatarSeed = profile?.avatarSeed || "Saif";
@@ -191,312 +93,235 @@ export default function ProfilePage() {
   if (authLoading || !user) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-muted-foreground">Loading...</div>
+        <span className="h-8 w-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
       </div>
     );
   }
 
+  const settingsGroups = [
+    {
+      title: "Account",
+      items: [
+        { id: "notifications", label: "Notifications", desc: "Manage alert preferences", icon: Bell, badge: "3 active" },
+        { id: "privacy", label: "Privacy & Security", desc: "Control your data settings", icon: Shield },
+        { id: "theme", label: theme === "dark" ? "Light Mode" : "Dark Mode", desc: "Switch appearance", icon: theme === "dark" ? Sun : Moon, action: toggleTheme },
+      ],
+    },
+    {
+      title: "Support",
+      items: [
+        { id: "help", label: "Help Center", desc: "Get help and find answers", icon: HelpCircle },
+        { id: "feedback", label: "Send Feedback", desc: "Help us improve CarWatch", icon: Mail },
+        { id: "about", label: "About CarWatch", desc: "Version 1.0.0", icon: Settings },
+      ],
+    },
+  ];
+
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden">
-      {/* Header with blur effect */}
-      <div className="shrink-0 bg-card/80 backdrop-blur-xl border-b border-border/20 px-4 py-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold">Profile</h1>
-        </div>
-      </div>
+      <header className="shrink-0 h-16 border-b border-border/40 bg-card/80 backdrop-blur-nav px-4 md:px-6 flex items-center">
+        <h1 className="text-lg font-semibold tracking-tight">Profile</h1>
+      </header>
 
-      {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto scrollbar-hide">
-        <div className="max-w-2xl mx-auto p-4 space-y-6 pb-safe">
-          {/* Profile Info */}
-          <Card className="border-0 bg-card/50 backdrop-blur-sm rounded-2xl shadow-lg">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="relative">
-                  <Avatar
-                    className="h-20 w-20 border-4 border-primary/20 shadow-lg cursor-pointer"
-                    onClick={() => setShowAvatarPicker(!showAvatarPicker)}
-                  >
-                    <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`} />
-                    <AvatarFallback className="text-xl font-bold bg-gradient-to-r from-red-500 to-red-600 text-white">
-                      {(profile?.name || "S")[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                  <button
-                    onClick={() => setShowAvatarPicker(!showAvatarPicker)}
-                    className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-primary text-white flex items-center justify-center shadow-md"
-                  >
-                    <Edit className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-                <div className="flex-1">
-                  <h2 className="text-2xl font-bold text-foreground">{profile?.name || "..."}</h2>
-                  <p className="text-muted-foreground">CarWatch Member</p>
-                  <Badge variant="secondary" className={`mt-2 rounded-full ${statusInfo.color}`}>
-                    {statusInfo.label}
-                  </Badge>
-                </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => {
-                    if (profile) {
-                      setEditForm({
-                        name: profile.name,
-                        email: profile.email,
-                        phone: profile.phone || "",
-                        location: profile.location || "",
-                      });
-                    }
-                    setIsEditing(!isEditing);
-                  }}
-                  className="h-9 w-9 rounded-xl border-primary/30 text-primary hover:bg-primary hover:text-white"
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-              </div>
-
-            {/* Avatar Picker */}
-            {showAvatarPicker && (
-              <div className="mb-6 p-4 bg-muted/50 rounded-xl">
-                <p className="text-sm font-medium mb-3">Choose your avatar</p>
-                <div className="grid grid-cols-5 gap-3">
-                  {AVATAR_SEEDS.map((seed) => (
-                    <button
-                      key={seed}
-                      onClick={() => handleAvatarSelect(seed)}
-                      className={`relative rounded-full transition-all ${
-                        seed === avatarSeed ? "ring-3 ring-primary scale-110" : "hover:scale-[1.02] opacity-70 hover:opacity-100"
-                      }`}
+        <div className="max-w-2xl mx-auto px-4 md:px-6 py-6 space-y-5 pb-safe">
+          {/* Profile card */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <Card>
+              <CardContent className="p-5 md:p-6">
+                <div className="flex items-center gap-4 mb-5">
+                  <div className="relative">
+                    <Avatar
+                      className="h-16 w-16 ring-2 ring-border cursor-pointer hover:ring-primary/30 transition-all"
+                      onClick={() => setShowAvatarPicker(!showAvatarPicker)}
                     >
-                      <Avatar className="h-12 w-12">
-                        <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`} />
-                      </Avatar>
-                      {seed === avatarSeed && (
-                        <div className="absolute -bottom-0.5 -right-0.5 h-5 w-5 rounded-full bg-primary text-white flex items-center justify-center">
-                          <Check className="h-3 w-3" />
-                        </div>
-                      )}
+                      <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`} />
+                      <AvatarFallback className="text-lg font-semibold bg-primary text-primary-foreground">
+                        {(profile?.name || "U")[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <button
+                      onClick={() => setShowAvatarPicker(!showAvatarPicker)}
+                      className="absolute -bottom-0.5 -right-0.5 h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-sm"
+                    >
+                      <Edit className="h-3 w-3" />
                     </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {isEditing ? (
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Name</label>
-                  <Input
-                    value={editForm.name}
-                    onChange={(e) => setEditForm({...editForm, name: e.target.value})}
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Email</label>
-                  <Input
-                    value={editForm.email}
-                    onChange={(e) => setEditForm({...editForm, email: e.target.value})}
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Phone</label>
-                  <Input
-                    value={editForm.phone}
-                    onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Location</label>
-                  <Input
-                    value={editForm.location}
-                    onChange={(e) => setEditForm({...editForm, location: e.target.value})}
-                    className="mt-1"
-                  />
-                </div>
-                <div className="flex gap-2 pt-2">
-                  <Button onClick={handleSaveProfile} className="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg">
-                    Save Changes
-                  </Button>
-                  <Button variant="outline" onClick={() => setIsEditing(false)} className="flex-1 border-primary/30 text-primary hover:bg-primary hover:text-white">
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 text-sm">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span>{profile?.email || "..."}</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span>{profile?.phone || "..."}</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span>{profile?.location || "..."}</span>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-3 gap-4">
-          <Link href="/watchlist">
-            <Card className="text-center p-4 border-0 bg-card/50 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200 cursor-pointer hover:border-2 hover:border-primary/30">
-              <div className="text-2xl font-bold text-primary">{profile?.stats.watchlistsCount ?? "..."}</div>
-              <div className="text-sm text-muted-foreground">Watchlists</div>
-            </Card>
-          </Link>
-          <Card className="text-center p-4 border-0 bg-card/50 backdrop-blur-sm rounded-2xl shadow-lg">
-            <div className="text-2xl font-bold text-primary">{profile?.stats.dealsFound ?? "..."}</div>
-            <div className="text-sm text-muted-foreground">Deals Found</div>
-          </Card>
-          <Link href="/favorites">
-            <Card className="text-center p-4 border-0 bg-card/50 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200 cursor-pointer hover:border-2 hover:border-primary/30">
-              <div className="text-2xl font-bold text-primary">{favoritesCount}</div>
-              <div className="text-sm text-muted-foreground">Favorites</div>
-            </Card>
-          </Link>
-        </div>
-
-        {/* Account Settings */}
-        <Card className="border-0 bg-card/50 backdrop-blur-sm rounded-2xl shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-lg">Account Settings</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            {accountSettings.map((setting, index) => (
-              <div key={setting.id}>
-                {setting.action ? (
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-xl font-bold text-foreground tracking-tight truncate">{profile?.name || "..."}</h2>
+                    <p className="text-sm text-muted-foreground">CarWatch Member</p>
+                    <Badge variant="secondary" className={`mt-1.5 text-xs ${statusInfo.color}`}>
+                      {statusInfo.label}
+                    </Badge>
+                  </div>
                   <Button
                     variant="ghost"
-                    className="w-full justify-start h-auto p-4 rounded-none hover:bg-primary/5"
-                    onClick={setting.action}
+                    size="icon"
+                    onClick={() => {
+                      if (profile) setEditForm({ name: profile.name, email: profile.email, phone: profile.phone || "", location: profile.location || "" });
+                      setIsEditing(!isEditing);
+                    }}
                   >
-                    <setting.icon className="h-5 w-5 mr-3 text-primary" />
-                    <div className="flex-1 text-left">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium">{setting.label}</span>
-                        {setting.badge && (
-                          <Badge variant="secondary" className="text-xs bg-red-100 text-red-700 border-red-200">
-                            {setting.badge}
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {setting.description}
-                      </p>
-                    </div>
-                    {setting.id === "theme" && (
-                      <div className="ml-2 px-3 py-1 rounded-full bg-primary/10">
-                        <span className="text-xs text-primary font-medium">{theme === "dark" ? "Dark" : "Light"}</span>
-                      </div>
-                    )}
+                    <Edit className="h-4 w-4 text-muted-foreground" />
                   </Button>
+                </div>
+
+                {/* Avatar picker */}
+                {showAvatarPicker && (
+                  <div className="mb-5 p-4 bg-muted/50 rounded-xl">
+                    <p className="text-xs font-medium text-muted-foreground mb-3">Choose avatar</p>
+                    <div className="grid grid-cols-5 gap-3">
+                      {AVATAR_SEEDS.map((seed) => (
+                        <button
+                          key={seed}
+                          onClick={() => handleAvatarSelect(seed)}
+                          className={`relative rounded-full transition-all ${seed === avatarSeed ? "ring-2 ring-primary scale-110" : "opacity-60 hover:opacity-100"}`}
+                        >
+                          <Avatar className="h-11 w-11">
+                            <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`} />
+                          </Avatar>
+                          {seed === avatarSeed && (
+                            <div className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                              <Check className="h-2.5 w-2.5" />
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {isEditing ? (
+                  <div className="space-y-3">
+                    {[
+                      { label: "Name", key: "name" as const },
+                      { label: "Email", key: "email" as const },
+                      { label: "Phone", key: "phone" as const },
+                      { label: "Location", key: "location" as const },
+                    ].map((field) => (
+                      <div key={field.key}>
+                        <label className="text-xs font-medium text-muted-foreground">{field.label}</label>
+                        <Input
+                          value={editForm[field.key]}
+                          onChange={(e) => setEditForm({ ...editForm, [field.key]: e.target.value })}
+                          className="mt-1 h-9"
+                        />
+                      </div>
+                    ))}
+                    <div className="flex gap-2 pt-1">
+                      <Button onClick={handleSaveProfile} className="flex-1" size="sm">Save</Button>
+                      <Button variant="outline" onClick={() => setIsEditing(false)} className="flex-1" size="sm">Cancel</Button>
+                    </div>
+                  </div>
                 ) : (
-                  <Link href={`/profile/${setting.id}`}>
-                    <Button
-                      variant="ghost"
-                      className="w-full justify-start h-auto p-4 rounded-none hover:bg-primary/5"
+                  <div className="space-y-2.5">
+                    {[
+                      { icon: Mail, value: profile?.email },
+                      { icon: Phone, value: profile?.phone || "Not set" },
+                      { icon: MapPin, value: profile?.location || "Not set" },
+                    ].map(({ icon: Icon, value }, i) => (
+                      <div key={i} className="flex items-center gap-2.5 text-sm">
+                        <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <span className="text-foreground truncate">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: "Watchlists", value: profile?.stats.watchlistsCount ?? "...", href: "/watchlist" },
+              { label: "Matches", value: profile?.stats.totalMatches ?? "...", href: "/profile/matches" },
+              { label: "Favorites", value: favoritesCount, href: "/favorites" },
+            ].map((stat, i) => {
+              const content = (
+                <Card className={`p-4 text-center ${stat.href ? "cursor-pointer hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200" : ""}`}>
+                  <div className="text-2xl font-bold text-foreground tracking-tight">{stat.value}</div>
+                  <div className="text-xs text-muted-foreground">{stat.label}</div>
+                </Card>
+              );
+              return stat.href ? <Link key={i} href={stat.href}>{content}</Link> : <div key={i}>{content}</div>;
+            })}
+          </div>
+
+          {/* Settings groups */}
+          {settingsGroups.map((group) => (
+            <Card key={group.title}>
+              <CardHeader className="pb-0">
+                <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{group.title}</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0 pt-2">
+                {group.items.map((item, i) => {
+                  const Icon = item.icon;
+                  const inner = (
+                    <button
+                      className="w-full flex items-center gap-3 px-5 py-3.5 text-left hover:bg-accent transition-colors"
+                      onClick={item.action}
                     >
-                      <setting.icon className="h-5 w-5 mr-3 text-primary" />
-                      <div className="flex-1 text-left">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium">{setting.label}</span>
-                          {setting.badge && (
-                            <Badge variant="secondary" className="text-xs bg-red-100 text-red-700 border-red-200">
-                              {setting.badge}
-                            </Badge>
+                      <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-foreground">{item.label}</span>
+                          {item.badge && (
+                            <Badge variant="secondary" className="text-[10px]">{item.badge}</Badge>
                           )}
                         </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {setting.description}
-                        </p>
+                        <p className="text-xs text-muted-foreground">{item.desc}</p>
                       </div>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground ml-2" />
-                    </Button>
-                  </Link>
-                )}
-                {index < accountSettings.length - 1 && <div className="border-b border-border mx-4" />}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Support */}
-        <Card className="border-0 bg-card/50 backdrop-blur-sm rounded-2xl shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-lg">Support & About</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            {supportSettings.map((setting, index) => (
-              <div key={setting.id}>
-                <Link href={`/profile/${setting.id}`}>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start h-auto p-4 rounded-none hover:bg-primary/5"
-                  >
-                    <setting.icon className="h-5 w-5 mr-3 text-primary" />
-                    <div className="flex-1 text-left">
-                      <span className="font-medium">{setting.label}</span>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {setting.description}
-                      </p>
+                      {item.id === "theme" ? (
+                        <span className="text-xs font-medium text-muted-foreground px-2 py-0.5 rounded-full bg-muted">
+                          {theme === "dark" ? "Dark" : "Light"}
+                        </span>
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                      )}
+                    </button>
+                  );
+                  return (
+                    <div key={item.id}>
+                      {item.action ? inner : <Link href={`/profile/${item.id}`}>{inner}</Link>}
+                      {i < group.items.length - 1 && <div className="border-b border-border/40 mx-5" />}
                     </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground ml-2" />
-                  </Button>
-                </Link>
-                {index < supportSettings.length - 1 && <div className="border-b border-border mx-4" />}
+                  );
+                })}
+              </CardContent>
+            </Card>
+          ))}
+
+          {/* Danger zone */}
+          <Card className="border-red-200/60 dark:border-red-900/30">
+            <CardContent className="p-5">
+              <h3 className="text-sm font-semibold text-foreground mb-3">Danger Zone</h3>
+              <div className="space-y-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-start text-red-600 border-red-200 hover:bg-red-50 dark:border-red-900/40 dark:hover:bg-red-950/20"
+                  onClick={() => { if (confirm("Delete all watchlists?")) alert("Deleted (demo)"); }}
+                >
+                  <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete All Watchlists
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-start text-red-600 border-red-200 hover:bg-red-50 dark:border-red-900/40 dark:hover:bg-red-950/20"
+                  onClick={async () => { if (confirm("Sign out?")) { await signOut(); router.push("/login"); } }}
+                >
+                  <LogOut className="h-3.5 w-3.5 mr-2" /> Sign Out
+                </Button>
               </div>
-            ))}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* Danger Zone */}
-        <Card className="border-red-200 shadow-lg">
-          <CardContent className="p-4">
-            <h3 className="font-semibold text-foreground mb-4">Danger Zone</h3>
-            <div className="space-y-3">
-              <Button
-                variant="outline"
-                className="w-full justify-start text-red-600 border-red-200 hover:bg-red-50"
-                onClick={() => {
-                  if (confirm("Are you sure you want to delete all watchlists? This action cannot be undone.")) {
-                    alert("All watchlists deleted (demo)");
-                  }
-                }}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete All Watchlists
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full justify-start text-red-600 border-red-200 hover:bg-red-50"
-                onClick={async () => {
-                  if (confirm("Are you sure you want to sign out?")) {
-                    await signOut();
-                    router.push("/login");
-                  }
-                }}
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="text-center py-8">
-          <p className="text-sm text-muted-foreground">
-            CarWatch v1.0.0
-          </p>
-        </div>
+          <p className="text-center text-xs text-muted-foreground py-4">CarWatch v1.0.0</p>
         </div>
       </div>
     </div>
