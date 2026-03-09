@@ -35,7 +35,7 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
 }
 
 export default function ChatPage() {
-  const { user } = useAuth();
+  const { user, avatarSeed } = useAuth();
   const userName = user?.user_metadata?.name || user?.email?.split("@")[0] || null;
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -265,6 +265,44 @@ export default function ChatPage() {
 
   const showWelcome = !activeConvId && messages.length === 0;
 
+  if (!user) {
+    return (
+      <div className="flex flex-col h-full bg-background overflow-hidden">
+        <header className="shrink-0 h-16 border-b border-border/40 bg-card/80 backdrop-blur-nav px-4 flex items-center justify-between sticky top-0 z-20">
+          <h1 className="text-lg font-semibold tracking-tight">AI Chat</h1>
+          <Link href="/login">
+            <Button variant="outline" size="sm">
+              <LogIn className="h-3.5 w-3.5 mr-1.5" />
+              Sign In
+            </Button>
+          </Link>
+        </header>
+        <div className="flex-1 flex items-center justify-center p-6">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="text-center max-w-sm space-y-4"
+          >
+            <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+              <MessageSquare className="h-7 w-7 text-primary" />
+            </div>
+            <h2 className="text-xl font-bold text-foreground tracking-tight">Sign in to use AI Chat</h2>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Get personalized car recommendations, deal analysis, and market insights from our AI assistant.
+            </p>
+            <Link href="/login">
+              <Button className="mt-2">
+                <LogIn className="h-4 w-4 mr-2" />
+                Sign In to Chat
+              </Button>
+            </Link>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-full bg-background overflow-hidden relative">
       {/* Sidebar */}
@@ -353,7 +391,7 @@ export default function ChatPage() {
           {user ? (
             <Link href="/profile">
               <Avatar className="h-9 w-9 cursor-pointer ring-2 ring-border hover:ring-primary/30 transition-all duration-150">
-                <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userName || "User"}`} />
+                <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`} />
                 <AvatarFallback className="text-xs font-medium">{(userName || "U")[0].toUpperCase()}</AvatarFallback>
               </Avatar>
             </Link>

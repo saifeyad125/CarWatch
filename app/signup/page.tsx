@@ -24,17 +24,38 @@ export default function SignupPage() {
     setError("");
     setLoading(true);
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { name } },
-    });
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { name } },
+      });
 
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-    } else {
+      if (error) {
+        setError(error.message);
+        setLoading(false);
+        return;
+      }
+
+      // Supabase returns user with empty identities when email already exists
+      // (to prevent email enumeration) — redirect to login instead
+      if (data?.user && data.user.identities?.length === 0) {
+        setError("An account with this email already exists. Please sign in instead.");
+        setLoading(false);
+        return;
+      }
+
+      // If email confirmation is required, session will be null
+      if (!data?.session) {
+        setError("Check your email to confirm your account, then sign in.");
+        setLoading(false);
+        return;
+      }
+
       router.push("/");
+    } catch {
+      setError("Something went wrong. Please try again.");
+      setLoading(false);
     }
   };
 

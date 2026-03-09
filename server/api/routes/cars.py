@@ -22,8 +22,8 @@ router = APIRouter()
 # ───── helpers ─────
 
 def _fmt_price(aed: int) -> str:
-    """Format integer AED price → '$52,000' style string for the frontend."""
-    return f"${aed:,}"
+    """Format integer AED price → 'د.إ 52,000' style string for the frontend."""
+    return f"د.إ {aed:,}"
 
 def _fmt_mileage(kms: Optional[int]) -> str:
     if kms is None:

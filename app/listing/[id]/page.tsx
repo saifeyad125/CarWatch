@@ -330,7 +330,7 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
                       <span className="text-muted-foreground line-through">{car.predictedPrice}</span>
                       {priceDiff > 0 && (
                         <span className={`font-medium ${isGoodDeal ? "text-emerald-600" : car.dealLabel === "Overpriced" ? "text-red-600" : "text-muted-foreground"}`}>
-                          {isGoodDeal ? `$${priceDiff.toLocaleString()} below` : car.dealLabel === "Overpriced" ? `$${priceDiff.toLocaleString()} above` : ""}
+                          {isGoodDeal ? `د.إ ${priceDiff.toLocaleString()} below` : car.dealLabel === "Overpriced" ? `د.إ ${priceDiff.toLocaleString()} above` : ""}
                         </span>
                       )}
                     </div>
@@ -388,7 +388,7 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
                                 style={{ width: `${(data.averagePrice / 28000) * 100}%` }}
                               />
                             </div>
-                            <span className="text-xs font-medium w-10 text-right">${(data.averagePrice / 1000).toFixed(0)}k</span>
+                            <span className="text-xs font-medium w-14 text-right">{(data.averagePrice / 1000).toFixed(0)}k</span>
                           </div>
                         ))}
                       </div>

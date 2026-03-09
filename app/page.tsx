@@ -24,7 +24,7 @@ interface WatchlistItem {
 
 export default function Home() {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, avatarSeed } = useAuth();
   const [favorites, setFavorites] = useState<number[]>([]);
   const [showAllListings, setShowAllListings] = useState(false);
   const [popularListings, setPopularListings] = useState<CarCardData[]>([]);
@@ -83,9 +83,9 @@ export default function Home() {
   const userName = user?.user_metadata?.name || user?.email?.split("@")[0] || null;
 
   const stats = [
-    { label: "Active Alerts", value: user ? activeWatchlists.toString() : "0", icon: Bell },
-    { label: "New Matches", value: user ? totalNewMatches.toString() : "0", icon: TrendingUp },
-    { label: "Favorites", value: favorites.length.toString(), icon: Heart, clickable: true },
+    { label: "Active Alerts", value: user ? activeWatchlists.toString() : "0", icon: Bell, href: "/watchlist" },
+    { label: "New Matches", value: user ? totalNewMatches.toString() : "0", icon: TrendingUp, href: "/watchlist" },
+    { label: "Favorites", value: favorites.length.toString(), icon: Heart, href: "/favorites" },
   ];
 
   return (
@@ -99,7 +99,7 @@ export default function Home() {
         {user ? (
           <Link href="/profile">
             <Avatar className="h-9 w-9 cursor-pointer ring-2 ring-border hover:ring-primary/30 transition-all duration-150">
-              <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userName || "User"}`} />
+              <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`} />
               <AvatarFallback className="text-xs font-medium">{(userName || "U")[0].toUpperCase()}</AvatarFallback>
             </Avatar>
           </Link>
@@ -190,14 +190,8 @@ export default function Home() {
                     transition={{ duration: 0.4, delay: 0.1 + i * 0.05, ease: [0.16, 1, 0.3, 1] }}
                   >
                     <Card
-                      className={`p-4 md:p-5 border-border/50 ${
-                        stat.clickable
-                          ? "cursor-pointer hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200"
-                          : ""
-                      }`}
-                      onClick={() => {
-                        if (stat.clickable && stat.label === "Favorites") router.push("/favorites");
-                      }}
+                      className="p-4 md:p-5 border-border/50 cursor-pointer hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200"
+                      onClick={() => router.push(stat.href)}
                     >
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-lg bg-primary/8 flex items-center justify-center shrink-0">

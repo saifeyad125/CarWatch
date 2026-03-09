@@ -48,7 +48,7 @@ const getAnalysisData = (id: string): AnalysisData => {
       make: "Toyota",
       model: "Camry",
       year: 2022,
-      price: "$24,500",
+      price: "د.إ 24,500",
       mileage: "15,000 mi",
       priceVsMiles: [
         { mileage: 5000, price: 28000 },
@@ -136,7 +136,7 @@ const SimpleChart = ({
               <div key={index} className="flex-1 flex flex-col items-center">
                 <div className="text-xs text-muted-foreground mb-1">
                   {typeof item[yKey] === 'number' && item[yKey] > 1000 
-                    ? `$${(item[yKey] / 1000).toFixed(0)}k`
+                    ? `${(item[yKey] / 1000).toFixed(0)}k`
                     : item[yKey]
                   }
                 </div>
@@ -308,11 +308,11 @@ export default function DetailedAnalysis({ params }: { params: Promise<{ id: str
                       </div>
                       <div className="text-right">
                         <div className="font-semibold text-foreground">
-                          ${car.price.toLocaleString()}
+                          د.إ {car.price.toLocaleString()}
                         </div>
                         {!isCurrentCar && (
                           <div className={`text-xs ${priceDiff > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                            {priceDiff > 0 ? '+' : ''}${priceDiff.toLocaleString()}
+                            {priceDiff > 0 ? '+' : ''}د.إ {priceDiff.toLocaleString()}
                           </div>
                         )}
                       </div>
@@ -356,7 +356,7 @@ export default function DetailedAnalysis({ params }: { params: Promise<{ id: str
                 <div>
                   <div className="font-medium text-orange-800 dark:text-orange-300">Expected Annual Costs</div>
                   <div className="text-sm text-orange-700 dark:text-orange-400">
-                    Budget approximately $550-650 annually for maintenance and repairs in year 2-3.
+                    Budget approximately د.إ 550-650 annually for maintenance and repairs in year 2-3.
                   </div>
                 </div>
               </div>

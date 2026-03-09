@@ -30,9 +30,9 @@ const mockDeals: Deal[] = [
     make: "Toyota",
     model: "Camry",
     year: 2022,
-    price: "$24,500",
-    predictedPrice: "$26,800",
-    savings: "$2,300",
+    price: "د.إ24,500",
+    predictedPrice: "د.إ26,800",
+    savings: "د.إ2,300",
     mileage: "15,000 mi",
     location: "Los Angeles, CA",
     foundDate: "2 days ago",
@@ -44,9 +44,9 @@ const mockDeals: Deal[] = [
     make: "Honda",
     model: "Civic",
     year: 2023,
-    price: "$28,900",
-    predictedPrice: "$31,200",
-    savings: "$2,300",
+    price: "د.إ28,900",
+    predictedPrice: "د.إ31,200",
+    savings: "د.إ2,300",
     mileage: "8,500 mi",
     location: "San Diego, CA",
     foundDate: "5 days ago",
@@ -58,9 +58,9 @@ const mockDeals: Deal[] = [
     make: "BMW",
     model: "X3",
     year: 2023,
-    price: "$48,500",
-    predictedPrice: "$51,200",
-    savings: "$2,700",
+    price: "د.إ48,500",
+    predictedPrice: "د.إ51,200",
+    savings: "د.إ2,700",
     mileage: "18,000 mi",
     location: "Chicago, IL",
     foundDate: "1 week ago",
@@ -102,7 +102,7 @@ export default function DealsPage() {
                 <div>
                   <h2 className="text-xl font-bold text-foreground">8 Great Deals</h2>
                   <p className="text-sm text-green-700">
-                    Total savings: $18,400 below market value
+                    Total savings: د.إ 18,400 below market value
                   </p>
                 </div>
               </div>

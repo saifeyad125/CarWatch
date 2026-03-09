@@ -23,13 +23,18 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-    } else {
-      router.push("/");
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        setError(error.message);
+      } else {
+        router.push("/");
+        return;
+      }
+    } catch {
+      setError("Something went wrong. Please try again.");
     }
+    setLoading(false);
   };
 
   return (

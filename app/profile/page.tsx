@@ -37,7 +37,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 };
 
 export default function ProfilePage() {
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, loading: authLoading, signOut, setAvatarSeed: setGlobalAvatarSeed } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -83,6 +83,7 @@ export default function ProfilePage() {
         body: JSON.stringify({ avatarSeed: seed }),
       });
       setProfile(data);
+      setGlobalAvatarSeed(seed);
       setShowAvatarPicker(false);
     } catch { alert("Failed to update avatar."); }
   };

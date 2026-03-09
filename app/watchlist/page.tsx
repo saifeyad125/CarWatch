@@ -68,7 +68,7 @@ interface WatchlistsResponse {
 }
 
 export default function WatchlistPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, avatarSeed } = useAuth();
   const userName = user?.user_metadata?.name || user?.email?.split("@")[0] || null;
   const router = useRouter();
 
@@ -476,7 +476,7 @@ export default function WatchlistPage() {
           </Button>
           <Link href="/profile">
             <Avatar className="h-9 w-9 cursor-pointer ring-2 ring-border hover:ring-primary/30 transition-all duration-150">
-              <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userName || "User"}`} />
+              <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`} />
               <AvatarFallback className="text-xs font-medium">{(userName || "U")[0].toUpperCase()}</AvatarFallback>
             </Avatar>
           </Link>

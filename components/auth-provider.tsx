@@ -3,11 +3,14 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
+import { API_ENDPOINTS, apiRequest } from "@/lib/api";
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  avatarSeed: string;
+  setAvatarSeed: (seed: string) => void;
   signOut: () => Promise<void>;
 }
 
@@ -15,6 +18,8 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
   loading: true,
+  avatarSeed: "User",
+  setAvatarSeed: () => {},
   signOut: async () => {},
 });
 
@@ -22,6 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [avatarSeed, setAvatarSeed] = useState("User");
 
   useEffect(() => {
     // Get initial session
@@ -43,12 +49,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Fetch avatar seed from profile when user is authenticated
+  useEffect(() => {
+    if (!user) {
+      setAvatarSeed("User");
+      return;
+    }
+    apiRequest<{ avatarSeed?: string }>(API_ENDPOINTS.profile)
+      .then((data) => {
+        if (data?.avatarSeed) setAvatarSeed(data.avatarSeed);
+      })
+      .catch(() => {});
+  }, [user]);
+
   const signOut = async () => {
     await supabase.auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, avatarSeed, setAvatarSeed, signOut }}>
       {children}
     </AuthContext.Provider>
   );
