@@ -16,6 +16,7 @@ export interface CarCardData {
   mileage: string;
   location: string;
   image: string;
+  source?: string;
 }
 
 interface CarCardProps {
@@ -111,6 +112,15 @@ export function CarCard({ car, isFavorite = false, onToggleFavorite, index = 0 }
                 <MapPin className="h-3.5 w-3.5" />
                 {car.location}
               </span>
+              {car.source && (
+                <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                  car.source === "dubicars"
+                    ? "bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400"
+                    : "bg-orange-50 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400"
+                }`}>
+                  {car.source === "dubicars" ? "DubiCars" : "Dubizzle"}
+                </span>
+              )}
             </div>
           </div>
         </div>

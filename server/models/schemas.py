@@ -19,6 +19,7 @@ class CarListingSummary(BaseModel):
     mileage: str
     location: str
     image: str
+    source: str = "dubizzle"
 
 class Seller(BaseModel):
     name: str

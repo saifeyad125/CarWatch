@@ -126,6 +126,7 @@ def _listing_to_summary(row: Listing) -> CarListingSummary:
         mileage=_fmt_mileage(row.kms),
         location=row.location or "Dubai, UAE",
         image=row.image or "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&h=600&fit=crop",
+        source=getattr(row, 'source', 'dubizzle'),
     )
 
 
@@ -210,6 +211,7 @@ def _listing_to_detail(row: Listing, db: Session) -> CarListingDetail:
         mileage=_fmt_mileage(row.kms),
         location=row.location or "Dubai, UAE",
         image=row.image or "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&h=600&fit=crop",
+        source=getattr(row, 'source', 'dubizzle'),
         images=row.images or [],
         description=description,
         seller=seller,
@@ -230,6 +232,7 @@ def get_listings(
     max_year: Optional[int] = Query(None),
     min_price: Optional[int] = Query(None),
     max_price: Optional[int] = Query(None),
+    source: Optional[str] = Query(None),
     limit: int = Query(20, ge=1, le=200),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
@@ -247,8 +250,10 @@ def get_listings(
         q = q.filter(Listing.price >= min_price)
     if max_price:
         q = q.filter(Listing.price <= max_price)
+    if source:
+        q = q.filter(Listing.source == source)
 
-    rows = q.order_by(Listing.id).offset(offset).limit(limit).all()
+    rows = q.order_by(Listing.id.desc()).offset(offset).limit(limit).all()
     return [_listing_to_summary(r) for r in rows]
 
 

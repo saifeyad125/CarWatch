@@ -461,7 +461,7 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
           <a href={car.url} target="_blank" rel="noopener noreferrer" className="block">
             <Button className="w-full h-12" size="lg">
               <ExternalLink className="mr-2 h-4 w-4" />
-              View on Dubizzle
+              View on {car.source === "dubicars" ? "DubiCars" : "Dubizzle"}
             </Button>
           </a>
         </div>

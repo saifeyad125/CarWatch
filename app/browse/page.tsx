@@ -22,6 +22,7 @@ export default function Browse() {
   const [priceMax, setPriceMax] = useState("");
   const [selectedMake, setSelectedMake] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
+  const [selectedSource, setSelectedSource] = useState("");
   const [sortBy, setSortBy] = useState("newest");
   const [favorites, setFavorites] = useState<number[]>([]);
   const [allListings, setAllListings] = useState<CarCardData[]>([]);
@@ -70,18 +71,18 @@ export default function Browse() {
         `${listing.make} ${listing.model}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
         listing.location.toLowerCase().includes(searchQuery.toLowerCase());
 
-      const price = parseInt(listing.price.replace(/[$,]/g, ""));
+      const price = parseInt(listing.price.replace(/[^\d]/g, ""));
       const min = priceMin ? parseInt(priceMin) : 0;
       const max = priceMax ? parseInt(priceMax) : Infinity;
 
-      return matchesSearch && price >= min && price <= max && (!selectedMake || listing.make === selectedMake) && (!selectedYear || listing.year.toString() === selectedYear);
+      return matchesSearch && price >= min && price <= max && (!selectedMake || listing.make === selectedMake) && (!selectedYear || listing.year.toString() === selectedYear) && (!selectedSource || listing.source === selectedSource);
     });
-  }, [allListings, searchQuery, priceMin, priceMax, selectedMake, selectedYear]);
+  }, [allListings, searchQuery, priceMin, priceMax, selectedMake, selectedYear, selectedSource]);
 
   const sortedListings = useMemo(() => {
     return [...filteredListings].sort((a, b) => {
-      const pA = parseInt(a.price.replace(/[$,]/g, ""));
-      const pB = parseInt(b.price.replace(/[$,]/g, ""));
+      const pA = parseInt(a.price.replace(/[^\d]/g, ""));
+      const pB = parseInt(b.price.replace(/[^\d]/g, ""));
       switch (sortBy) {
         case "price-low": return pA - pB;
         case "price-high": return pB - pA;
@@ -92,13 +93,14 @@ export default function Browse() {
     });
   }, [filteredListings, sortBy]);
 
-  const activeFilters = [selectedMake, selectedYear, priceMin, priceMax].filter(Boolean);
+  const activeFilters = [selectedMake, selectedYear, priceMin, priceMax, selectedSource].filter(Boolean);
 
   const clearFilters = () => {
     setSelectedMake("");
     setSelectedYear("");
     setPriceMin("");
     setPriceMax("");
+    setSelectedSource("");
   };
 
   return (
@@ -210,6 +212,12 @@ export default function Browse() {
                     <button onClick={() => setPriceMax("")}><X className="h-3 w-3" /></button>
                   </Badge>
                 )}
+                {selectedSource && (
+                  <Badge variant="secondary" className="whitespace-nowrap text-xs gap-1">
+                    {selectedSource === "dubicars" ? "DubiCars" : "Dubizzle"}
+                    <button onClick={() => setSelectedSource("")}><X className="h-3 w-3" /></button>
+                  </Badge>
+                )}
                 <button
                   onClick={clearFilters}
                   className="text-xs text-muted-foreground hover:text-foreground whitespace-nowrap transition-colors"
@@ -233,7 +241,7 @@ export default function Browse() {
             className="shrink-0 overflow-hidden border-b border-border/40 bg-card"
           >
             <div className="max-w-7xl mx-auto px-4 md:px-6 py-4">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">Min Price (AED)</label>
                   <Input
@@ -281,6 +289,20 @@ export default function Browse() {
                       {years.map((year) => (
                         <option key={year} value={year}>{year}</option>
                       ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Source</label>
+                  <div className="relative">
+                    <select
+                      value={selectedSource}
+                      onChange={(e) => setSelectedSource(e.target.value)}
+                      className="h-9 w-full px-3 rounded-lg border border-input bg-background text-sm appearance-none cursor-pointer focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-colors"
+                    >
+                      <option value="">All Sources</option>
+                      <option value="dubizzle">Dubizzle</option>
+                      <option value="dubicars">DubiCars</option>
                     </select>
                   </div>
                 </div>

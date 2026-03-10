@@ -11,6 +11,7 @@ SCRAPE_INTERVAL_HOURS = int(os.getenv("SCRAPE_INTERVAL_HOURS", "5"))
 from db.database import SessionLocal
 from db.models import Watchlist
 from api.services.scraper_service import scrape_new_listings
+from api.services.dubicars_scraper_service import scrape_dubicars_listings
 from api.services.expiry_service import expire_listings
 from api.services.notification_service import create_match_notifications
 from api.services.watchlists_service import run_watchlist_scan
@@ -74,9 +75,17 @@ def hourly_scrape_and_match():
     logger.info("=== Hourly scrape-and-match job started ===")
     db = SessionLocal()
     try:
-        # Step 1: Discover + insert new listings
+        # Step 1a: Discover + insert new Dubizzle listings
         new_listings = scrape_new_listings(db, pages=5)
-        logger.info(f"Step 1: {len(new_listings)} new listings scraped")
+        logger.info(f"Step 1a: {len(new_listings)} new Dubizzle listings scraped")
+
+        # Step 1b: Discover + insert new DubiCars listings
+        try:
+            dubicars_listings = scrape_dubicars_listings(db, pages=int(os.getenv("DUBICARS_MAX_PAGES", "5")))
+            new_listings.extend(dubicars_listings)
+            logger.info(f"Step 1b: {len(dubicars_listings)} new DubiCars listings scraped")
+        except Exception as e:
+            logger.error(f"Step 1b: DubiCars scrape failed (continuing): {e}")
 
         # Step 2: Run ML predictions
         if new_listings:
@@ -130,7 +139,7 @@ def start_scheduler():
         hourly_scrape_and_match,
         trigger=IntervalTrigger(hours=SCRAPE_INTERVAL_HOURS),
         id="hourly_scrape_and_match",
-        name=f"Dubizzle scrape + watchlist match (every {SCRAPE_INTERVAL_HOURS}h)",
+        name=f"Scrape (Dubizzle+DubiCars) + watchlist match (every {SCRAPE_INTERVAL_HOURS}h)",
         replace_existing=True,
     )
     scheduler.start()

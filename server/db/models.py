@@ -31,7 +31,7 @@ class Listing(Base):
     horsepower = Column(String(50), nullable=True)
     doors = Column(String(20), nullable=True)
     fuel_type = Column(String(50), nullable=True)
-    cylinders = Column(String(10), nullable=True)
+    cylinders = Column(String(50), nullable=True)
     interior_color = Column(String(50), nullable=True)
     exterior_color = Column(String(50), nullable=True)
     body_type = Column(String(50), nullable=True)
@@ -46,6 +46,7 @@ class Listing(Base):
     # ML-derived fields (populated by prediction service)
     predicted_price = Column(Integer, nullable=True)
     deal_label = Column(String(20), nullable=True)       # "Good Deal" / "Fair" / "Overpriced"
+    source = Column(String(50), nullable=False, default="dubizzle", index=True)
 
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),

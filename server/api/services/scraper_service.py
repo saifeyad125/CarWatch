@@ -540,6 +540,7 @@ def scrape_new_listings(db: Session, pages: int = MAX_PAGES) -> list[Listing]:
             image=scraped_images[0] if scraped_images else DEFAULT_IMAGE,
             images=scraped_images if scraped_images else None,
             location=random.choice(UAE_LOCATIONS),
+            source="dubizzle",
         )
         db.add(listing)
         new_listings.append(listing)
