@@ -233,7 +233,7 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
   const isGoodDeal = car.dealLabel === "Good Deal";
   const allImages = car.images?.length ? car.images : [car.image];
   const priceDiff = car.predictedPrice
-    ? Math.abs(parseInt(car.predictedPrice.replace(/[$,]/g, "")) - parseInt(car.price.replace(/[$,]/g, "")))
+    ? Math.abs(parseInt(car.predictedPrice.replace(/[^\d]/g, "")) - parseInt(car.price.replace(/[^\d]/g, "")))
     : 0;
 
   return (

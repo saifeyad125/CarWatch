@@ -27,7 +27,7 @@ from models.schemas import (
 # ─────────── helpers ───────────
 
 def _fmt_price(aed: int) -> str:
-    return f"${aed:,}"
+    return f"د.إ {aed:,}"
 
 
 def _fmt_mileage(kms: int | None) -> str:
@@ -48,6 +48,7 @@ def _listing_to_summary(row: Listing) -> CarListingSummary:
         mileage=_fmt_mileage(row.kms),
         location=row.location or "Dubai, UAE",
         image=row.image or "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&h=600&fit=crop",
+        source=getattr(row, 'source', 'dubizzle'),
     )
 
 
@@ -110,7 +111,7 @@ def _watchlist_to_card(w: Watchlist, db: Session) -> WatchlistCard:
         year_part = f"{criteria.year_min}–{criteria.year_max}"
     price_part = ""
     if criteria.price_min and criteria.price_max:
-        price_part = f"${criteria.price_min:,}–${criteria.price_max:,}"
+        price_part = f"د.إ {criteria.price_min:,}–د.إ {criteria.price_max:,}"
     subtitle = " • ".join(filter(None, [year_part, price_part]))
 
     return WatchlistCard(
@@ -215,7 +216,7 @@ def get_watchlist_matches(
         ))
 
     if sort == "price":
-        matches.sort(key=lambda m: int(m.listing.price.replace("$", "").replace(",", "")))
+        matches.sort(key=lambda m: int(re.sub(r"[^\d]", "", m.listing.price)))
     elif sort == "newest":
         matches.sort(key=lambda m: m.isNew, reverse=True)
 
