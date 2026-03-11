@@ -13,7 +13,7 @@ class CarListingSummary(BaseModel):
     make: str
     model: str
     year: int
-    price: str                                              # "$52,000"
+    price: str                                              # "د.إ 52,000"
     predictedPrice: Optional[str] = None
     dealLabel: Optional[Literal["Good Deal", "Fair", "Overpriced"]] = None
     mileage: str

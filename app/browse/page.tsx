@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CarCard, CarCardSkeleton, type CarCardData } from "@/components/ui/car-card";
 import { API_ENDPOINTS, apiRequest } from "@/lib/api";
 import { useAuth } from "@/components/auth-provider";
+import { useDebounce } from "@/lib/hooks/use-debounce";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -29,12 +30,27 @@ export default function Browse() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Debounce typed inputs so the API isn't called on every keystroke
+  const debouncedSearch = useDebounce(searchQuery, 300);
+  const debouncedPriceMin = useDebounce(priceMin, 300);
+  const debouncedPriceMax = useDebounce(priceMax, 300);
+
   useEffect(() => {
     const fetchListings = async () => {
       try {
         setIsLoading(true);
         setError(null);
-        const data = await apiRequest<CarCardData[]>(`${API_ENDPOINTS.cars.list}?limit=100`);
+        const params = new URLSearchParams({ limit: "200" });
+        if (debouncedSearch) params.set("search", debouncedSearch);
+        if (selectedSource) params.set("source", selectedSource);
+        if (selectedMake) params.set("make", selectedMake);
+        if (selectedYear) {
+          params.set("min_year", selectedYear);
+          params.set("max_year", selectedYear);
+        }
+        if (debouncedPriceMin) params.set("min_price", debouncedPriceMin);
+        if (debouncedPriceMax) params.set("max_price", debouncedPriceMax);
+        const data = await apiRequest<CarCardData[]>(`${API_ENDPOINTS.cars.list}?${params}`);
         setAllListings(data);
       } catch {
         setError("Failed to load listings. Please try again later.");
@@ -43,7 +59,7 @@ export default function Browse() {
       }
     };
     fetchListings();
-  }, []);
+  }, [debouncedSearch, selectedSource, selectedMake, selectedYear, debouncedPriceMin, debouncedPriceMax]);
 
   useEffect(() => {
     const saved = localStorage.getItem("carFavorites");
@@ -64,25 +80,10 @@ export default function Browse() {
     [allListings]
   );
 
-  const filteredListings = useMemo(() => {
-    return allListings.filter((listing) => {
-      const matchesSearch =
-        !searchQuery ||
-        `${listing.make} ${listing.model}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        listing.location.toLowerCase().includes(searchQuery.toLowerCase());
-
-      const price = parseInt(listing.price.replace(/[^\d]/g, ""));
-      const min = priceMin ? parseInt(priceMin) : 0;
-      const max = priceMax ? parseInt(priceMax) : Infinity;
-
-      return matchesSearch && price >= min && price <= max && (!selectedMake || listing.make === selectedMake) && (!selectedYear || listing.year.toString() === selectedYear) && (!selectedSource || listing.source === selectedSource);
-    });
-  }, [allListings, searchQuery, priceMin, priceMax, selectedMake, selectedYear, selectedSource]);
-
   const sortedListings = useMemo(() => {
-    return [...filteredListings].sort((a, b) => {
-      const pA = parseInt(a.price.replace(/[^\d]/g, ""));
-      const pB = parseInt(b.price.replace(/[^\d]/g, ""));
+    return [...allListings].sort((a, b) => {
+      const pA = parseInt(a.price.replace(/[^\d]/g, "")) || 0;
+      const pB = parseInt(b.price.replace(/[^\d]/g, "")) || 0;
       switch (sortBy) {
         case "price-low": return pA - pB;
         case "price-high": return pB - pA;
@@ -91,11 +92,12 @@ export default function Browse() {
         default: return 0;
       }
     });
-  }, [filteredListings, sortBy]);
+  }, [allListings, sortBy]);
 
   const activeFilters = [selectedMake, selectedYear, priceMin, priceMax, selectedSource].filter(Boolean);
 
   const clearFilters = () => {
+    setSearchQuery("");
     setSelectedMake("");
     setSelectedYear("");
     setPriceMin("");

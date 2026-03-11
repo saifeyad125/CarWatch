@@ -4,6 +4,7 @@ Car listings endpoints – reads from Postgres via SQLAlchemy.
 from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import Optional, List
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 
 from db.deps import get_db
 from db.models import Listing
@@ -226,6 +227,7 @@ def _listing_to_detail(row: Listing, db: Session) -> CarListingDetail:
 
 @router.get("", response_model=List[CarListingSummary])
 def get_listings(
+    search: Optional[str] = Query(None),
     make: Optional[str] = Query(None),
     model: Optional[str] = Query(None),
     min_year: Optional[int] = Query(None),
@@ -238,6 +240,13 @@ def get_listings(
     db: Session = Depends(get_db),
 ):
     q = db.query(Listing)
+    if search:
+        term = f"%{search}%"
+        q = q.filter(or_(
+            Listing.brand.ilike(term),
+            Listing.model.ilike(term),
+            Listing.location.ilike(term),
+        ))
     if make:
         q = q.filter(Listing.brand.ilike(make))
     if model:

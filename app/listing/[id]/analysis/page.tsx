@@ -206,7 +206,7 @@ export default function DetailedAnalysis({ params }: { params: Promise<{ id: str
             yKey="price"
             title="Price vs Mileage Analysis"
             xLabel="Mileage (miles)"
-            yLabel="Price ($)"
+            yLabel="Price (AED)"
             color="bg-blue-500"
           />
 
@@ -217,7 +217,7 @@ export default function DetailedAnalysis({ params }: { params: Promise<{ id: str
             yKey="price"
             title="Price vs Model Year"
             xLabel="Model Year"
-            yLabel="Market Value ($)"
+            yLabel="Market Value (AED)"
             color="bg-green-500"
           />
 
@@ -238,7 +238,7 @@ export default function DetailedAnalysis({ params }: { params: Promise<{ id: str
                   return (
                     <div key={index} className="flex-1 flex flex-col items-center">
                       <div className="text-xs text-muted-foreground mb-1">
-                        ${(item.maintenanceCost + item.repairCost)}
+                        AED {(item.maintenanceCost + item.repairCost).toLocaleString()}
                       </div>
                       <div className="w-full relative">
                         <div 
@@ -292,7 +292,7 @@ export default function DetailedAnalysis({ params }: { params: Promise<{ id: str
             <div className="space-y-3">
               {data.marketComparison.map((car, index) => {
                 const isCurrentCar = car.make === data.make && car.model === data.model;
-                const priceDiff = car.price - parseInt(data.price.replace(/[$,]/g, ''));
+                const priceDiff = car.price - parseInt(data.price.replace(/[^\d]/g, ''));
                 
                 return (
                   <div key={index} className={`p-3 rounded-lg ${isCurrentCar ? 'bg-primary/10 border border-primary/20' : 'bg-background/50'}`}>
