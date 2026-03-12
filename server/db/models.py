@@ -47,6 +47,7 @@ class Listing(Base):
     predicted_price = Column(Integer, nullable=True)
     deal_label = Column(String(20), nullable=True)       # "Good Deal" / "Fair" / "Overpriced"
     source = Column(String(50), nullable=False, default="dubizzle", index=True)
+    depreciation_data = Column(JSON, nullable=True)
 
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
@@ -166,3 +167,13 @@ class ChatMessage(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     conversation = relationship("ChatConversation", back_populates="messages")
+
+
+class ModelAnalytics(Base):
+    __tablename__ = "model_analytics"
+
+    brand = Column(String(100), primary_key=True)
+    model = Column(String(200), primary_key=True)
+    chart_data = Column(JSON, nullable=False)
+    sample_count = Column(Integer, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))

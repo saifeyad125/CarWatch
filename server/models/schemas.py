@@ -47,6 +47,50 @@ class CarListingDetail(CarListingSummary):
     similarListings: Optional[List[CarListingSummary]] = None
 
 
+# ───────────────────────── Analysis endpoint ─────────────────────────
+
+class DepreciationPoint(BaseModel):
+    yearsAhead: int
+    projectedAge: int
+    projectedKms: int
+    predictedPrice: int
+    retentionPct: float
+
+
+class PriceMileagePoint(BaseModel):
+    kms: int
+    price: int
+
+
+class PriceYearPoint(BaseModel):
+    year: int
+    avgPrice: int
+    count: int
+
+
+class Competitor(BaseModel):
+    brand: str
+    model: str
+    avgPrice: int
+    avgKms: int
+    avgYear: int
+    count: int
+
+
+class AnalysisResponse(BaseModel):
+    listingId: int
+    make: str
+    model: str
+    year: int
+    currentPrice: int
+    predictedPrice: int
+    annualKms: int
+    depreciationCurve: List[DepreciationPoint]
+    priceVsMileage: List[PriceMileagePoint]
+    priceVsYear: List[PriceYearPoint]
+    competitors: List[Competitor]
+
+
 # ───────────────────────── Watchlists ─────────────────────────
 
 class WatchlistSearchCriteria(BaseModel):

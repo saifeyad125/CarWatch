@@ -1,12 +1,3 @@
-"""
-DubiCars scraper service -- discovers new DubiCars listings and inserts them
-into the DB.
-
-Browse pages: direct HTTP GET to dubicars.com/uae/used?page=N
-Detail pages: direct HTTP GET to each listing URL
-
-NO proxy is used; requests go out directly with a realistic User-Agent.
-"""
 import os
 import json
 import time
@@ -22,7 +13,7 @@ from db.models import Listing
 
 logger = logging.getLogger("dubicars")
 
-# ── Config from environment variables ──
+# config from env
 DUBICARS_ENABLED = os.getenv("DUBICARS_ENABLED", "true").lower() in ("true", "1", "yes")
 DUBICARS_MAX_PAGES = int(os.getenv("DUBICARS_MAX_PAGES", "5"))
 DUBICARS_SLEEP_BROWSE = float(os.getenv("DUBICARS_SLEEP_BROWSE", "2.0"))
@@ -76,17 +67,9 @@ KEY_PREFIXES = {
 }
 
 
-# ═══════════════════════════════════════════════════════════════════
-#  HTTP FETCH (direct -- no proxy)
-# ═══════════════════════════════════════════════════════════════════
+# http fetch (no proxy)
 
 def _fetch_page(url: str) -> str:
-    """
-    GET a page directly (no proxy) with logging, back-off, and retry.
-
-    On 429 / 403: log warning, double sleep, retry up to 3 times.
-    On other HTTP errors: log warning, return empty string.
-    """
     sleep_time = DUBICARS_SLEEP_DETAIL  # base sleep between retries
 
     for attempt in range(1, 4):
@@ -133,17 +116,9 @@ def _fetch_page(url: str) -> str:
     return ""
 
 
-# ═══════════════════════════════════════════════════════════════════
-#  BROWSE PAGE PARSER
-# ═══════════════════════════════════════════════════════════════════
+# browse page parser
 
 def _extract_listings_from_browse(html: str) -> list[dict]:
-    """
-    Parse a DubiCars browse / search-results page.
-
-    Selects ``li.serp-list-item`` cards and extracts:
-      brand, model, price, year, kms, url, image
-    """
     soup = BeautifulSoup(html, "html.parser")
     cards = soup.select("li.serp-list-item")
     rows: list[dict] = []
@@ -161,7 +136,7 @@ def _extract_listings_from_browse(html: str) -> list[dict]:
         model = None
         ga4_image = None
 
-        # ── Primary source: data-ga4-detail JSON ──
+        # primary source: ga4 json
         if ga4_raw:
             try:
                 ga4 = json.loads(ga4_raw)
@@ -174,7 +149,7 @@ def _extract_listings_from_browse(html: str) -> list[dict]:
             except (json.JSONDecodeError, TypeError):
                 pass
 
-        # ── Fallback: data-sp-item JSON ──
+        # fallback: sp-item json
         if sp_raw:
             try:
                 sp = json.loads(sp_raw)
@@ -187,19 +162,19 @@ def _extract_listings_from_browse(html: str) -> list[dict]:
             except (json.JSONDecodeError, TypeError):
                 pass
 
-        # ── Kilometres from data-item-kilometers attribute ──
+        # kilometres from data attribute
         if km_numeric is None and kms_raw:
             digits = "".join(ch for ch in kms_raw if ch.isdigit())
             km_numeric = int(digits) if digits else None
 
-        # ── URL from first <a> tag ──
+        # url from first <a> tag
         url = None
         link_el = card.select_one("a")
         if link_el and link_el.has_attr("href"):
             href = link_el["href"]
             url = href if href.startswith("http") else "https://www.dubicars.com" + href
 
-        # ── Thumbnail image: prefer <img> tag, fallback to ga4 image_url ──
+        # thumbnail: prefer <img>, fallback to ga4
         image = None
         img_el = card.select_one("img")
         if img_el and img_el.has_attr("src"):
@@ -207,14 +182,14 @@ def _extract_listings_from_browse(html: str) -> list[dict]:
         if not image:
             image = ga4_image
 
-        # ── Coerce price to int ──
+        # coerce price to int
         if price is not None:
             try:
                 price = int(price)
             except (ValueError, TypeError):
                 price = None
 
-        # ── Coerce year to int ──
+        # coerce year to int
         if year is not None:
             try:
                 year = int(year)
@@ -239,15 +214,9 @@ def _extract_listings_from_browse(html: str) -> list[dict]:
     return rows
 
 
-# ═══════════════════════════════════════════════════════════════════
-#  DETAIL PAGE PARSER
-# ═══════════════════════════════════════════════════════════════════
+# detail page parser
 
 def _collect_section_li_texts(heading, stop_headings: list[str]) -> list[str]:
-    """
-    Walk siblings of *heading* and collect text from ``<li>`` elements
-    until we hit another section heading listed in *stop_headings*.
-    """
     texts: list[str] = []
     if heading is None:
         return texts
@@ -267,10 +236,6 @@ def _collect_section_li_texts(heading, stop_headings: list[str]) -> list[str]:
 
 
 def _update_data_from_line(data: dict, line: str) -> None:
-    """
-    Match a single ``<li>`` text line against KEY_PREFIXES and, on match,
-    store the value portion in *data*.
-    """
     for prefix, column in KEY_PREFIXES.items():
         if line.startswith(prefix):
             # Value is everything after the prefix, stripped of leading
@@ -282,18 +247,10 @@ def _update_data_from_line(data: dict, line: str) -> None:
 
 
 def _parse_detail_page(html: str) -> dict:
-    """
-    Parse a DubiCars detail/listing page.
-
-    Extracts spec fields from "Highlights" and "Specs & features" sections,
-    plus listing images.
-
-    Returns a dict with spec columns and an ``_images`` key.
-    """
     soup = BeautifulSoup(html, "html.parser")
     data: dict = {}
 
-    # ── Highlights section ──
+    # highlights section
     highlights_heading = soup.find(
         lambda tag: tag.name in ("h2", "h3", "h4") and "Highlights" in tag.get_text()
     )
@@ -307,7 +264,7 @@ def _parse_detail_page(html: str) -> dict:
     for line in highlight_lines:
         _update_data_from_line(data, line)
 
-    # ── Specs & features section ──
+    # specs & features section
     specs_heading = soup.find(
         lambda tag: tag.name in ("h2", "h3", "h4") and "Specs & features" in tag.get_text()
     )
@@ -322,7 +279,7 @@ def _parse_detail_page(html: str) -> dict:
     for line in specs_lines:
         _update_data_from_line(data, line)
 
-    # ── Images ──
+    # images
     images: list[str] = []
 
     # 1) og:image meta tag
@@ -343,20 +300,12 @@ def _parse_detail_page(html: str) -> dict:
     return data
 
 
-# ═══════════════════════════════════════════════════════════════════
-#  MAIN ENTRY POINT
-# ═══════════════════════════════════════════════════════════════════
+# main entry point
 
 def scrape_dubicars_listings(
     db: Session,
     pages: int = DUBICARS_MAX_PAGES,
 ) -> list[Listing]:
-    """
-    Scrape DubiCars browse pages, discover new listing URLs, fetch detail
-    pages for enrichment, and insert new Listings into the DB.
-
-    Returns the list of newly created Listing ORM objects.
-    """
     if not DUBICARS_ENABLED:
         logger.info("DubiCars scraping is disabled (DUBICARS_ENABLED=false)")
         return []
@@ -367,7 +316,7 @@ def scrape_dubicars_listings(
     )
     logger.info("Existing URLs in DB: %d", len(existing_urls))
 
-    # ── Browse phase ──
+    # browse phase
     discovered: list[dict] = []
     seen_urls: set[str] = set()
     consecutive_blocks = 0
@@ -412,7 +361,7 @@ def scrape_dubicars_listings(
     if not new_stubs:
         return []
 
-    # ── Detail phase ──
+    # detail phase
     new_listings: list[Listing] = []
     consecutive_blocks = 0
 

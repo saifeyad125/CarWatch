@@ -377,20 +377,23 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
                     </div>
 
                     <div>
-                      <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2.5">6-Month Trend</h4>
+                      <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2.5">Price Projections</h4>
                       <div className="space-y-2">
-                        {car.marketAnalysis.priceHistory.map((data) => (
-                          <div key={data.month} className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground w-12 text-xs">{data.month}</span>
-                            <div className="flex-1 mx-3 h-1.5 bg-muted rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-primary/60 rounded-full transition-all"
-                                style={{ width: `${(data.averagePrice / 28000) * 100}%` }}
-                              />
+                        {(() => {
+                          const maxPrice = Math.max(...car.marketAnalysis.priceHistory.map((d: any) => d.averagePrice));
+                          return car.marketAnalysis.priceHistory.map((data) => (
+                            <div key={data.month} className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground w-12 text-xs">{data.month}</span>
+                              <div className="flex-1 mx-3 h-1.5 bg-muted rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-primary/60 rounded-full transition-all"
+                                  style={{ width: `${(data.averagePrice / maxPrice) * 100}%` }}
+                                />
+                              </div>
+                              <span className="text-xs font-medium w-14 text-right">{(data.averagePrice / 1000).toFixed(0)}k</span>
                             </div>
-                            <span className="text-xs font-medium w-14 text-right">{(data.averagePrice / 1000).toFixed(0)}k</span>
-                          </div>
-                        ))}
+                          ));
+                        })()}
                       </div>
                     </div>
 

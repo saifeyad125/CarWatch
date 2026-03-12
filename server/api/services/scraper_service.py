@@ -1,11 +1,3 @@
-"""
-Scraper service — discovers new Dubizzle listings and inserts them into the DB.
-
-Browse pages: Oxylabs Web Scraper API (render=html to bypass Imperva WAF)
-  → HTML parsed with data-testid selectors (from dubizzile_scraper.py)
-Detail pages: Oxylabs mobile proxy (direct, no rendering needed)
-  → __NEXT_DATA__ JSON parsed (from dubizzile_enrich_2.py)
-"""
 import os
 import re
 import json
@@ -50,18 +42,16 @@ UAE_LOCATIONS = [
     "Ras Al Khaimah, UAE", "Fujairah, UAE", "Al Ain, UAE",
 ]
 
-# ── Lazy proxy config ──
+# lazy proxy config
 _proxy_cache: dict | None = None
 _session: requests.Session | None = None
 
 
 def _get_credentials() -> tuple[str, str]:
-    """Return (username, password) from env."""
     return os.getenv("OXY_PROXY_USER", ""), os.getenv("OXY_PROXY_PASS", "")
 
 
 def _get_proxies() -> dict:
-    """Build proxy dict from env vars (lazy, cached)."""
     global _proxy_cache
     if _proxy_cache is not None:
         return _proxy_cache
@@ -78,7 +68,6 @@ def _get_proxies() -> dict:
 
 
 def _get_session() -> requests.Session:
-    """Reusable session with trust_env=False (matching enrich_2.py)."""
     global _session
     if _session is None:
         _session = requests.Session()
@@ -91,7 +80,6 @@ def _clean(s: str | None) -> str:
 
 
 def _to_int(s: str | None) -> int | None:
-    """Extract digits from string → int (matching dubizzile_scraper.py)."""
     if not s:
         return None
     digits = re.sub(r"[^\d]", "", s)
@@ -99,7 +87,6 @@ def _to_int(s: str | None) -> int | None:
 
 
 def _extract_images(payload: dict | None) -> list[str]:
-    """Extract listing image URLs from __NEXT_DATA__ payload."""
     if not payload:
         return []
     listing = payload.get("listing") or {}
@@ -125,15 +112,9 @@ def _extract_images(payload: dict | None) -> list[str]:
     return images
 
 
-# ═══════════════════════════════════════════════════════════════════
-#  BROWSE PAGE: Oxylabs Web Scraper API (bypasses Imperva WAF)
-# ═══════════════════════════════════════════════════════════════════
+# browse page fetching (oxylabs proxy)
 
 def _fetch_browse_html(url: str) -> str:
-    """
-    Fetch a browse page via Oxylabs mobile proxy.
-    Retries on Imperva blocks and transient errors.
-    """
     proxies = _get_proxies()
     s = _get_session()
 
@@ -184,14 +165,9 @@ def _fetch_browse_html(url: str) -> str:
 
 
 def _extract_listings_from_browse(html: str) -> list[dict]:
-    """
-    Parse Dubizzle browse page. Tries two approaches:
-    1) data-testid selectors (matching dubizzile_scraper.py)
-    2) __NEXT_DATA__ JSON (fallback if page has embedded data)
-    """
     soup = BeautifulSoup(html, "html.parser")
 
-    # ── Approach 1: data-testid selectors (dubizzile_scraper.py) ──
+    # approach 1: data-testid selectors
     wrapper = soup.select_one("#listing-card-wrapper") or soup
     anchors = wrapper.select('a[data-testid^="listing-"]')
 
@@ -228,7 +204,7 @@ def _extract_listings_from_browse(html: str) -> list[dict]:
         logger.info(f"Browse (data-testid): {len(anchors)} anchors, {len(results)} valid")
         return results
 
-    # ── Approach 2: __NEXT_DATA__ JSON (fallback) ──
+    # approach 2: __NEXT_DATA__ json fallback
     tag = soup.find("script", id="__NEXT_DATA__")
     if tag and tag.string:
         try:
@@ -281,7 +257,6 @@ def _extract_listings_from_browse(html: str) -> list[dict]:
 
 
 def _find_listings_array(obj: Any) -> list | None:
-    """Recursively find the listings/hits array in __NEXT_DATA__."""
     if isinstance(obj, dict):
         for key in ("hits", "listings", "results", "ads"):
             val = obj.get(key)
@@ -300,16 +275,9 @@ def _find_listings_array(obj: Any) -> list | None:
     return None
 
 
-# ═══════════════════════════════════════════════════════════════════
-#  DETAIL PAGE: Oxylabs mobile proxy (direct, matching enrich_2.py)
-# ═══════════════════════════════════════════════════════════════════
+# detail page fetching (mobile proxy)
 
 def _fetch_detail_html(url: str) -> str:
-    """
-    Fetch a detail page via Oxylabs mobile proxy with retries.
-    Includes soft-block detection: if __NEXT_DATA__ is missing, retries.
-    Matching dubizzile_enrich_2.py fetch_html() exactly.
-    """
     proxies = _get_proxies()
     s = _get_session()
 
@@ -360,11 +328,6 @@ def _fetch_detail_html(url: str) -> str:
 
 
 def _parse_detail_page(html: str) -> dict[str, Any]:
-    """
-    Extract enrichment fields + images from a detail page.
-    1) __NEXT_DATA__ JSON (preferred, matching enrich_2.py)
-    2) data-testid selectors (fallback, matching enrich_2.py)
-    """
     soup = BeautifulSoup(html, "html.parser")
 
     # 1) __NEXT_DATA__ JSON
@@ -435,11 +398,6 @@ def _parse_detail_page(html: str) -> dict[str, Any]:
 
 
 def _find_listing_payload(obj: Any) -> dict | None:
-    """
-    Recursively search __NEXT_DATA__ for:
-      payload -> listing -> details -> {primary, secondary}
-    Matching enrich_2.py's find_first_listing_payload().
-    """
     if isinstance(obj, dict):
         if "payload" in obj and isinstance(obj["payload"], dict):
             p = obj["payload"]
@@ -463,15 +421,9 @@ def _find_listing_payload(obj: Any) -> dict | None:
     return None
 
 
-# ═══════════════════════════════════════════════════════════════════
-#  MAIN ENTRY POINTS
-# ═══════════════════════════════════════════════════════════════════
+# main entry points
 
 def scrape_new_listings(db: Session, pages: int = MAX_PAGES) -> list[Listing]:
-    """
-    Scrape Dubizzle browse pages, discover new listing URLs,
-    fetch detail pages for enrichment, and insert new Listings into DB.
-    """
     user, _ = _get_credentials()
     if not user:
         logger.warning("OXY_PROXY_USER not set — skipping scrape")
@@ -560,7 +512,6 @@ def scrape_new_listings(db: Session, pages: int = MAX_PAGES) -> list[Listing]:
 
 
 def check_listing_alive(url: str) -> bool:
-    """HEAD-check a listing URL. Returns True if alive, False if 404/gone."""
     proxies = _get_proxies()
     s = _get_session()
     try:
