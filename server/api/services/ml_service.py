@@ -32,6 +32,7 @@ class MLService:
         self.tau = 0.3
         self.beta = 0.4
         self.stage2_features: list[str] = []
+        self.usage_profiles = None
 
         self._load_models()
 
@@ -84,6 +85,17 @@ class MLService:
                   f"tau={self.tau}, beta={self.beta}")
         else:
             print(f"Calibration not found: {cal_path}")
+
+        # Usage profiles
+        profiles_path = os.getenv(
+            "USAGE_PROFILES_PATH", str(models_dir / "usage_profiles.json")
+        )
+        if Path(profiles_path).exists():
+            with open(profiles_path) as f:
+                self.usage_profiles = json.load(f)
+            print(f"Usage profiles loaded: {profiles_path}")
+        else:
+            print(f"Usage profiles not found: {profiles_path}")
 
     # ── prediction ───────────────────────────────────────────
 
@@ -173,24 +185,24 @@ class MLService:
         kms_per_year = kms / max(vehicle_age, 1)
 
         row = [
-            # categorical
-            f.get("brand", "Unknown"),
-            f.get("model", "Unknown"),
-            f.get("trim", "Unknown"),
-            f.get("fuel_type", "Petrol"),
-            f.get("body_type", "Unknown"),
-            f.get("steering_side", "Left"),
-            f.get("regional_specs", "GCC"),
-            str(f.get("doors", "4")),
-            str(f.get("seating_capacity", "5")),
-            str(f.get("cylinders", "4")),
+            # categorical (use `or` to handle explicit None values)
+            f.get("brand") or "Unknown",
+            f.get("model") or "Unknown",
+            f.get("trim") or "Unknown",
+            f.get("fuel_type") or "Petrol",
+            f.get("body_type") or "Unknown",
+            f.get("steering_side") or "Left",
+            f.get("regional_specs") or "GCC",
+            str(f.get("doors") or "4"),
+            str(f.get("seating_capacity") or "5"),
+            str(f.get("cylinders") or "4"),
             self._age_bucket(vehicle_age),
-            # numerical
+            # numerical (use `or` to handle explicit None values)
             kms,
             vehicle_age,
             kms_per_year,
-            f.get("horsepower", 200),
-            f.get("engine_cc", 2000),
+            f.get("horsepower") or 200,
+            f.get("engine_cc") or 2000,
         ]
         return [row]  # CatBoost expects 2-D
 
@@ -212,16 +224,16 @@ class MLService:
         kms_per_year = kms / max(vehicle_age, 1)
 
         row = [
-            f.get("brand", "Unknown"),
-            f.get("model", "Unknown"),
+            f.get("brand") or "Unknown",
+            f.get("model") or "Unknown",
             vehicle_age,
             kms_per_year,
-            f.get("horsepower", 200),
-            f.get("engine_cc", 2000),
-            f.get("fuel_type", "Petrol"),
-            f.get("body_type", "Unknown"),
-            f.get("regional_specs", "GCC"),
-            f.get("trim", "Unknown"),
+            f.get("horsepower") or 200,
+            f.get("engine_cc") or 2000,
+            f.get("fuel_type") or "Petrol",
+            f.get("body_type") or "Unknown",
+            f.get("regional_specs") or "GCC",
+            f.get("trim") or "Unknown",
             mu_log,
             sigma_log,
         ]
@@ -240,6 +252,82 @@ class MLService:
         if age <= 10:
             return "7-10"
         return "10+"
+
+    def get_annual_kms(self, brand: str, model: str) -> int:
+        """Look up median annual kms: model → brand → global fallback."""
+        if not self.usage_profiles:
+            return 20_000  # Safe default
+
+        brands = self.usage_profiles.get("brands", {})
+        brand_data = brands.get(brand, {})
+        model_data = brand_data.get("models", {}).get(model, {})
+
+        if model_data.get("median_kms_per_year"):
+            return model_data["median_kms_per_year"]
+        if brand_data.get("brand_median_kms_per_year"):
+            return brand_data["brand_median_kms_per_year"]
+        return self.usage_profiles.get("global_median_kms_per_year", 20_000)
+
+    def compute_depreciation(
+        self, features: Dict[str, Any], current_predicted_price: float | None = None
+    ) -> Dict[str, Any]:
+        """
+        Run 3 forward projections (1, 3, 5 years) using usage profiles.
+        Returns depreciation_data dict ready for DB storage.
+
+        If current_predicted_price is provided (e.g., from a prior predict_price call),
+        it is reused to avoid a redundant model inference.
+        """
+        if not self.model_loaded:
+            return {}
+
+        brand = features.get("brand", "Unknown")
+        model_name = features.get("model", "Unknown")
+        annual_kms = self.get_annual_kms(brand, model_name)
+
+        current_year = 2026
+        year = features.get("year", 2020)
+        current_age = current_year - year
+        current_kms = features.get("mileage", 50_000)
+
+        # Reuse current predicted price if already computed
+        if current_predicted_price is not None:
+            current_price = current_predicted_price
+        else:
+            current_pred = self.predict_price(features)
+            current_price = current_pred["predicted_price"]
+
+        projections = []
+        prev_price = current_price
+        for years_ahead in [1, 3, 5]:
+            projected_age = current_age + years_ahead
+            projected_kms = current_kms + (annual_kms * years_ahead)
+            synthetic_year = current_year - projected_age
+
+            # Build modified features
+            proj_features = dict(features)
+            proj_features["year"] = synthetic_year
+            proj_features["mileage"] = projected_kms
+
+            pred = self.predict_price(proj_features)
+            raw_price = int(pred["predicted_price"])
+
+            # Enforce monotonic decreasing: a car should never appreciate
+            capped_price = min(raw_price, prev_price)
+            prev_price = capped_price
+
+            projections.append({
+                "years_ahead": years_ahead,
+                "projected_age": projected_age,
+                "projected_kms": projected_kms,
+                "predicted_price": capped_price,
+            })
+
+        return {
+            "current_price_predicted": int(current_price),
+            "annual_kms": annual_kms,
+            "projections": projections,
+        }
 
     def get_model_info(self) -> Dict[str, Any]:
         return {

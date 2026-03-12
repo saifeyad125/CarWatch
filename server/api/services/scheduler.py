@@ -46,6 +46,8 @@ def _predict_and_label(listing, ml_service) -> None:
             "engine_cc": _safe_int(listing.engine_capacity) or 2000,
             "regional_specs": listing.regional_specs or "GCC",
             "steering_side": listing.steering_side or "Left",
+            "doors": getattr(listing, "doors", None),
+            "seating_capacity": getattr(listing, "seating_capacity", None),
         }
         result = ml_service.predict_price(features)
         listing.predicted_price = int(result["predicted_price"])
@@ -59,6 +61,13 @@ def _predict_and_label(listing, ml_service) -> None:
                 listing.deal_label = "Overpriced"
             else:
                 listing.deal_label = "Fair"
+
+        # Compute depreciation projections (reuse predicted_price to avoid redundant inference)
+        try:
+            dep_data = ml_service.compute_depreciation(features, current_predicted_price=listing.predicted_price)
+            listing.depreciation_data = dep_data
+        except Exception as e:
+            logger.warning(f"Depreciation failed for listing {listing.id}: {e}")
     except Exception as e:
         logger.warning(f"ML prediction failed for listing {listing.id}: {e}")
 
@@ -66,7 +75,7 @@ def _predict_and_label(listing, ml_service) -> None:
 def hourly_scrape_and_match():
     """
     The main hourly job:
-      1. Scrape new Dubizzle listings
+      1. Scrape new Source (Dubizzile, DubiCars, etc.) listings
       2. Run ML predictions on new listings
       3. Expire old/dead listings
       4. Re-scan all active watchlists

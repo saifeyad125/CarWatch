@@ -1,7 +1,3 @@
-/**
- * API Configuration
- * Single source of truth for all API calls
- */
 import { supabase } from '@/lib/supabase/client';
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -11,6 +7,7 @@ export const API_ENDPOINTS = {
   cars: {
     list: `${API_BASE_URL}/api/cars`,
     detail: (id: number) => `${API_BASE_URL}/api/cars/${id}`,
+    analysis: (id: number) => `${API_BASE_URL}/api/cars/${id}/analysis`,
     brands: `${API_BASE_URL}/api/cars/brands`,
     models: (brand: string) => `${API_BASE_URL}/api/cars/brands/${encodeURIComponent(brand)}/models`,
   },
@@ -55,9 +52,8 @@ export const API_ENDPOINTS = {
   health: `${API_BASE_URL}/api/health`,
 } as const;
 
-/**
- * Fetch wrapper with error handling
- */
+
+// Fetch wrapper with error handling
 export async function apiRequest<T>(
   url: string,
   options?: RequestInit

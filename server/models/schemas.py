@@ -1,7 +1,3 @@
-"""
-Pydantic schemas for API request / response bodies.
-Kept separate from SQLAlchemy models in db/models.py.
-"""
 from pydantic import BaseModel
 from typing import List, Optional, Literal
 
@@ -13,13 +9,13 @@ class CarListingSummary(BaseModel):
     make: str
     model: str
     year: int
-    price: str                                              # "د.إ 52,000"
+    price: str              #in DHS
     predictedPrice: Optional[str] = None
     dealLabel: Optional[Literal["Good Deal", "Fair", "Overpriced"]] = None
     mileage: str
     location: str
     image: str
-    source: str = "dubizzle"
+    source: str = "dubizzle" # e.g. "dubizzle", "dubicar"
 
 class Seller(BaseModel):
     name: str
@@ -47,10 +43,53 @@ class CarListingDetail(CarListingSummary):
     similarListings: Optional[List[CarListingSummary]] = None
 
 
+# ───────────────────────── Detailed Analysis ───────────────────────
+
+class DepreciationPoint(BaseModel):
+    yearsAhead: int
+    projectedAge: int
+    projectedKms: int
+    predictedPrice: int
+    retentionPct: float
+
+
+class PriceMileagePoint(BaseModel):
+    kms: int
+    price: int
+
+
+class PriceYearPoint(BaseModel):
+    year: int
+    avgPrice: int
+    count: int
+
+
+class Competitor(BaseModel):
+    brand: str
+    model: str
+    avgPrice: int
+    avgKms: int
+    avgYear: int
+    count: int
+
+
+class AnalysisResponse(BaseModel):
+    listingId: int
+    make: str
+    model: str
+    year: int
+    currentPrice: int
+    predictedPrice: int
+    annualKms: int
+    depreciationCurve: List[DepreciationPoint]
+    priceVsMileage: List[PriceMileagePoint]
+    priceVsYear: List[PriceYearPoint]
+    competitors: List[Competitor]
+
+
 # ───────────────────────── Watchlists ─────────────────────────
 
 class WatchlistSearchCriteria(BaseModel):
-    """Search parameters for filtering car listings"""
     make: Optional[str] = None
     models: Optional[List[str]] = None
     year_min: Optional[int] = None

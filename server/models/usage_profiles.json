@@ -1,0 +1,2896 @@
+{
+  "global_median_kms_per_year": 13333,
+  "brands": {
+    "Abarth": {
+      "brand_median_kms_per_year": 10000,
+      "models": {
+        "595": {
+          "median_kms_per_year": 10787,
+          "sample_count": 24
+        },
+        "695": {
+          "median_kms_per_year": 8917,
+          "sample_count": 26
+        }
+      }
+    },
+    "Acura": {
+      "brand_median_kms_per_year": 1857,
+      "models": {}
+    },
+    "Alfa Romeo": {
+      "brand_median_kms_per_year": 10185,
+      "models": {
+        "GIULIETTA": {
+          "median_kms_per_year": 12848,
+          "sample_count": 62
+        },
+        "Giulia": {
+          "median_kms_per_year": 9796,
+          "sample_count": 50
+        },
+        "Stelvio": {
+          "median_kms_per_year": 10971,
+          "sample_count": 49
+        }
+      }
+    },
+    "Ashok Leyland": {
+      "brand_median_kms_per_year": 26700,
+      "models": {}
+    },
+    "Aston Martin": {
+      "brand_median_kms_per_year": 3062,
+      "models": {
+        "DB11": {
+          "median_kms_per_year": 3535,
+          "sample_count": 24
+        },
+        "DB12": {
+          "median_kms_per_year": 2084,
+          "sample_count": 14
+        },
+        "DB9": {
+          "median_kms_per_year": 4796,
+          "sample_count": 10
+        },
+        "DBS": {
+          "median_kms_per_year": 2659,
+          "sample_count": 12
+        },
+        "DBX": {
+          "median_kms_per_year": 4667,
+          "sample_count": 39
+        },
+        "Rapide": {
+          "median_kms_per_year": 933,
+          "sample_count": 11
+        },
+        "Vanquish": {
+          "median_kms_per_year": 1333,
+          "sample_count": 27
+        },
+        "Vantage": {
+          "median_kms_per_year": 3714,
+          "sample_count": 41
+        }
+      }
+    },
+    "Audi": {
+      "brand_median_kms_per_year": 13312,
+      "models": {
+        "A3": {
+          "median_kms_per_year": 14740,
+          "sample_count": 142
+        },
+        "A4": {
+          "median_kms_per_year": 11915,
+          "sample_count": 112
+        },
+        "A5": {
+          "median_kms_per_year": 12700,
+          "sample_count": 151
+        },
+        "A6": {
+          "median_kms_per_year": 15053,
+          "sample_count": 153
+        },
+        "A7": {
+          "median_kms_per_year": 13275,
+          "sample_count": 58
+        },
+        "A8": {
+          "median_kms_per_year": 20123,
+          "sample_count": 169
+        },
+        "Q2": {
+          "median_kms_per_year": 9000,
+          "sample_count": 14
+        },
+        "Q3": {
+          "median_kms_per_year": 13600,
+          "sample_count": 126
+        },
+        "Q5": {
+          "median_kms_per_year": 13506,
+          "sample_count": 226
+        },
+        "Q7": {
+          "median_kms_per_year": 15073,
+          "sample_count": 215
+        },
+        "Q8": {
+          "median_kms_per_year": 16409,
+          "sample_count": 114
+        },
+        "R8": {
+          "median_kms_per_year": 4525,
+          "sample_count": 44
+        },
+        "RS Q8": {
+          "median_kms_per_year": 12280,
+          "sample_count": 75
+        },
+        "RSQ3": {
+          "median_kms_per_year": 12200,
+          "sample_count": 25
+        },
+        "S3": {
+          "median_kms_per_year": 15000,
+          "sample_count": 55
+        },
+        "S3/RS3": {
+          "median_kms_per_year": 13000,
+          "sample_count": 71
+        },
+        "S4/RS4": {
+          "median_kms_per_year": 6515,
+          "sample_count": 20
+        },
+        "S5": {
+          "median_kms_per_year": 7630,
+          "sample_count": 16
+        },
+        "S5/RS5": {
+          "median_kms_per_year": 10556,
+          "sample_count": 29
+        },
+        "S6/RS6": {
+          "median_kms_per_year": 9050,
+          "sample_count": 52
+        },
+        "S7": {
+          "median_kms_per_year": 10455,
+          "sample_count": 12
+        },
+        "S7/RS7": {
+          "median_kms_per_year": 11000,
+          "sample_count": 29
+        },
+        "S8": {
+          "median_kms_per_year": 10767,
+          "sample_count": 42
+        },
+        "SQ5": {
+          "median_kms_per_year": 12885,
+          "sample_count": 34
+        },
+        "SQ7": {
+          "median_kms_per_year": 10951,
+          "sample_count": 10
+        },
+        "SQ8": {
+          "median_kms_per_year": 9416,
+          "sample_count": 21
+        },
+        "TT": {
+          "median_kms_per_year": 10682,
+          "sample_count": 42
+        },
+        "e-tron": {
+          "median_kms_per_year": 8000,
+          "sample_count": 29
+        }
+      }
+    },
+    "BAIC": {
+      "brand_median_kms_per_year": 17963,
+      "models": {
+        "BJ40 C": {
+          "median_kms_per_year": 18250,
+          "sample_count": 11
+        },
+        "BJ40L": {
+          "median_kms_per_year": 18554,
+          "sample_count": 14
+        }
+      }
+    },
+    "BAW": {
+      "brand_median_kms_per_year": 19,
+      "models": {
+        "212 T01": {
+          "median_kms_per_year": 19,
+          "sample_count": 10
+        }
+      }
+    },
+    "Bentley": {
+      "brand_median_kms_per_year": 6383,
+      "models": {
+        "Bentayga": {
+          "median_kms_per_year": 9064,
+          "sample_count": 210
+        },
+        "Continental": {
+          "median_kms_per_year": 5333,
+          "sample_count": 297
+        },
+        "Flying Spur": {
+          "median_kms_per_year": 6083,
+          "sample_count": 91
+        },
+        "Mulsanne": {
+          "median_kms_per_year": 5595,
+          "sample_count": 28
+        }
+      }
+    },
+    "Bentley Onyx": {
+      "brand_median_kms_per_year": 46,
+      "models": {}
+    },
+    "Bestune": {
+      "brand_median_kms_per_year": 12122,
+      "models": {
+        "T77": {
+          "median_kms_per_year": 14596,
+          "sample_count": 16
+        }
+      }
+    },
+    "BMW": {
+      "brand_median_kms_per_year": 12679,
+      "models": {
+        "1-Series": {
+          "median_kms_per_year": 14127,
+          "sample_count": 83
+        },
+        "2-Series": {
+          "median_kms_per_year": 13084,
+          "sample_count": 134
+        },
+        "3-Series": {
+          "median_kms_per_year": 12000,
+          "sample_count": 375
+        },
+        "4-Series": {
+          "median_kms_per_year": 13636,
+          "sample_count": 361
+        },
+        "5-Series": {
+          "median_kms_per_year": 13750,
+          "sample_count": 435
+        },
+        "6-Series": {
+          "median_kms_per_year": 9600,
+          "sample_count": 82
+        },
+        "7-Series": {
+          "median_kms_per_year": 12822,
+          "sample_count": 408
+        },
+        "8-Series": {
+          "median_kms_per_year": 10356,
+          "sample_count": 86
+        },
+        "M2": {
+          "median_kms_per_year": 9096,
+          "sample_count": 48
+        },
+        "M3": {
+          "median_kms_per_year": 9500,
+          "sample_count": 55
+        },
+        "M4": {
+          "median_kms_per_year": 9750,
+          "sample_count": 102
+        },
+        "M5": {
+          "median_kms_per_year": 8284,
+          "sample_count": 101
+        },
+        "M6": {
+          "median_kms_per_year": 7638,
+          "sample_count": 15
+        },
+        "M8": {
+          "median_kms_per_year": 11352,
+          "sample_count": 31
+        },
+        "X1": {
+          "median_kms_per_year": 12333,
+          "sample_count": 107
+        },
+        "X2": {
+          "median_kms_per_year": 14684,
+          "sample_count": 110
+        },
+        "X3": {
+          "median_kms_per_year": 12144,
+          "sample_count": 146
+        },
+        "X4": {
+          "median_kms_per_year": 13867,
+          "sample_count": 156
+        },
+        "X5": {
+          "median_kms_per_year": 14683,
+          "sample_count": 610
+        },
+        "X6": {
+          "median_kms_per_year": 14000,
+          "sample_count": 345
+        },
+        "X7": {
+          "median_kms_per_year": 14261,
+          "sample_count": 160
+        },
+        "XM": {
+          "median_kms_per_year": 9284,
+          "sample_count": 38
+        },
+        "Z4": {
+          "median_kms_per_year": 9500,
+          "sample_count": 56
+        },
+        "i4": {
+          "median_kms_per_year": 3200,
+          "sample_count": 13
+        },
+        "i5": {
+          "median_kms_per_year": 5296,
+          "sample_count": 24
+        },
+        "i7": {
+          "median_kms_per_year": 8911,
+          "sample_count": 11
+        },
+        "i8": {
+          "median_kms_per_year": 6862,
+          "sample_count": 18
+        },
+        "iX": {
+          "median_kms_per_year": 10333,
+          "sample_count": 39
+        }
+      }
+    },
+    "BMW Alpina": {
+      "brand_median_kms_per_year": 4844,
+      "models": {}
+    },
+    "Bugatti": {
+      "brand_median_kms_per_year": 618,
+      "models": {
+        "Chiron": {
+          "median_kms_per_year": 629,
+          "sample_count": 26
+        }
+      }
+    },
+    "Buick": {
+      "brand_median_kms_per_year": 5343,
+      "models": {}
+    },
+    "BYD": {
+      "brand_median_kms_per_year": 54,
+      "models": {
+        "HAN": {
+          "median_kms_per_year": 70,
+          "sample_count": 12
+        },
+        "Leopard": {
+          "median_kms_per_year": 20,
+          "sample_count": 17
+        },
+        "Leopard 5": {
+          "median_kms_per_year": 24,
+          "sample_count": 30
+        },
+        "Leopard 8": {
+          "median_kms_per_year": 31,
+          "sample_count": 23
+        },
+        "Leopard Titanium 7": {
+          "median_kms_per_year": 22,
+          "sample_count": 14
+        },
+        "Seal": {
+          "median_kms_per_year": 1400,
+          "sample_count": 19
+        },
+        "Song Plus": {
+          "median_kms_per_year": 7000,
+          "sample_count": 23
+        }
+      }
+    },
+    "Cadillac": {
+      "brand_median_kms_per_year": 13515,
+      "models": {
+        "ATS": {
+          "median_kms_per_year": 13692,
+          "sample_count": 35
+        },
+        "CT4": {
+          "median_kms_per_year": 11500,
+          "sample_count": 15
+        },
+        "CT5": {
+          "median_kms_per_year": 11677,
+          "sample_count": 38
+        },
+        "CTS/Catera": {
+          "median_kms_per_year": 14750,
+          "sample_count": 20
+        },
+        "Escalade": {
+          "median_kms_per_year": 15000,
+          "sample_count": 347
+        },
+        "SRX": {
+          "median_kms_per_year": 10867,
+          "sample_count": 36
+        },
+        "XT4": {
+          "median_kms_per_year": 17381,
+          "sample_count": 12
+        },
+        "XT5": {
+          "median_kms_per_year": 12805,
+          "sample_count": 33
+        },
+        "XT6": {
+          "median_kms_per_year": 12305,
+          "sample_count": 15
+        }
+      }
+    },
+    "Caterham": {
+      "brand_median_kms_per_year": 1440,
+      "models": {}
+    },
+    "Changan": {
+      "brand_median_kms_per_year": 17500,
+      "models": {
+        "Alsvin": {
+          "median_kms_per_year": 14092,
+          "sample_count": 14
+        },
+        "CS35 Plus": {
+          "median_kms_per_year": 20000,
+          "sample_count": 27
+        },
+        "CS85": {
+          "median_kms_per_year": 24918,
+          "sample_count": 14
+        },
+        "UNI-K": {
+          "median_kms_per_year": 14000,
+          "sample_count": 19
+        },
+        "Uni-V": {
+          "median_kms_per_year": 17500,
+          "sample_count": 13
+        }
+      }
+    },
+    "Chery": {
+      "brand_median_kms_per_year": 7773,
+      "models": {}
+    },
+    "Chevrolet": {
+      "brand_median_kms_per_year": 16216,
+      "models": {
+        "Aveo": {
+          "median_kms_per_year": 15795,
+          "sample_count": 16
+        },
+        "Blazer": {
+          "median_kms_per_year": 13545,
+          "sample_count": 36
+        },
+        "Camaro": {
+          "median_kms_per_year": 13545,
+          "sample_count": 171
+        },
+        "Camaro Convertible": {
+          "median_kms_per_year": 13000,
+          "sample_count": 15
+        },
+        "Captiva": {
+          "median_kms_per_year": 20515,
+          "sample_count": 184
+        },
+        "Corvette": {
+          "median_kms_per_year": 6208,
+          "sample_count": 134
+        },
+        "Cruze": {
+          "median_kms_per_year": 15718,
+          "sample_count": 86
+        },
+        "Equinox": {
+          "median_kms_per_year": 18539,
+          "sample_count": 30
+        },
+        "Express": {
+          "median_kms_per_year": 15333,
+          "sample_count": 12
+        },
+        "Groove": {
+          "median_kms_per_year": 18500,
+          "sample_count": 53
+        },
+        "Impala": {
+          "median_kms_per_year": 19000,
+          "sample_count": 89
+        },
+        "Malibu": {
+          "median_kms_per_year": 19500,
+          "sample_count": 115
+        },
+        "Silverado": {
+          "median_kms_per_year": 18167,
+          "sample_count": 171
+        },
+        "Sonic": {
+          "median_kms_per_year": 11667,
+          "sample_count": 11
+        },
+        "Spark": {
+          "median_kms_per_year": 16500,
+          "sample_count": 47
+        },
+        "Suburban": {
+          "median_kms_per_year": 17674,
+          "sample_count": 44
+        },
+        "Tahoe": {
+          "median_kms_per_year": 18499,
+          "sample_count": 187
+        },
+        "Trailblazer": {
+          "median_kms_per_year": 14154,
+          "sample_count": 34
+        },
+        "Traverse": {
+          "median_kms_per_year": 16790,
+          "sample_count": 77
+        },
+        "Trax": {
+          "median_kms_per_year": 13750,
+          "sample_count": 57
+        }
+      }
+    },
+    "Chrysler": {
+      "brand_median_kms_per_year": 14167,
+      "models": {
+        "300": {
+          "median_kms_per_year": 17321,
+          "sample_count": 10
+        },
+        "300C": {
+          "median_kms_per_year": 14167,
+          "sample_count": 37
+        }
+      }
+    },
+    "Citroen": {
+      "brand_median_kms_per_year": 26583,
+      "models": {}
+    },
+    "CMC": {
+      "brand_median_kms_per_year": 970,
+      "models": {
+        "Veryca": {
+          "median_kms_per_year": 6,
+          "sample_count": 16
+        }
+      }
+    },
+    "Denza": {
+      "brand_median_kms_per_year": 23,
+      "models": {}
+    },
+    "DFSK": {
+      "brand_median_kms_per_year": 5167,
+      "models": {}
+    },
+    "Dodge": {
+      "brand_median_kms_per_year": 15403,
+      "models": {
+        "Challenger": {
+          "median_kms_per_year": 14000,
+          "sample_count": 321
+        },
+        "Charger": {
+          "median_kms_per_year": 16379,
+          "sample_count": 497
+        },
+        "Durango": {
+          "median_kms_per_year": 15378,
+          "sample_count": 119
+        },
+        "Neon": {
+          "median_kms_per_year": 12556,
+          "sample_count": 12
+        },
+        "Ram": {
+          "median_kms_per_year": 16286,
+          "sample_count": 137
+        }
+      }
+    },
+    "DongFeng": {
+      "brand_median_kms_per_year": 1379,
+      "models": {}
+    },
+    "Exeed": {
+      "brand_median_kms_per_year": 11100,
+      "models": {
+        "RX": {
+          "median_kms_per_year": 16500,
+          "sample_count": 11
+        },
+        "VX": {
+          "median_kms_per_year": 9810,
+          "sample_count": 11
+        }
+      }
+    },
+    "Fengon": {
+      "brand_median_kms_per_year": 1333,
+      "models": {}
+    },
+    "Ferrari": {
+      "brand_median_kms_per_year": 1333,
+      "models": {
+        "12Cilindri": {
+          "median_kms_per_year": 92,
+          "sample_count": 20
+        },
+        "296 GTB": {
+          "median_kms_per_year": 575,
+          "sample_count": 49
+        },
+        "296 GTS": {
+          "median_kms_per_year": 683,
+          "sample_count": 62
+        },
+        "360": {
+          "median_kms_per_year": 1235,
+          "sample_count": 12
+        },
+        "488 GTB": {
+          "median_kms_per_year": 3800,
+          "sample_count": 22
+        },
+        "488 Pista": {
+          "median_kms_per_year": 1371,
+          "sample_count": 13
+        },
+        "488 Pista Spider": {
+          "median_kms_per_year": 480,
+          "sample_count": 11
+        },
+        "488 Spider": {
+          "median_kms_per_year": 4083,
+          "sample_count": 13
+        },
+        "599 GTB": {
+          "median_kms_per_year": 1563,
+          "sample_count": 14
+        },
+        "612 Scaglietti": {
+          "median_kms_per_year": 1650,
+          "sample_count": 14
+        },
+        "812": {
+          "median_kms_per_year": 333,
+          "sample_count": 25
+        },
+        "812 GTS": {
+          "median_kms_per_year": 1500,
+          "sample_count": 49
+        },
+        "812 Superfast": {
+          "median_kms_per_year": 2227,
+          "sample_count": 33
+        },
+        "California T": {
+          "median_kms_per_year": 5070,
+          "sample_count": 15
+        },
+        "F12 Berlinetta": {
+          "median_kms_per_year": 1837,
+          "sample_count": 16
+        },
+        "F430": {
+          "median_kms_per_year": 1933,
+          "sample_count": 19
+        },
+        "F8 Spider": {
+          "median_kms_per_year": 1500,
+          "sample_count": 24
+        },
+        "F8 Tributo": {
+          "median_kms_per_year": 2225,
+          "sample_count": 19
+        },
+        "GTC4 Lusso T": {
+          "median_kms_per_year": 3500,
+          "sample_count": 21
+        },
+        "Portofino": {
+          "median_kms_per_year": 2774,
+          "sample_count": 36
+        },
+        "Purosangue": {
+          "median_kms_per_year": 1100,
+          "sample_count": 88
+        },
+        "Roma": {
+          "median_kms_per_year": 1350,
+          "sample_count": 55
+        },
+        "SF90 Spider": {
+          "median_kms_per_year": 536,
+          "sample_count": 54
+        },
+        "SF90 Stradale": {
+          "median_kms_per_year": 866,
+          "sample_count": 60
+        }
+      }
+    },
+    "Fiat": {
+      "brand_median_kms_per_year": 7714,
+      "models": {
+        "500": {
+          "median_kms_per_year": 8333,
+          "sample_count": 61
+        },
+        "500X": {
+          "median_kms_per_year": 7714,
+          "sample_count": 15
+        }
+      }
+    },
+    "Ford": {
+      "brand_median_kms_per_year": 14470,
+      "models": {
+        "Bronco": {
+          "median_kms_per_year": 10500,
+          "sample_count": 87
+        },
+        "Ecosport": {
+          "median_kms_per_year": 14500,
+          "sample_count": 152
+        },
+        "Edge": {
+          "median_kms_per_year": 13385,
+          "sample_count": 373
+        },
+        "Escape": {
+          "median_kms_per_year": 15679,
+          "sample_count": 139
+        },
+        "Escort": {
+          "median_kms_per_year": 16535,
+          "sample_count": 11
+        },
+        "Everest": {
+          "median_kms_per_year": 16766,
+          "sample_count": 25
+        },
+        "Expedition": {
+          "median_kms_per_year": 15769,
+          "sample_count": 115
+        },
+        "Explorer": {
+          "median_kms_per_year": 13847,
+          "sample_count": 410
+        },
+        "F-Series": {
+          "median_kms_per_year": 16000,
+          "sample_count": 75
+        },
+        "F-Series Pickup": {
+          "median_kms_per_year": 16208,
+          "sample_count": 244
+        },
+        "Fiesta": {
+          "median_kms_per_year": 12857,
+          "sample_count": 26
+        },
+        "Figo": {
+          "median_kms_per_year": 15833,
+          "sample_count": 107
+        },
+        "Focus": {
+          "median_kms_per_year": 15800,
+          "sample_count": 127
+        },
+        "Fusion": {
+          "median_kms_per_year": 17714,
+          "sample_count": 54
+        },
+        "GT": {
+          "median_kms_per_year": 394,
+          "sample_count": 10
+        },
+        "Mustang": {
+          "median_kms_per_year": 12239,
+          "sample_count": 519
+        },
+        "Ranger": {
+          "median_kms_per_year": 17333,
+          "sample_count": 61
+        },
+        "Shelby Cobra": {
+          "median_kms_per_year": 897,
+          "sample_count": 10
+        },
+        "Taurus": {
+          "median_kms_per_year": 14070,
+          "sample_count": 39
+        },
+        "Territory": {
+          "median_kms_per_year": 21781,
+          "sample_count": 102
+        },
+        "Transit": {
+          "median_kms_per_year": 26170,
+          "sample_count": 26
+        }
+      }
+    },
+    "Forthing": {
+      "brand_median_kms_per_year": 9368,
+      "models": {}
+    },
+    "Foton": {
+      "brand_median_kms_per_year": 27250,
+      "models": {}
+    },
+    "GAC": {
+      "brand_median_kms_per_year": 13884,
+      "models": {
+        "EMKOO": {
+          "median_kms_per_year": 13604,
+          "sample_count": 17
+        },
+        "EMPOW": {
+          "median_kms_per_year": 15152,
+          "sample_count": 25
+        },
+        "EMZOOM": {
+          "median_kms_per_year": 7080,
+          "sample_count": 17
+        },
+        "GS3": {
+          "median_kms_per_year": 7400,
+          "sample_count": 46
+        },
+        "GS8": {
+          "median_kms_per_year": 15800,
+          "sample_count": 47
+        }
+      }
+    },
+    "Geely": {
+      "brand_median_kms_per_year": 16500,
+      "models": {
+        "Coolray": {
+          "median_kms_per_year": 13500,
+          "sample_count": 61
+        },
+        "Emgrand": {
+          "median_kms_per_year": 15375,
+          "sample_count": 30
+        },
+        "Monjaro": {
+          "median_kms_per_year": 17131,
+          "sample_count": 34
+        },
+        "Preface": {
+          "median_kms_per_year": 26000,
+          "sample_count": 11
+        },
+        "Tugella": {
+          "median_kms_per_year": 13166,
+          "sample_count": 13
+        }
+      }
+    },
+    "Genesis": {
+      "brand_median_kms_per_year": 13262,
+      "models": {
+        "G70": {
+          "median_kms_per_year": 14310,
+          "sample_count": 34
+        },
+        "G80": {
+          "median_kms_per_year": 12864,
+          "sample_count": 46
+        },
+        "G90": {
+          "median_kms_per_year": 9318,
+          "sample_count": 14
+        },
+        "GV70": {
+          "median_kms_per_year": 12166,
+          "sample_count": 37
+        },
+        "GV80": {
+          "median_kms_per_year": 15119,
+          "sample_count": 62
+        }
+      }
+    },
+    "GMC": {
+      "brand_median_kms_per_year": 16775,
+      "models": {
+        "Acadia": {
+          "median_kms_per_year": 14681,
+          "sample_count": 87
+        },
+        "Hummer": {
+          "median_kms_per_year": 3500,
+          "sample_count": 15
+        },
+        "Sierra": {
+          "median_kms_per_year": 19562,
+          "sample_count": 202
+        },
+        "Terrain": {
+          "median_kms_per_year": 15455,
+          "sample_count": 71
+        },
+        "Yukon": {
+          "median_kms_per_year": 18667,
+          "sample_count": 247
+        }
+      }
+    },
+    "GWM": {
+      "brand_median_kms_per_year": 22500,
+      "models": {}
+    },
+    "Haval": {
+      "brand_median_kms_per_year": 14667,
+      "models": {
+        "H6": {
+          "median_kms_per_year": 17306,
+          "sample_count": 20
+        },
+        "H9": {
+          "median_kms_per_year": 11500,
+          "sample_count": 11
+        },
+        "Jolion": {
+          "median_kms_per_year": 9250,
+          "sample_count": 16
+        }
+      }
+    },
+    "Higer": {
+      "brand_median_kms_per_year": 13611,
+      "models": {}
+    },
+    "Hino": {
+      "brand_median_kms_per_year": 25211,
+      "models": {
+        "300": {
+          "median_kms_per_year": 25211,
+          "sample_count": 10
+        }
+      }
+    },
+    "HiPhi": {
+      "brand_median_kms_per_year": 1250,
+      "models": {}
+    },
+    "Holden": {
+      "brand_median_kms_per_year": 8882,
+      "models": {}
+    },
+    "Honda": {
+      "brand_median_kms_per_year": 15574,
+      "models": {
+        "Accord": {
+          "median_kms_per_year": 16094,
+          "sample_count": 358
+        },
+        "CR-V": {
+          "median_kms_per_year": 14797,
+          "sample_count": 144
+        },
+        "City": {
+          "median_kms_per_year": 15308,
+          "sample_count": 71
+        },
+        "Civic": {
+          "median_kms_per_year": 14700,
+          "sample_count": 274
+        },
+        "HR-V": {
+          "median_kms_per_year": 14161,
+          "sample_count": 50
+        },
+        "Odyssey": {
+          "median_kms_per_year": 19771,
+          "sample_count": 64
+        },
+        "Pilot": {
+          "median_kms_per_year": 15736,
+          "sample_count": 90
+        },
+        "ZR-V": {
+          "median_kms_per_year": 7522,
+          "sample_count": 16
+        }
+      }
+    },
+    "Hummer": {
+      "brand_median_kms_per_year": 8506,
+      "models": {
+        "H2": {
+          "median_kms_per_year": 6500,
+          "sample_count": 18
+        },
+        "H3": {
+          "median_kms_per_year": 9722,
+          "sample_count": 26
+        }
+      }
+    },
+    "Hyundai": {
+      "brand_median_kms_per_year": 15760,
+      "models": {
+        "Accent": {
+          "median_kms_per_year": 19000,
+          "sample_count": 151
+        },
+        "Avante": {
+          "median_kms_per_year": 12300,
+          "sample_count": 26
+        },
+        "Azera": {
+          "median_kms_per_year": 14402,
+          "sample_count": 32
+        },
+        "Creta": {
+          "median_kms_per_year": 20981,
+          "sample_count": 130
+        },
+        "Elantra": {
+          "median_kms_per_year": 16727,
+          "sample_count": 217
+        },
+        "Genesis": {
+          "median_kms_per_year": 14225,
+          "sample_count": 26
+        },
+        "Grand Santa Fe": {
+          "median_kms_per_year": 17182,
+          "sample_count": 13
+        },
+        "Grand i10": {
+          "median_kms_per_year": 20033,
+          "sample_count": 11
+        },
+        "H1": {
+          "median_kms_per_year": 17918,
+          "sample_count": 103
+        },
+        "Kona": {
+          "median_kms_per_year": 12625,
+          "sample_count": 62
+        },
+        "Palisade": {
+          "median_kms_per_year": 15450,
+          "sample_count": 94
+        },
+        "Santa Fe": {
+          "median_kms_per_year": 13350,
+          "sample_count": 228
+        },
+        "Sonata": {
+          "median_kms_per_year": 16764,
+          "sample_count": 292
+        },
+        "Staria": {
+          "median_kms_per_year": 16167,
+          "sample_count": 34
+        },
+        "Tucson": {
+          "median_kms_per_year": 14322,
+          "sample_count": 300
+        },
+        "Veloster": {
+          "median_kms_per_year": 14400,
+          "sample_count": 97
+        },
+        "Venue": {
+          "median_kms_per_year": 15333,
+          "sample_count": 11
+        },
+        "i10": {
+          "median_kms_per_year": 14542,
+          "sample_count": 10
+        }
+      }
+    },
+    "INEOS": {
+      "brand_median_kms_per_year": 8000,
+      "models": {
+        "Grenadier": {
+          "median_kms_per_year": 8000,
+          "sample_count": 13
+        }
+      }
+    },
+    "Infiniti": {
+      "brand_median_kms_per_year": 14699,
+      "models": {
+        "FX45/FX35": {
+          "median_kms_per_year": 13580,
+          "sample_count": 24
+        },
+        "FX50": {
+          "median_kms_per_year": 12453,
+          "sample_count": 12
+        },
+        "G25": {
+          "median_kms_per_year": 16342,
+          "sample_count": 13
+        },
+        "G35": {
+          "median_kms_per_year": 14883,
+          "sample_count": 12
+        },
+        "G37": {
+          "median_kms_per_year": 13250,
+          "sample_count": 15
+        },
+        "JX-Series": {
+          "median_kms_per_year": 16096,
+          "sample_count": 12
+        },
+        "Q30": {
+          "median_kms_per_year": 14037,
+          "sample_count": 28
+        },
+        "Q50": {
+          "median_kms_per_year": 15806,
+          "sample_count": 104
+        },
+        "Q60": {
+          "median_kms_per_year": 12949,
+          "sample_count": 30
+        },
+        "Q70": {
+          "median_kms_per_year": 14929,
+          "sample_count": 11
+        },
+        "QX30": {
+          "median_kms_per_year": 14797,
+          "sample_count": 17
+        },
+        "QX50": {
+          "median_kms_per_year": 13145,
+          "sample_count": 144
+        },
+        "QX55": {
+          "median_kms_per_year": 10500,
+          "sample_count": 55
+        },
+        "QX56": {
+          "median_kms_per_year": 14345,
+          "sample_count": 32
+        },
+        "QX60": {
+          "median_kms_per_year": 15321,
+          "sample_count": 106
+        },
+        "QX70": {
+          "median_kms_per_year": 16100,
+          "sample_count": 97
+        },
+        "QX80": {
+          "median_kms_per_year": 16390,
+          "sample_count": 124
+        }
+      }
+    },
+    "Isuzu": {
+      "brand_median_kms_per_year": 24273,
+      "models": {
+        "N-SERIES": {
+          "median_kms_per_year": 33333,
+          "sample_count": 11
+        }
+      }
+    },
+    "JAC": {
+      "brand_median_kms_per_year": 19196,
+      "models": {
+        "J7": {
+          "median_kms_per_year": 20826,
+          "sample_count": 58
+        },
+        "JS4": {
+          "median_kms_per_year": 18333,
+          "sample_count": 37
+        },
+        "JS6": {
+          "median_kms_per_year": 17311,
+          "sample_count": 13
+        },
+        "S3": {
+          "median_kms_per_year": 18568,
+          "sample_count": 49
+        }
+      }
+    },
+    "JAECOO": {
+      "brand_median_kms_per_year": 8399,
+      "models": {}
+    },
+    "Jaguar": {
+      "brand_median_kms_per_year": 12068,
+      "models": {
+        "E-Pace": {
+          "median_kms_per_year": 11554,
+          "sample_count": 44
+        },
+        "F-Pace": {
+          "median_kms_per_year": 13868,
+          "sample_count": 100
+        },
+        "F-Type": {
+          "median_kms_per_year": 11000,
+          "sample_count": 40
+        },
+        "XE": {
+          "median_kms_per_year": 13944,
+          "sample_count": 42
+        },
+        "XF": {
+          "median_kms_per_year": 11909,
+          "sample_count": 77
+        },
+        "XJ": {
+          "median_kms_per_year": 10229,
+          "sample_count": 32
+        }
+      }
+    },
+    "Jeep": {
+      "brand_median_kms_per_year": 14067,
+      "models": {
+        "Cherokee": {
+          "median_kms_per_year": 13550,
+          "sample_count": 76
+        },
+        "Compass": {
+          "median_kms_per_year": 12100,
+          "sample_count": 50
+        },
+        "Gladiator": {
+          "median_kms_per_year": 10813,
+          "sample_count": 56
+        },
+        "Grand Cherokee": {
+          "median_kms_per_year": 15167,
+          "sample_count": 433
+        },
+        "Grand Cherokee L": {
+          "median_kms_per_year": 17208,
+          "sample_count": 60
+        },
+        "Grand Wagoneer": {
+          "median_kms_per_year": 9098,
+          "sample_count": 31
+        },
+        "Renegade": {
+          "median_kms_per_year": 14468,
+          "sample_count": 20
+        },
+        "Wrangler": {
+          "median_kms_per_year": 13636,
+          "sample_count": 571
+        },
+        "Wrangler 4xe": {
+          "median_kms_per_year": 7000,
+          "sample_count": 27
+        },
+        "Wrangler Unlimited": {
+          "median_kms_per_year": 14444,
+          "sample_count": 329
+        }
+      }
+    },
+    "Jetour": {
+      "brand_median_kms_per_year": 10583,
+      "models": {
+        "Dashing": {
+          "median_kms_per_year": 8865,
+          "sample_count": 95
+        },
+        "G700": {
+          "median_kms_per_year": 77,
+          "sample_count": 11
+        },
+        "T1": {
+          "median_kms_per_year": 60,
+          "sample_count": 34
+        },
+        "T2": {
+          "median_kms_per_year": 13000,
+          "sample_count": 279
+        },
+        "X50": {
+          "median_kms_per_year": 2900,
+          "sample_count": 25
+        },
+        "X70": {
+          "median_kms_per_year": 11209,
+          "sample_count": 22
+        },
+        "X70 Plus": {
+          "median_kms_per_year": 14000,
+          "sample_count": 49
+        },
+        "X90 Plus": {
+          "median_kms_per_year": 19500,
+          "sample_count": 17
+        }
+      }
+    },
+    "Kia": {
+      "brand_median_kms_per_year": 15721,
+      "models": {
+        "Bongo": {
+          "median_kms_per_year": 12278,
+          "sample_count": 27
+        },
+        "Cadenza": {
+          "median_kms_per_year": 16167,
+          "sample_count": 40
+        },
+        "Carens": {
+          "median_kms_per_year": 18333,
+          "sample_count": 18
+        },
+        "Carnival": {
+          "median_kms_per_year": 21917,
+          "sample_count": 66
+        },
+        "Cerato": {
+          "median_kms_per_year": 16374,
+          "sample_count": 65
+        },
+        "Forte": {
+          "median_kms_per_year": 14930,
+          "sample_count": 26
+        },
+        "K3": {
+          "median_kms_per_year": 13538,
+          "sample_count": 21
+        },
+        "K5": {
+          "median_kms_per_year": 17250,
+          "sample_count": 83
+        },
+        "K8": {
+          "median_kms_per_year": 12500,
+          "sample_count": 11
+        },
+        "Morning": {
+          "median_kms_per_year": 12571,
+          "sample_count": 14
+        },
+        "Optima": {
+          "median_kms_per_year": 16000,
+          "sample_count": 190
+        },
+        "Pegas": {
+          "median_kms_per_year": 17154,
+          "sample_count": 87
+        },
+        "Picanto": {
+          "median_kms_per_year": 15286,
+          "sample_count": 91
+        },
+        "Rio": {
+          "median_kms_per_year": 15833,
+          "sample_count": 99
+        },
+        "Sedona": {
+          "median_kms_per_year": 16611,
+          "sample_count": 26
+        },
+        "Seltos": {
+          "median_kms_per_year": 16538,
+          "sample_count": 107
+        },
+        "Sonet": {
+          "median_kms_per_year": 20952,
+          "sample_count": 20
+        },
+        "Sorento": {
+          "median_kms_per_year": 15232,
+          "sample_count": 180
+        },
+        "Soul": {
+          "median_kms_per_year": 14788,
+          "sample_count": 47
+        },
+        "Sportage": {
+          "median_kms_per_year": 15000,
+          "sample_count": 361
+        },
+        "Stinger": {
+          "median_kms_per_year": 14786,
+          "sample_count": 32
+        },
+        "Telluride": {
+          "median_kms_per_year": 16000,
+          "sample_count": 55
+        }
+      }
+    },
+    "King Long": {
+      "brand_median_kms_per_year": 28409,
+      "models": {}
+    },
+    "Koenigsegg": {
+      "brand_median_kms_per_year": 114,
+      "models": {}
+    },
+    "KTM": {
+      "brand_median_kms_per_year": 2300,
+      "models": {}
+    },
+    "Lamborghini": {
+      "brand_median_kms_per_year": 2000,
+      "models": {
+        "Aventador": {
+          "median_kms_per_year": 1500,
+          "sample_count": 75
+        },
+        "Aventador S": {
+          "median_kms_per_year": 2064,
+          "sample_count": 18
+        },
+        "Gallardo": {
+          "median_kms_per_year": 1044,
+          "sample_count": 15
+        },
+        "Huracan": {
+          "median_kms_per_year": 1700,
+          "sample_count": 161
+        },
+        "Murcielago": {
+          "median_kms_per_year": 632,
+          "sample_count": 14
+        },
+        "Revuelto": {
+          "median_kms_per_year": 454,
+          "sample_count": 60
+        },
+        "Urus": {
+          "median_kms_per_year": 6000,
+          "sample_count": 328
+        }
+      }
+    },
+    "Lancia": {
+      "brand_median_kms_per_year": 2471,
+      "models": {}
+    },
+    "Land Rover": {
+      "brand_median_kms_per_year": 13455,
+      "models": {
+        "Defender": {
+          "median_kms_per_year": 13163,
+          "sample_count": 475
+        },
+        "Discovery": {
+          "median_kms_per_year": 13862,
+          "sample_count": 50
+        },
+        "Discovery Sport": {
+          "median_kms_per_year": 13000,
+          "sample_count": 77
+        },
+        "LR2": {
+          "median_kms_per_year": 14429,
+          "sample_count": 19
+        },
+        "LR4": {
+          "median_kms_per_year": 14083,
+          "sample_count": 46
+        },
+        "Range Rover": {
+          "median_kms_per_year": 13392,
+          "sample_count": 965
+        },
+        "Range Rover Evoque": {
+          "median_kms_per_year": 12733,
+          "sample_count": 284
+        },
+        "Range Rover Sport": {
+          "median_kms_per_year": 13535,
+          "sample_count": 849
+        },
+        "Range Rover Velar": {
+          "median_kms_per_year": 14500,
+          "sample_count": 261
+        }
+      }
+    },
+    "Leapmotor": {
+      "brand_median_kms_per_year": 7333,
+      "models": {}
+    },
+    "Lexus": {
+      "brand_median_kms_per_year": 13000,
+      "models": {
+        "ES HYBRID": {
+          "median_kms_per_year": 18333,
+          "sample_count": 27
+        },
+        "ES-Series": {
+          "median_kms_per_year": 13750,
+          "sample_count": 245
+        },
+        "GS-Series": {
+          "median_kms_per_year": 14167,
+          "sample_count": 131
+        },
+        "GX 460": {
+          "median_kms_per_year": 15003,
+          "sample_count": 83
+        },
+        "IS-Series": {
+          "median_kms_per_year": 13571,
+          "sample_count": 331
+        },
+        "LC-Series": {
+          "median_kms_per_year": 7869,
+          "sample_count": 12
+        },
+        "LS-Series": {
+          "median_kms_per_year": 10889,
+          "sample_count": 244
+        },
+        "LX-Series": {
+          "median_kms_per_year": 14523,
+          "sample_count": 276
+        },
+        "NX-Series": {
+          "median_kms_per_year": 12500,
+          "sample_count": 113
+        },
+        "RC": {
+          "median_kms_per_year": 10139,
+          "sample_count": 10
+        },
+        "RC F": {
+          "median_kms_per_year": 16455,
+          "sample_count": 14
+        },
+        "RX-Series": {
+          "median_kms_per_year": 11427,
+          "sample_count": 297
+        },
+        "UX 200": {
+          "median_kms_per_year": 14556,
+          "sample_count": 18
+        },
+        "UX-Series": {
+          "median_kms_per_year": 15200,
+          "sample_count": 37
+        }
+      }
+    },
+    "Li Auto": {
+      "brand_median_kms_per_year": 9999,
+      "models": {
+        "L9": {
+          "median_kms_per_year": 9999,
+          "sample_count": 12
+        }
+      }
+    },
+    "Lincoln": {
+      "brand_median_kms_per_year": 13606,
+      "models": {
+        "Aviator": {
+          "median_kms_per_year": 13060,
+          "sample_count": 42
+        },
+        "Corsair": {
+          "median_kms_per_year": 14588,
+          "sample_count": 37
+        },
+        "MKC": {
+          "median_kms_per_year": 14040,
+          "sample_count": 36
+        },
+        "MKX": {
+          "median_kms_per_year": 11842,
+          "sample_count": 53
+        },
+        "MKZ": {
+          "median_kms_per_year": 12792,
+          "sample_count": 22
+        },
+        "Nautilus": {
+          "median_kms_per_year": 14833,
+          "sample_count": 47
+        },
+        "Navigator": {
+          "median_kms_per_year": 15348,
+          "sample_count": 106
+        }
+      }
+    },
+    "Lotus": {
+      "brand_median_kms_per_year": 6801,
+      "models": {}
+    },
+    "Lucid": {
+      "brand_median_kms_per_year": 96,
+      "models": {}
+    },
+    "Mahindra": {
+      "brand_median_kms_per_year": 24000,
+      "models": {}
+    },
+    "Maserati": {
+      "brand_median_kms_per_year": 9735,
+      "models": {
+        "Ghibli": {
+          "median_kms_per_year": 10325,
+          "sample_count": 68
+        },
+        "GranTurismo": {
+          "median_kms_per_year": 7429,
+          "sample_count": 18
+        },
+        "Grecale": {
+          "median_kms_per_year": 9141,
+          "sample_count": 38
+        },
+        "Levante": {
+          "median_kms_per_year": 11600,
+          "sample_count": 103
+        },
+        "MC20": {
+          "median_kms_per_year": 667,
+          "sample_count": 11
+        },
+        "Quattroporte": {
+          "median_kms_per_year": 9630,
+          "sample_count": 40
+        }
+      }
+    },
+    "Maxus": {
+      "brand_median_kms_per_year": 19556,
+      "models": {}
+    },
+    "Maybach": {
+      "brand_median_kms_per_year": 4248,
+      "models": {}
+    },
+    "Mazda": {
+      "brand_median_kms_per_year": 17647,
+      "models": {
+        "2": {
+          "median_kms_per_year": 14224,
+          "sample_count": 18
+        },
+        "3": {
+          "median_kms_per_year": 17472,
+          "sample_count": 150
+        },
+        "3 Hatchback": {
+          "median_kms_per_year": 15663,
+          "sample_count": 20
+        },
+        "6": {
+          "median_kms_per_year": 17667,
+          "sample_count": 168
+        },
+        "CX-3": {
+          "median_kms_per_year": 18000,
+          "sample_count": 61
+        },
+        "CX-30": {
+          "median_kms_per_year": 16995,
+          "sample_count": 48
+        },
+        "CX-5": {
+          "median_kms_per_year": 19598,
+          "sample_count": 154
+        },
+        "CX-9": {
+          "median_kms_per_year": 16813,
+          "sample_count": 118
+        },
+        "CX-90": {
+          "median_kms_per_year": 15690,
+          "sample_count": 10
+        },
+        "MX-5": {
+          "median_kms_per_year": 9801,
+          "sample_count": 11
+        }
+      }
+    },
+    "McLaren": {
+      "brand_median_kms_per_year": 1262,
+      "models": {
+        "720S": {
+          "median_kms_per_year": 2143,
+          "sample_count": 19
+        },
+        "Artura": {
+          "median_kms_per_year": 1752,
+          "sample_count": 16
+        },
+        "Senna": {
+          "median_kms_per_year": 443,
+          "sample_count": 10
+        }
+      }
+    },
+    "Mercedes-Benz": {
+      "brand_median_kms_per_year": 9750,
+      "models": {
+        "A-Class": {
+          "median_kms_per_year": 12667,
+          "sample_count": 417
+        },
+        "AMG": {
+          "median_kms_per_year": 4633,
+          "sample_count": 230
+        },
+        "C-Class": {
+          "median_kms_per_year": 11346,
+          "sample_count": 1158
+        },
+        "CL-Class": {
+          "median_kms_per_year": 6917,
+          "sample_count": 43
+        },
+        "CLA": {
+          "median_kms_per_year": 11667,
+          "sample_count": 307
+        },
+        "CLE-Class": {
+          "median_kms_per_year": 3000,
+          "sample_count": 85
+        },
+        "CLK-Class": {
+          "median_kms_per_year": 4426,
+          "sample_count": 22
+        },
+        "CLS-Class": {
+          "median_kms_per_year": 10000,
+          "sample_count": 197
+        },
+        "E-Class": {
+          "median_kms_per_year": 10200,
+          "sample_count": 1099
+        },
+        "EQA": {
+          "median_kms_per_year": 9488,
+          "sample_count": 14
+        },
+        "EQB": {
+          "median_kms_per_year": 6158,
+          "sample_count": 13
+        },
+        "EQE": {
+          "median_kms_per_year": 5000,
+          "sample_count": 64
+        },
+        "EQS": {
+          "median_kms_per_year": 4910,
+          "sample_count": 48
+        },
+        "G-Class": {
+          "median_kms_per_year": 8567,
+          "sample_count": 920
+        },
+        "G-Class Brabus": {
+          "median_kms_per_year": 4052,
+          "sample_count": 117
+        },
+        "GL-Class": {
+          "median_kms_per_year": 12636,
+          "sample_count": 79
+        },
+        "GLA": {
+          "median_kms_per_year": 10625,
+          "sample_count": 133
+        },
+        "GLB": {
+          "median_kms_per_year": 10016,
+          "sample_count": 86
+        },
+        "GLC": {
+          "median_kms_per_year": 10938,
+          "sample_count": 332
+        },
+        "GLC Coupe": {
+          "median_kms_per_year": 10250,
+          "sample_count": 143
+        },
+        "GLE Coupe": {
+          "median_kms_per_year": 10682,
+          "sample_count": 239
+        },
+        "GLE-Class": {
+          "median_kms_per_year": 11500,
+          "sample_count": 255
+        },
+        "GLK-Class": {
+          "median_kms_per_year": 7276,
+          "sample_count": 50
+        },
+        "GLS-Class": {
+          "median_kms_per_year": 9926,
+          "sample_count": 205
+        },
+        "M-Class": {
+          "median_kms_per_year": 11667,
+          "sample_count": 77
+        },
+        "S-Class": {
+          "median_kms_per_year": 8700,
+          "sample_count": 1002
+        },
+        "SEL-Class": {
+          "median_kms_per_year": 2528,
+          "sample_count": 17
+        },
+        "SL-Class": {
+          "median_kms_per_year": 3697,
+          "sample_count": 162
+        },
+        "SLC": {
+          "median_kms_per_year": 13531,
+          "sample_count": 18
+        },
+        "SLK-Class": {
+          "median_kms_per_year": 9013,
+          "sample_count": 44
+        },
+        "SLR": {
+          "median_kms_per_year": 711,
+          "sample_count": 15
+        },
+        "SLS": {
+          "median_kms_per_year": 1857,
+          "sample_count": 21
+        },
+        "Sprinter": {
+          "median_kms_per_year": 2400,
+          "sample_count": 24
+        },
+        "V-Class": {
+          "median_kms_per_year": 13644,
+          "sample_count": 138
+        },
+        "Viano": {
+          "median_kms_per_year": 11444,
+          "sample_count": 19
+        },
+        "Vito": {
+          "median_kms_per_year": 17722,
+          "sample_count": 32
+        }
+      }
+    },
+    "Mercedes-Maybach": {
+      "brand_median_kms_per_year": 5600,
+      "models": {
+        "GLS-Class": {
+          "median_kms_per_year": 4000,
+          "sample_count": 65
+        },
+        "S-Class": {
+          "median_kms_per_year": 7667,
+          "sample_count": 79
+        }
+      }
+    },
+    "Mercedes Onyx": {
+      "brand_median_kms_per_year": 24,
+      "models": {}
+    },
+    "Mercury": {
+      "brand_median_kms_per_year": 12294,
+      "models": {}
+    },
+    "MG": {
+      "brand_median_kms_per_year": 17587,
+      "models": {
+        "6": {
+          "median_kms_per_year": 16500,
+          "sample_count": 14
+        },
+        "GT": {
+          "median_kms_per_year": 19267,
+          "sample_count": 65
+        },
+        "HS": {
+          "median_kms_per_year": 12670,
+          "sample_count": 60
+        },
+        "MG 7": {
+          "median_kms_per_year": 23745,
+          "sample_count": 22
+        },
+        "MG3": {
+          "median_kms_per_year": 12500,
+          "sample_count": 13
+        },
+        "MG5": {
+          "median_kms_per_year": 22912,
+          "sample_count": 94
+        },
+        "MG6": {
+          "median_kms_per_year": 16600,
+          "sample_count": 13
+        },
+        "One": {
+          "median_kms_per_year": 16917,
+          "sample_count": 36
+        },
+        "RX5": {
+          "median_kms_per_year": 16216,
+          "sample_count": 76
+        },
+        "RX8": {
+          "median_kms_per_year": 14050,
+          "sample_count": 55
+        },
+        "ZS": {
+          "median_kms_per_year": 17906,
+          "sample_count": 135
+        }
+      }
+    },
+    "MINI": {
+      "brand_median_kms_per_year": 11833,
+      "models": {
+        "Clubman": {
+          "median_kms_per_year": 12000,
+          "sample_count": 15
+        },
+        "Cooper": {
+          "median_kms_per_year": 11404,
+          "sample_count": 410
+        },
+        "Countryman": {
+          "median_kms_per_year": 12462,
+          "sample_count": 171
+        }
+      }
+    },
+    "Mitsubishi": {
+      "brand_median_kms_per_year": 15842,
+      "models": {
+        "ASX": {
+          "median_kms_per_year": 14725,
+          "sample_count": 109
+        },
+        "Attrage": {
+          "median_kms_per_year": 17830,
+          "sample_count": 208
+        },
+        "Canter": {
+          "median_kms_per_year": 30000,
+          "sample_count": 113
+        },
+        "EclipseCross": {
+          "median_kms_per_year": 13667,
+          "sample_count": 41
+        },
+        "Galant": {
+          "median_kms_per_year": 15810,
+          "sample_count": 15
+        },
+        "L200": {
+          "median_kms_per_year": 21202,
+          "sample_count": 98
+        },
+        "Lancer": {
+          "median_kms_per_year": 16051,
+          "sample_count": 62
+        },
+        "Lancer EX": {
+          "median_kms_per_year": 15683,
+          "sample_count": 58
+        },
+        "Mirage": {
+          "median_kms_per_year": 15714,
+          "sample_count": 23
+        },
+        "Montero Sport": {
+          "median_kms_per_year": 12750,
+          "sample_count": 103
+        },
+        "Other": {
+          "median_kms_per_year": 2648,
+          "sample_count": 10
+        },
+        "Outlander": {
+          "median_kms_per_year": 17186,
+          "sample_count": 117
+        },
+        "Pajero": {
+          "median_kms_per_year": 13214,
+          "sample_count": 469
+        },
+        "Xpander": {
+          "median_kms_per_year": 19851,
+          "sample_count": 36
+        },
+        "Xpander Cross": {
+          "median_kms_per_year": 21993,
+          "sample_count": 14
+        }
+      }
+    },
+    "Nio": {
+      "brand_median_kms_per_year": 9333,
+      "models": {}
+    },
+    "Nissan": {
+      "brand_median_kms_per_year": 16875,
+      "models": {
+        "370z": {
+          "median_kms_per_year": 12761,
+          "sample_count": 28
+        },
+        "Altima": {
+          "median_kms_per_year": 16923,
+          "sample_count": 763
+        },
+        "Armada": {
+          "median_kms_per_year": 14196,
+          "sample_count": 114
+        },
+        "GT-R": {
+          "median_kms_per_year": 2539,
+          "sample_count": 18
+        },
+        "Juke": {
+          "median_kms_per_year": 12990,
+          "sample_count": 98
+        },
+        "Kicks": {
+          "median_kms_per_year": 14667,
+          "sample_count": 265
+        },
+        "Maxima": {
+          "median_kms_per_year": 16333,
+          "sample_count": 193
+        },
+        "Micra": {
+          "median_kms_per_year": 15167,
+          "sample_count": 73
+        },
+        "Murano": {
+          "median_kms_per_year": 13529,
+          "sample_count": 53
+        },
+        "Navara": {
+          "median_kms_per_year": 20000,
+          "sample_count": 63
+        },
+        "Pathfinder": {
+          "median_kms_per_year": 15238,
+          "sample_count": 303
+        },
+        "Patrol": {
+          "median_kms_per_year": 19167,
+          "sample_count": 966
+        },
+        "Patrol Safari": {
+          "median_kms_per_year": 15762,
+          "sample_count": 251
+        },
+        "Pickup": {
+          "median_kms_per_year": 14900,
+          "sample_count": 23
+        },
+        "Qashqai": {
+          "median_kms_per_year": 12595,
+          "sample_count": 22
+        },
+        "Quest": {
+          "median_kms_per_year": 17194,
+          "sample_count": 14
+        },
+        "Rogue": {
+          "median_kms_per_year": 15948,
+          "sample_count": 168
+        },
+        "Sentra": {
+          "median_kms_per_year": 17000,
+          "sample_count": 302
+        },
+        "Skyline": {
+          "median_kms_per_year": 3198,
+          "sample_count": 26
+        },
+        "Sunny": {
+          "median_kms_per_year": 19200,
+          "sample_count": 521
+        },
+        "Tiida": {
+          "median_kms_per_year": 16140,
+          "sample_count": 189
+        },
+        "Urvan": {
+          "median_kms_per_year": 25800,
+          "sample_count": 163
+        },
+        "Versa": {
+          "median_kms_per_year": 14921,
+          "sample_count": 65
+        },
+        "X-Trail": {
+          "median_kms_per_year": 16667,
+          "sample_count": 369
+        },
+        "Xterra": {
+          "median_kms_per_year": 15857,
+          "sample_count": 161
+        }
+      }
+    },
+    "OMODA": {
+      "brand_median_kms_per_year": 232,
+      "models": {}
+    },
+    "Opel": {
+      "brand_median_kms_per_year": 12167,
+      "models": {
+        "Mokka": {
+          "median_kms_per_year": 12667,
+          "sample_count": 10
+        }
+      }
+    },
+    "Other Make": {
+      "brand_median_kms_per_year": 137,
+      "models": {}
+    },
+    "Pagani": {
+      "brand_median_kms_per_year": 123,
+      "models": {}
+    },
+    "Peugeot": {
+      "brand_median_kms_per_year": 16201,
+      "models": {
+        "2008": {
+          "median_kms_per_year": 9548,
+          "sample_count": 36
+        },
+        "208": {
+          "median_kms_per_year": 15275,
+          "sample_count": 32
+        },
+        "3008": {
+          "median_kms_per_year": 16914,
+          "sample_count": 84
+        },
+        "301": {
+          "median_kms_per_year": 17273,
+          "sample_count": 11
+        },
+        "308": {
+          "median_kms_per_year": 12696,
+          "sample_count": 24
+        },
+        "5008": {
+          "median_kms_per_year": 12887,
+          "sample_count": 19
+        },
+        "508": {
+          "median_kms_per_year": 17175,
+          "sample_count": 18
+        },
+        "Boxer": {
+          "median_kms_per_year": 35750,
+          "sample_count": 18
+        },
+        "Landtrek": {
+          "median_kms_per_year": 15,
+          "sample_count": 11
+        },
+        "Partner": {
+          "median_kms_per_year": 30250,
+          "sample_count": 33
+        }
+      }
+    },
+    "Polaris": {
+      "brand_median_kms_per_year": 900,
+      "models": {
+        "Slingshot": {
+          "median_kms_per_year": 900,
+          "sample_count": 10
+        }
+      }
+    },
+    "Polestar": {
+      "brand_median_kms_per_year": 6150,
+      "models": {
+        "2": {
+          "median_kms_per_year": 7167,
+          "sample_count": 28
+        }
+      }
+    },
+    "Pontiac": {
+      "brand_median_kms_per_year": 5437,
+      "models": {}
+    },
+    "Porsche": {
+      "brand_median_kms_per_year": 8750,
+      "models": {
+        "718 Spyder": {
+          "median_kms_per_year": 3333,
+          "sample_count": 31
+        },
+        "918 Spyder": {
+          "median_kms_per_year": 610,
+          "sample_count": 16
+        },
+        "Boxster": {
+          "median_kms_per_year": 8190,
+          "sample_count": 110
+        },
+        "Carrera / 911": {
+          "median_kms_per_year": 3800,
+          "sample_count": 694
+        },
+        "Cayenne": {
+          "median_kms_per_year": 12571,
+          "sample_count": 615
+        },
+        "Cayman": {
+          "median_kms_per_year": 8044,
+          "sample_count": 115
+        },
+        "Macan": {
+          "median_kms_per_year": 12640,
+          "sample_count": 233
+        },
+        "Panamera": {
+          "median_kms_per_year": 10457,
+          "sample_count": 170
+        },
+        "Taycan": {
+          "median_kms_per_year": 7859,
+          "sample_count": 72
+        }
+      }
+    },
+    "Rabdan": {
+      "brand_median_kms_per_year": 3192,
+      "models": {
+        "One": {
+          "median_kms_per_year": 3008,
+          "sample_count": 10
+        }
+      }
+    },
+    "RAM": {
+      "brand_median_kms_per_year": 15236,
+      "models": {
+        "1500": {
+          "median_kms_per_year": 15833,
+          "sample_count": 71
+        },
+        "1500 TRX": {
+          "median_kms_per_year": 13000,
+          "sample_count": 39
+        }
+      }
+    },
+    "Renault": {
+      "brand_median_kms_per_year": 16009,
+      "models": {
+        "Captur": {
+          "median_kms_per_year": 14714,
+          "sample_count": 31
+        },
+        "Dokker": {
+          "median_kms_per_year": 26535,
+          "sample_count": 24
+        },
+        "Duster": {
+          "median_kms_per_year": 17500,
+          "sample_count": 141
+        },
+        "Koleos": {
+          "median_kms_per_year": 15240,
+          "sample_count": 109
+        },
+        "Megane": {
+          "median_kms_per_year": 12484,
+          "sample_count": 26
+        },
+        "Symbol": {
+          "median_kms_per_year": 20625,
+          "sample_count": 32
+        }
+      }
+    },
+    "Rolls-Royce": {
+      "brand_median_kms_per_year": 3817,
+      "models": {
+        "Cullinan": {
+          "median_kms_per_year": 4333,
+          "sample_count": 287
+        },
+        "Dawn": {
+          "median_kms_per_year": 2746,
+          "sample_count": 64
+        },
+        "Ghost": {
+          "median_kms_per_year": 5400,
+          "sample_count": 139
+        },
+        "Phantom": {
+          "median_kms_per_year": 2277,
+          "sample_count": 98
+        },
+        "Spectre": {
+          "median_kms_per_year": 2000,
+          "sample_count": 79
+        },
+        "Wraith": {
+          "median_kms_per_year": 4485,
+          "sample_count": 151
+        }
+      }
+    },
+    "Rivian": {
+      "brand_median_kms_per_year": 12500,
+      "models": {}
+    },
+    "Rolls-Royce Onyx": {
+      "brand_median_kms_per_year": 1649,
+      "models": {}
+    },
+    "Rox": {
+      "brand_median_kms_per_year": 23,
+      "models": {
+        "01": {
+          "median_kms_per_year": 23,
+          "sample_count": 35
+        }
+      }
+    },
+    "Saab": {
+      "brand_median_kms_per_year": 12972,
+      "models": {}
+    },
+    "Seat": {
+      "brand_median_kms_per_year": 12267,
+      "models": {}
+    },
+    "Skoda": {
+      "brand_median_kms_per_year": 10400,
+      "models": {
+        "Kamiq": {
+          "median_kms_per_year": 15968,
+          "sample_count": 12
+        },
+        "Karoq": {
+          "median_kms_per_year": 3365,
+          "sample_count": 18
+        },
+        "Kodiaq": {
+          "median_kms_per_year": 11333,
+          "sample_count": 17
+        },
+        "Kushaq": {
+          "median_kms_per_year": 16890,
+          "sample_count": 13
+        },
+        "Octavia": {
+          "median_kms_per_year": 11311,
+          "sample_count": 24
+        },
+        "Scala": {
+          "median_kms_per_year": 10566,
+          "sample_count": 15
+        },
+        "Superb": {
+          "median_kms_per_year": 7760,
+          "sample_count": 18
+        }
+      }
+    },
+    "Skywell": {
+      "brand_median_kms_per_year": 13224,
+      "models": {}
+    },
+    "Smart": {
+      "brand_median_kms_per_year": 4520,
+      "models": {
+        "Fortwo": {
+          "median_kms_per_year": 5733,
+          "sample_count": 10
+        }
+      }
+    },
+    "Subaru": {
+      "brand_median_kms_per_year": 14469,
+      "models": {
+        "BRZ": {
+          "median_kms_per_year": 10667,
+          "sample_count": 19
+        },
+        "WRX": {
+          "median_kms_per_year": 12857,
+          "sample_count": 33
+        },
+        "XV": {
+          "median_kms_per_year": 17570,
+          "sample_count": 10
+        }
+      }
+    },
+    "Suzuki": {
+      "brand_median_kms_per_year": 17500,
+      "models": {
+        "Baleno": {
+          "median_kms_per_year": 21500,
+          "sample_count": 38
+        },
+        "Ciaz": {
+          "median_kms_per_year": 19000,
+          "sample_count": 85
+        },
+        "Dzire": {
+          "median_kms_per_year": 19500,
+          "sample_count": 22
+        },
+        "Ertiga": {
+          "median_kms_per_year": 37167,
+          "sample_count": 35
+        },
+        "Grand Vitara": {
+          "median_kms_per_year": 16786,
+          "sample_count": 27
+        },
+        "Jimny": {
+          "median_kms_per_year": 15345,
+          "sample_count": 110
+        },
+        "Swift": {
+          "median_kms_per_year": 14926,
+          "sample_count": 72
+        },
+        "Vitara": {
+          "median_kms_per_year": 13000,
+          "sample_count": 18
+        }
+      }
+    },
+    "TANK": {
+      "brand_median_kms_per_year": 10750,
+      "models": {
+        "300": {
+          "median_kms_per_year": 4900,
+          "sample_count": 11
+        },
+        "500": {
+          "median_kms_per_year": 13055,
+          "sample_count": 18
+        }
+      }
+    },
+    "TATA": {
+      "brand_median_kms_per_year": 21504,
+      "models": {}
+    },
+    "Tesla": {
+      "brand_median_kms_per_year": 16500,
+      "models": {
+        "Cybertruck": {
+          "median_kms_per_year": 4434,
+          "sample_count": 29
+        },
+        "Model 3": {
+          "median_kms_per_year": 19633,
+          "sample_count": 282
+        },
+        "Model S": {
+          "median_kms_per_year": 14575,
+          "sample_count": 62
+        },
+        "Model X": {
+          "median_kms_per_year": 13873,
+          "sample_count": 83
+        },
+        "Model Y": {
+          "median_kms_per_year": 16500,
+          "sample_count": 227
+        }
+      }
+    },
+    "Toyota": {
+      "brand_median_kms_per_year": 15562,
+      "models": {
+        "4Runner": {
+          "median_kms_per_year": 9200,
+          "sample_count": 18
+        },
+        "86": {
+          "median_kms_per_year": 11151,
+          "sample_count": 22
+        },
+        "Aurion": {
+          "median_kms_per_year": 17333,
+          "sample_count": 20
+        },
+        "Avalon": {
+          "median_kms_per_year": 14545,
+          "sample_count": 51
+        },
+        "Avanza": {
+          "median_kms_per_year": 22562,
+          "sample_count": 44
+        },
+        "C-HR": {
+          "median_kms_per_year": 13667,
+          "sample_count": 53
+        },
+        "Camry": {
+          "median_kms_per_year": 18438,
+          "sample_count": 413
+        },
+        "Coaster": {
+          "median_kms_per_year": 8363,
+          "sample_count": 19
+        },
+        "Corolla": {
+          "median_kms_per_year": 17200,
+          "sample_count": 463
+        },
+        "Corolla Cross": {
+          "median_kms_per_year": 17054,
+          "sample_count": 79
+        },
+        "Crown": {
+          "median_kms_per_year": 5894,
+          "sample_count": 16
+        },
+        "FJ Cruiser": {
+          "median_kms_per_year": 14222,
+          "sample_count": 132
+        },
+        "Fortuner": {
+          "median_kms_per_year": 15534,
+          "sample_count": 241
+        },
+        "Granvia": {
+          "median_kms_per_year": 19397,
+          "sample_count": 11
+        },
+        "Hiace": {
+          "median_kms_per_year": 23600,
+          "sample_count": 165
+        },
+        "Highlander": {
+          "median_kms_per_year": 10815,
+          "sample_count": 81
+        },
+        "Hilux": {
+          "median_kms_per_year": 15663,
+          "sample_count": 245
+        },
+        "Innova": {
+          "median_kms_per_year": 19565,
+          "sample_count": 36
+        },
+        "Land Cruiser": {
+          "median_kms_per_year": 15246,
+          "sample_count": 690
+        },
+        "Land Cruiser 70": {
+          "median_kms_per_year": 3114,
+          "sample_count": 14
+        },
+        "Land Cruiser 79 series": {
+          "median_kms_per_year": 6942,
+          "sample_count": 21
+        },
+        "Prado": {
+          "median_kms_per_year": 12077,
+          "sample_count": 389
+        },
+        "Previa": {
+          "median_kms_per_year": 18889,
+          "sample_count": 31
+        },
+        "Prius": {
+          "median_kms_per_year": 14472,
+          "sample_count": 22
+        },
+        "Raize": {
+          "median_kms_per_year": 8899,
+          "sample_count": 40
+        },
+        "Rav 4": {
+          "median_kms_per_year": 13400,
+          "sample_count": 359
+        },
+        "Rush": {
+          "median_kms_per_year": 20167,
+          "sample_count": 111
+        },
+        "Sequoia": {
+          "median_kms_per_year": 16615,
+          "sample_count": 19
+        },
+        "Sienna": {
+          "median_kms_per_year": 15200,
+          "sample_count": 43
+        },
+        "Supra": {
+          "median_kms_per_year": 10000,
+          "sample_count": 75
+        },
+        "Tacoma": {
+          "median_kms_per_year": 8333,
+          "sample_count": 23
+        },
+        "Tundra": {
+          "median_kms_per_year": 10000,
+          "sample_count": 119
+        },
+        "Urban Cruiser": {
+          "median_kms_per_year": 17631,
+          "sample_count": 25
+        },
+        "Veloz": {
+          "median_kms_per_year": 18000,
+          "sample_count": 21
+        },
+        "Yaris": {
+          "median_kms_per_year": 17425,
+          "sample_count": 439
+        }
+      }
+    },
+    "Triumph": {
+      "brand_median_kms_per_year": 2422,
+      "models": {}
+    },
+    "Victory": {
+      "brand_median_kms_per_year": 20000,
+      "models": {
+        "V1": {
+          "median_kms_per_year": 19850,
+          "sample_count": 20
+        }
+      }
+    },
+    "Volkswagen": {
+      "brand_median_kms_per_year": 14612,
+      "models": {
+        "Amarok": {
+          "median_kms_per_year": 10000,
+          "sample_count": 13
+        },
+        "Atlas": {
+          "median_kms_per_year": 15482,
+          "sample_count": 10
+        },
+        "Beetle": {
+          "median_kms_per_year": 9626,
+          "sample_count": 50
+        },
+        "CC": {
+          "median_kms_per_year": 16400,
+          "sample_count": 21
+        },
+        "Golf": {
+          "median_kms_per_year": 15778,
+          "sample_count": 413
+        },
+        "ID.4": {
+          "median_kms_per_year": 10250,
+          "sample_count": 34
+        },
+        "ID.6": {
+          "median_kms_per_year": 18438,
+          "sample_count": 14
+        },
+        "Jetta": {
+          "median_kms_per_year": 15530,
+          "sample_count": 89
+        },
+        "Passat": {
+          "median_kms_per_year": 16106,
+          "sample_count": 120
+        },
+        "Scirocco": {
+          "median_kms_per_year": 13841,
+          "sample_count": 14
+        },
+        "T-Roc": {
+          "median_kms_per_year": 13546,
+          "sample_count": 93
+        },
+        "Teramont": {
+          "median_kms_per_year": 18296,
+          "sample_count": 185
+        },
+        "Tiguan": {
+          "median_kms_per_year": 13000,
+          "sample_count": 240
+        },
+        "Touareg": {
+          "median_kms_per_year": 14134,
+          "sample_count": 194
+        }
+      }
+    },
+    "Volvo": {
+      "brand_median_kms_per_year": 13286,
+      "models": {
+        "S60": {
+          "median_kms_per_year": 14583,
+          "sample_count": 13
+        },
+        "S90": {
+          "median_kms_per_year": 15900,
+          "sample_count": 25
+        },
+        "V-Class": {
+          "median_kms_per_year": 15000,
+          "sample_count": 25
+        },
+        "XC40": {
+          "median_kms_per_year": 10750,
+          "sample_count": 23
+        },
+        "XC60": {
+          "median_kms_per_year": 12500,
+          "sample_count": 81
+        },
+        "XC90": {
+          "median_kms_per_year": 14991,
+          "sample_count": 72
+        }
+      }
+    },
+    "Voyah": {
+      "brand_median_kms_per_year": 28,
+      "models": {
+        "Free": {
+          "median_kms_per_year": 3225,
+          "sample_count": 10
+        }
+      }
+    },
+    "Westfield Sportscars": {
+      "brand_median_kms_per_year": 857,
+      "models": {}
+    },
+    "Wuling": {
+      "brand_median_kms_per_year": 6396,
+      "models": {}
+    },
+    "Xiaomi": {
+      "brand_median_kms_per_year": 334,
+      "models": {
+        "SU7": {
+          "median_kms_per_year": 1500,
+          "sample_count": 10
+        },
+        "YU7": {
+          "median_kms_per_year": 175,
+          "sample_count": 10
+        }
+      }
+    },
+    "XPeng": {
+      "brand_median_kms_per_year": 9300,
+      "models": {}
+    },
+    "YangWang": {
+      "brand_median_kms_per_year": 2300,
+      "models": {}
+    },
+    "Zeekr": {
+      "brand_median_kms_per_year": 950,
+      "models": {
+        "001": {
+          "median_kms_per_year": 6833,
+          "sample_count": 15
+        },
+        "9X": {
+          "median_kms_per_year": 41,
+          "sample_count": 18
+        }
+      }
+    },
+    "ZNA": {
+      "brand_median_kms_per_year": 8,
+      "models": {}
+    },
+    "Zotye": {
+      "brand_median_kms_per_year": 22175,
+      "models": {}
+    },
+    "Can-am": {
+      "brand_median_kms_per_year": 2292,
+      "models": {}
+    },
+    "Fuso": {
+      "brand_median_kms_per_year": 16375,
+      "models": {}
+    },
+    "Iveco": {
+      "brand_median_kms_per_year": 21444,
+      "models": {}
+    },
+    "JMC": {
+      "brand_median_kms_per_year": 35674,
+      "models": {}
+    },
+    "Kaiyi": {
+      "brand_median_kms_per_year": 1181,
+      "models": {}
+    },
+    "SAIC": {
+      "brand_median_kms_per_year": 13500,
+      "models": {}
+    },
+    "Seres": {
+      "brand_median_kms_per_year": 10463,
+      "models": {}
+    },
+    "Stelato": {
+      "brand_median_kms_per_year": 0,
+      "models": {}
+    },
+    "ZXAUTO": {
+      "brand_median_kms_per_year": 20000,
+      "models": {}
+    }
+  }
+}

@@ -7,13 +7,18 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
 from db.deps import get_db
-from db.models import Listing
+from db.models import Listing, ModelAnalytics
 from models.schemas import (
-    CarListingSummary, 
-    CarListingDetail, 
-    Seller, 
-    MarketAnalysis, 
-    PricePoint, 
+    CarListingSummary,
+    CarListingDetail,
+    Seller,
+    MarketAnalysis,
+    PricePoint,
+    AnalysisResponse,
+    DepreciationPoint,
+    PriceMileagePoint,
+    PriceYearPoint,
+    Competitor,
 )
 
 
@@ -67,7 +72,7 @@ def _similarity_score(target: Listing, cand: Listing) -> float:
     """
     score = 0.0
 
-    # Model match — dominant signal: a same-model result always beats a different-model one
+    # Model match (most important), same-model result always beat a different-model 
     if target.model and cand.model and target.model.lower() == cand.model.lower():
         score += 10.0
 
@@ -75,7 +80,7 @@ def _similarity_score(target: Listing, cand: Listing) -> float:
     if target.trim and cand.trim and target.trim.lower() == cand.trim.lower():
         score += 1.5
 
-    # Categorical matches
+    # Category match
     if target.body_type and cand.body_type and target.body_type == cand.body_type:
         score += 1.0
     if target.fuel_type and cand.fuel_type and target.fuel_type == cand.fuel_type:
@@ -83,7 +88,7 @@ def _similarity_score(target: Listing, cand: Listing) -> float:
     if target.regional_specs and cand.regional_specs == target.regional_specs:
         score += 0.5
 
-    # Numeric closeness (penalties for divergence)
+    # Num closeness (penalties for divergence)
     score -= 2.0 * _norm_diff(target.year,       cand.year,       5)
     score -= 2.5 * _norm_diff(target.price,      cand.price,      50_000)
     score -= 1.8 * _norm_diff(target.kms,        cand.kms,        50_000)
@@ -97,7 +102,7 @@ def _get_similar_listings(row: Listing, db: Session) -> List[CarListingSummary]:
     """
     Return the 3 most similar listings to `row` using a scoring function.
     Pulls all same-brand listings (up to 300), scores each, returns top 3.
-    The SQL filter narrows to same brand; Python scoring handles the rest.
+    The SQL filter narrows to same brand, Python scoring handles the rest.
     """
     candidates = (
         db.query(Listing)
@@ -179,24 +184,54 @@ def _listing_to_detail(row: Listing, db: Session) -> CarListingDetail:
         description += f" {row.regional_specs} specifications."
     description += " Excellent condition, ready for immediate delivery."
     
-    # Market analysis (without similarListings now)
-    base_price = row.price
-    market_analysis = MarketAnalysis(
-        depreciation={
-            "oneYear": 12,
-            "threeYear": 35,
-            "fiveYear": 55
-        },
-        marketTrend="stable",
-        priceHistory=[
-            PricePoint(month="Jan", averagePrice=int(base_price * 0.95)),
-            PricePoint(month="Feb", averagePrice=int(base_price * 0.97)),
-            PricePoint(month="Mar", averagePrice=int(base_price * 0.98)),
-            PricePoint(month="Apr", averagePrice=int(base_price * 1.00)),
-            PricePoint(month="May", averagePrice=int(base_price * 1.02)),
-            PricePoint(month="Jun", averagePrice=int(base_price * 1.01)),
-        ],
-    )
+    # Market analysis from ML depreciation data
+    dep = row.depreciation_data
+    if dep and dep.get("projections"):
+        current_pred = dep["current_price_predicted"]
+        projs = dep["projections"]
+        proj_map = {p["years_ahead"]: p["predicted_price"] for p in projs}
+
+        def _pct_drop(future_price):
+            if current_pred <= 0:
+                return 0
+            return max(0, round((1 - future_price / current_pred) * 100))
+
+        one_yr_drop = _pct_drop(proj_map.get(1, current_pred))
+
+        if one_yr_drop > 15:
+            trend = "declining"
+        elif one_yr_drop < 5:
+            trend = "stable"
+        else:
+            trend = "moderate"
+
+        market_analysis = MarketAnalysis(
+            depreciation={
+                "oneYear": one_yr_drop,
+                "threeYear": _pct_drop(proj_map.get(3, current_pred)),
+                "fiveYear": _pct_drop(proj_map.get(5, current_pred)),
+            },
+            marketTrend=trend,
+            priceHistory=[
+                PricePoint(month="Now", averagePrice=current_pred),
+                PricePoint(month="+1 yr", averagePrice=proj_map.get(1, current_pred)),
+                PricePoint(month="+3 yr", averagePrice=proj_map.get(3, current_pred)),
+                PricePoint(month="+5 yr", averagePrice=proj_map.get(5, current_pred)),
+            ],
+        )
+    else:
+        # fallback for listings without depreciation data
+        base_price = row.price
+        market_analysis = MarketAnalysis(
+            depreciation={"oneYear": 12, "threeYear": 35, "fiveYear": 55},
+            marketTrend="stable",
+            priceHistory=[
+                PricePoint(month="Now", averagePrice=base_price),
+                PricePoint(month="+1 yr", averagePrice=int(base_price * 0.88)),
+                PricePoint(month="+3 yr", averagePrice=int(base_price * 0.65)),
+                PricePoint(month="+5 yr", averagePrice=int(base_price * 0.45)),
+            ],
+        )
     
     # Find the 3 most similar listings using scored similarity
     similar_listings = _get_similar_listings(row, db)
@@ -291,3 +326,58 @@ def get_car_by_id(car_id: int, db: Session = Depends(get_db)):
     if not row:
         raise HTTPException(status_code=404, detail=f"Car with ID {car_id} not found")
     return _listing_to_detail(row, db)
+
+
+@router.get("/{car_id}/analysis", response_model=AnalysisResponse)
+def get_car_analysis(car_id: int, db: Session = Depends(get_db)):
+    """Return full analysis data for a listing: depreciation curve + model chart data."""
+    row = db.query(Listing).filter(Listing.id == car_id).first()
+    if not row:
+        raise HTTPException(status_code=404, detail=f"Car with ID {car_id} not found")
+
+    # depreciation curve from stored data
+    dep = row.depreciation_data or {}
+    current_pred = dep.get("current_price_predicted", row.predicted_price or row.price)
+    annual_kms = dep.get("annual_kms", 0)
+    projs = dep.get("projections", [])
+
+    depreciation_curve = []
+    for p in projs:
+        retention = round((p["predicted_price"] / current_pred) * 100, 1) if current_pred > 0 else 0
+        depreciation_curve.append(DepreciationPoint(
+            yearsAhead=p["years_ahead"],
+            projectedAge=p["projected_age"],
+            projectedKms=p["projected_kms"],
+            predictedPrice=p["predicted_price"],
+            retentionPct=retention,
+        ))
+
+    # chart data from model_analytics table
+    analytics = db.query(ModelAnalytics).filter(
+        ModelAnalytics.brand == row.brand,
+        ModelAnalytics.model == row.model,
+    ).first()
+
+    if analytics and analytics.chart_data:
+        chart = analytics.chart_data if isinstance(analytics.chart_data, dict) else {}
+        price_vs_mileage = [PriceMileagePoint(**p) for p in chart.get("priceVsMileage", [])]
+        price_vs_year = [PriceYearPoint(**p) for p in chart.get("priceVsYear", [])]
+        competitors = [Competitor(**c) for c in chart.get("competitors", [])]
+    else:
+        price_vs_mileage = []
+        price_vs_year = []
+        competitors = []
+
+    return AnalysisResponse(
+        listingId=row.id,
+        make=row.brand,
+        model=row.model,
+        year=row.year,
+        currentPrice=row.price,
+        predictedPrice=row.predicted_price or row.price,
+        annualKms=annual_kms,
+        depreciationCurve=depreciation_curve,
+        priceVsMileage=price_vs_mileage,
+        priceVsYear=price_vs_year,
+        competitors=competitors,
+    )
