@@ -93,6 +93,9 @@ export default function WatchlistPage() {
   const [formLocations, setFormLocations] = useState<string[]>([]);
   const [formTitle, setFormTitle] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
   const [allBrands, setAllBrands] = useState<string[]>([]);
   const [brandSuggestions, setBrandSuggestions] = useState<string[]>([]);
@@ -161,7 +164,8 @@ export default function WatchlistPage() {
   };
 
   const handleSubmitWatchlist = async () => {
-    if (!formMake.trim()) { alert("Please select a make."); return; }
+    if (!formMake.trim()) { setFormError("Please select a make."); return; }
+    setFormError(null);
     setIsSubmitting(true);
     try {
       const body = {
@@ -184,7 +188,7 @@ export default function WatchlistPage() {
       setSummary(data.summary);
       resetForm();
     } catch {
-      alert("Failed to create watchlist. Please try again.");
+      setFormError("Failed to create watchlist. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -217,14 +221,14 @@ export default function WatchlistPage() {
     } catch (err: any) {
       setWatchlistItems((prev) => prev.map((item) => (item.id === id ? { ...item, isActive: currentlyActive } : item)));
       if (err?.message?.includes("409")) setShowLimitModal(true);
-      else alert("Failed to update watchlist status.");
+      else { setActionError("Failed to update status."); setTimeout(() => setActionError(null), 3000); }
     }
   };
 
-  const deleteWatchlist = async (id: number) => {
-    if (!window.confirm("Delete this watchlist? This cannot be undone.")) return;
+  const confirmAndDeleteWatchlist = async (id: number) => {
     const prev = watchlistItems;
     setWatchlistItems((items) => items.filter((item) => item.id !== id));
+    setDeleteConfirmId(null);
     try {
       await apiRequest(API_ENDPOINTS.watchlists.delete(id), { method: "DELETE" });
       const data = await apiRequest<WatchlistsResponse>(API_ENDPOINTS.watchlists.list);
@@ -232,7 +236,8 @@ export default function WatchlistPage() {
       setSummary(data.summary);
     } catch {
       setWatchlistItems(prev);
-      alert("Failed to delete watchlist.");
+      setActionError("Failed to delete watchlist.");
+      setTimeout(() => setActionError(null), 3000);
     }
   };
 
@@ -254,7 +259,7 @@ export default function WatchlistPage() {
   // Add form view
   if (showAddForm) {
     return (
-      <div className="flex flex-col h-screen bg-background">
+      <div className="flex flex-col h-full bg-background">
         <header className="shrink-0 h-16 border-b border-border/40 bg-card/80 backdrop-blur-nav px-4 flex items-center justify-between">
           <Button variant="ghost" size="sm" onClick={resetForm}>
             <X className="h-4 w-4 mr-1.5" /> Cancel
@@ -265,6 +270,14 @@ export default function WatchlistPage() {
 
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-xl mx-auto p-4 md:p-6 space-y-5 pb-32">
+            {formError && (
+              <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 text-red-700 dark:text-red-400 text-sm flex items-center justify-between">
+                {formError}
+                <button onClick={() => setFormError(null)} className="text-red-500 hover:text-red-700 ml-2 shrink-0">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            )}
             <Card>
               <CardHeader><CardTitle className="text-sm">Name (optional)</CardTitle></CardHeader>
               <CardContent>
@@ -486,6 +499,19 @@ export default function WatchlistPage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto scrollbar-hide">
         <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 space-y-5 pb-safe">
+          {/* Action error */}
+          <AnimatePresence>
+            {actionError && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 text-red-700 dark:text-red-400 text-sm"
+              >
+                {actionError}
+              </motion.div>
+            )}
+          </AnimatePresence>
           {/* Search */}
           <div className="relative max-w-md">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -514,13 +540,27 @@ export default function WatchlistPage() {
           {/* Usage limit */}
           {(() => {
             const activeCount = watchlistItems.filter((i) => i.isActive).length;
-            const color = activeCount === 0 ? "amber" : activeCount <= 2 ? "emerald" : "red";
+            const cardClasses = activeCount === 0
+              ? "border-amber-200 dark:border-amber-900/40 bg-amber-50/50 dark:bg-amber-950/20"
+              : activeCount <= 2
+              ? "border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/50 dark:bg-emerald-950/20"
+              : "border-red-200 dark:border-red-900/40 bg-red-50/50 dark:bg-red-950/20";
+            const iconBgClasses = activeCount === 0
+              ? "bg-amber-100 dark:bg-amber-950/30"
+              : activeCount <= 2
+              ? "bg-emerald-100 dark:bg-emerald-950/30"
+              : "bg-red-100 dark:bg-red-950/30";
+            const iconClasses = activeCount === 0
+              ? "text-amber-600 dark:text-amber-400"
+              : activeCount <= 2
+              ? "text-emerald-600 dark:text-emerald-400"
+              : "text-red-600 dark:text-red-400";
             return (
-              <Card className={`p-4 border-${color}-200 dark:border-${color}-900/40 bg-${color}-50/50 dark:bg-${color}-950/20`}>
+              <Card className={`p-4 ${cardClasses}`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className={`h-9 w-9 rounded-lg bg-${color}-100 dark:bg-${color}-950/30 flex items-center justify-center`}>
-                      <Bell className={`h-4 w-4 text-${color}-600 dark:text-${color}-400`} />
+                    <div className={`h-9 w-9 rounded-lg ${iconBgClasses} flex items-center justify-center`}>
+                      <Bell className={`h-4 w-4 ${iconClasses}`} />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-foreground">{activeCount}/2 Active</p>
@@ -571,14 +611,35 @@ export default function WatchlistPage() {
                           >
                             {item.isActive ? <Pause className="h-3.5 w-3.5 text-amber-600" /> : <Play className="h-3.5 w-3.5 text-emerald-600" />}
                           </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteWatchlist(item.id); }}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
+                          {deleteConfirmId === item.id ? (
+                            <div className="flex items-center gap-1" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="h-7 text-xs px-2"
+                                onClick={() => confirmAndDeleteWatchlist(item.id)}
+                              >
+                                Delete
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-xs px-2"
+                                onClick={() => setDeleteConfirmId(null)}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          ) : (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeleteConfirmId(item.id); }}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
                         </div>
                       </div>
 

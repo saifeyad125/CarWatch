@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  User, Bell, Shield, HelpCircle, Settings, ChevronRight,
+  Bell, HelpCircle, Settings, ChevronRight,
   LogOut, Moon, Sun, Mail, Phone, MapPin, Edit, Trash2, Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -46,6 +46,8 @@ export default function ProfilePage() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  const [confirmDeleteWatchlists, setConfirmDeleteWatchlists] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const { theme, toggleTheme } = useTheme();
   const [favoritesCount, setFavoritesCount] = useState(0);
   const [profile, setProfile] = useState<ProfileData | null>(null);
@@ -73,7 +75,8 @@ export default function ProfilePage() {
       });
       setProfile(data);
       setIsEditing(false);
-    } catch { alert("Failed to save profile."); }
+      setSaveError(null);
+    } catch { setSaveError("Failed to save profile. Please try again."); }
   };
 
   const handleAvatarSelect = async (seed: string) => {
@@ -85,7 +88,8 @@ export default function ProfilePage() {
       setProfile(data);
       setGlobalAvatarSeed(seed);
       setShowAvatarPicker(false);
-    } catch { alert("Failed to update avatar."); }
+      setSaveError(null);
+    } catch { setSaveError("Failed to update avatar."); }
   };
 
   const statusInfo = STATUS_LABELS[profile?.status || "free"];
@@ -103,8 +107,7 @@ export default function ProfilePage() {
     {
       title: "Account",
       items: [
-        { id: "notifications", label: "Notifications", desc: "Manage alert preferences", icon: Bell, badge: "3 active" },
-        { id: "privacy", label: "Privacy & Security", desc: "Control your data settings", icon: Shield },
+        { id: "alerts", label: "Alert History", desc: "View your notification history", icon: Bell },
         { id: "theme", label: theme === "dark" ? "Light Mode" : "Dark Mode", desc: "Switch appearance", icon: theme === "dark" ? Sun : Moon, action: toggleTheme },
       ],
     },
@@ -112,7 +115,6 @@ export default function ProfilePage() {
       title: "Support",
       items: [
         { id: "help", label: "Help Center", desc: "Get help and find answers", icon: HelpCircle },
-        { id: "feedback", label: "Send Feedback", desc: "Help us improve CarWatch", icon: Mail },
         { id: "about", label: "About CarWatch", desc: "Version 1.0.0", icon: Settings },
       ],
     },
@@ -170,6 +172,16 @@ export default function ProfilePage() {
                     <Edit className="h-4 w-4 text-muted-foreground" />
                   </Button>
                 </div>
+
+                {/* Save error */}
+                {saveError && (
+                  <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 text-red-700 dark:text-red-400 text-sm flex items-center justify-between">
+                    {saveError}
+                    <button onClick={() => setSaveError(null)} className="text-red-500 hover:text-red-700 ml-2 shrink-0">
+                      <Check className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
 
                 {/* Avatar picker */}
                 {showAvatarPicker && (
@@ -271,9 +283,6 @@ export default function ProfilePage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium text-foreground">{item.label}</span>
-                          {item.badge && (
-                            <Badge variant="secondary" className="text-[10px]">{item.badge}</Badge>
-                          )}
                         </div>
                         <p className="text-xs text-muted-foreground">{item.desc}</p>
                       </div>
@@ -297,28 +306,51 @@ export default function ProfilePage() {
             </Card>
           ))}
 
+          {/* Sign Out button */}
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={async () => { await signOut(); router.push("/login"); }}
+          >
+            <LogOut className="h-4 w-4 mr-2" /> Sign Out
+          </Button>
+
           {/* Danger zone */}
           <Card className="border-red-200/60 dark:border-red-900/30">
             <CardContent className="p-5">
               <h3 className="text-sm font-semibold text-foreground mb-3">Danger Zone</h3>
-              <div className="space-y-2">
+              {confirmDeleteWatchlists ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">Are you sure? This will delete all your watchlists.</p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => { setConfirmDeleteWatchlists(false); }}
+                    >
+                      Yes, Delete All
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => setConfirmDeleteWatchlists(false)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
                 <Button
                   variant="outline"
                   size="sm"
                   className="w-full justify-start text-red-600 border-red-200 hover:bg-red-50 dark:border-red-900/40 dark:hover:bg-red-950/20"
-                  onClick={() => { if (confirm("Delete all watchlists?")) alert("Deleted (demo)"); }}
+                  onClick={() => setConfirmDeleteWatchlists(true)}
                 >
                   <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete All Watchlists
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full justify-start text-red-600 border-red-200 hover:bg-red-50 dark:border-red-900/40 dark:hover:bg-red-950/20"
-                  onClick={async () => { if (confirm("Sign out?")) { await signOut(); router.push("/login"); } }}
-                >
-                  <LogOut className="h-3.5 w-3.5 mr-2" /> Sign Out
-                </Button>
-              </div>
+              )}
             </CardContent>
           </Card>
 

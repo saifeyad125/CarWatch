@@ -135,14 +135,13 @@ export default function ChatPage() {
 
     setInputMessage("");
 
-    // Ensure we have a conversation
+    // make sure we have a convo
     let convId = activeConvId;
     if (!convId) {
       convId = await createConversation();
       if (!convId) return;
     }
 
-    // Optimistically add user message
     const userMsg: Message = {
       id: Date.now(),
       role: "user",
@@ -213,7 +212,7 @@ export default function ChatPage() {
         }
       }
 
-      // Refresh conversation list to update titles and last messages
+      // Refresh convo list to update titles and last messages
       await fetchConversations();
     } catch (err) {
       if ((err as Error).name === "AbortError") return;
@@ -511,6 +510,7 @@ export default function ChatPage() {
                 placeholder="Ask about cars, deals, or pricing..."
                 className="resize-none min-h-0 h-11 py-2.5 pr-12 rounded-xl text-sm"
                 rows={1}
+                maxLength={500}
               />
               <span className="absolute bottom-2.5 right-3 text-[10px] text-muted-foreground">{inputMessage.length}/500</span>
             </div>

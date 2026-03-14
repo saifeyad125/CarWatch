@@ -314,8 +314,16 @@ export default function Browse() {
         )}
       </AnimatePresence>
 
+      {/* Filter backdrop */}
+      {showFilters && (
+        <div
+          className="fixed inset-0 z-0 md:hidden"
+          onClick={() => setShowFilters(false)}
+        />
+      )}
+
       {/* Results */}
-      <div className="flex-1 overflow-y-auto scrollbar-hide">
+      <div className="flex-1 overflow-y-auto scrollbar-hide" onClick={() => showFilters && setShowFilters(false)}>
         <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-6 pb-safe">
           {/* Loading */}
           {isLoading && (

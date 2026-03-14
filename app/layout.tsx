@@ -33,14 +33,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.classList.add('dark')}catch(e){}})()`,
+          }}
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ThemeProvider>
           <AuthProvider>
             <div className="flex h-screen overflow-hidden">
-              {/* Desktop sidebar — hidden on mobile */}
+              {/* Desktop sidebar (hidden on mobile) */}
               <DesktopSidebar />
 
               {/* Main content area */}
@@ -48,7 +55,7 @@ export default function RootLayout({
                 <main className="flex-1 overflow-hidden">
                   {children}
                 </main>
-                {/* Bottom nav — mobile only */}
+                {/* Bottom nav (mobile only) */}
                 <div className="md:hidden">
                   <BottomNavigation />
                 </div>

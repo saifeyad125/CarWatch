@@ -172,7 +172,7 @@ export default function WatchlistDetailPage({ params }: { params: Promise<{ id: 
   }
 
   return (
-    <div className="flex flex-col h-screen bg-background overflow-hidden">
+    <div className="flex flex-col h-full bg-background overflow-hidden">
       {/* Header */}
       <div className="shrink-0 bg-card/80 backdrop-blur-xl border-b border-border/20 px-4 py-4 sticky top-0 z-10">
         <div className="flex items-center justify-between mb-4">

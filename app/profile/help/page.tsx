@@ -171,15 +171,9 @@ export default function HelpPage() {
           {/* Contact Support Card */}
           <Card className="p-5 border-0 bg-card/50 backdrop-blur-sm rounded-2xl shadow-lg">
             <h3 className="font-semibold text-foreground mb-3">Still need help?</h3>
-            <p className="text-muted-foreground text-sm mb-4">
-              Can't find what you're looking for? Our support team is here to help.
+            <p className="text-muted-foreground text-sm">
+              Use the AI Chat to ask any question about CarWatch, car pricing, or your watchlists.
             </p>
-            <Button 
-              className="w-full rounded-2xl bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg"
-              onClick={() => router.push('/profile/feedback')}
-            >
-              Contact Support
-            </Button>
           </Card>
         </div>
       </div>

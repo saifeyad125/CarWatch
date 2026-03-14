@@ -1,14 +1,15 @@
 "use client"
 
-import { ArrowLeft, BarChart3 } from "lucide-react";
+import { ArrowLeft, BarChart3, TrendingDown, Gauge, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useState, useRef } from "react";
 import { API_ENDPOINTS, apiRequest } from "@/lib/api";
+import { motion } from "framer-motion";
 
-// --- TypeScript Interfaces ---
+// TypeScript Interfaces 
 
 interface DepreciationPoint {
   yearsAhead: number;
@@ -52,103 +53,254 @@ interface AnalysisData {
   competitors: Competitor[];
 }
 
-// --- Helpers ---
+// Helpers 
 
 const formatAED = (price: number) => `د.إ ${price.toLocaleString()}`;
+const formatK = (v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`;
 
-// --- SimpleChart Component ---
+// Retention Chart (line-style with dots and filled area)
 
-const SimpleChart = ({
-  data,
-  xKey,
-  yKey,
-  title,
-  xLabel,
-  yLabel,
-  color = "bg-primary",
-  formatY,
-}: {
-  data: any[];
-  xKey: string;
-  yKey: string;
-  title: string;
-  xLabel: string;
-  yLabel: string;
-  color?: string;
-  formatY?: (v: number) => string;
-}) => {
-  const maxY = Math.max(...data.map(item => item[yKey]));
-  const minY = Math.min(...data.map(item => item[yKey]));
+function RetentionChart({ data, depreciationCurve, currentPrice }: {
+  data: { label: string; retentionPct: number }[];
+  depreciationCurve: DepreciationPoint[];
+  currentPrice: number;
+}) {
+  const prices = [currentPrice, ...depreciationCurve.map(d => d.predictedPrice)];
 
   return (
-    <Card className="p-5 bg-card/50 backdrop-blur-sm">
-      <h4 className="font-semibold text-foreground mb-4">{title}</h4>
+    <Card className="p-5">
+      <div className="flex items-center gap-2 mb-5">
+        <TrendingDown className="h-4 w-4 text-primary" />
+        <h4 className="font-semibold text-foreground">Value Retention Over Time</h4>
+      </div>
 
-      {/* Chart area */}
-      <div className="h-48 relative mb-4">
-        <div className="flex items-end h-full gap-2 px-2">
-          {data.map((item, index) => {
-            const range = maxY - minY;
-            const height = range === 0 ? 100 : ((item[yKey] - minY) / range) * 100;
-            const yVal = item[yKey];
-            const displayY = formatY
-              ? formatY(yVal)
-              : typeof yVal === 'number' && yVal > 1000
-                ? `${(yVal / 1000).toFixed(0)}k`
-                : `${yVal}`;
-            return (
-              <div key={index} className="flex-1 flex flex-col items-center">
-                <div className="text-xs text-muted-foreground mb-1">
-                  {displayY}
-                </div>
-                <div
-                  className={`w-full ${color} rounded-t-sm transition-all duration-300`}
-                  style={{ height: `${Math.max(height, 5)}%` }}
+      {/* Chart */}
+      <div className="flex gap-3 sm:gap-6 mb-3">
+        {data.map((item, i) => {
+          const isNow = i === 0;
+          const isLast = i === data.length - 1;
+          const pct = isNow ? 100 : Math.max(item.retentionPct, 2);
+          const color = isLast
+            ? "bg-red-500"
+            : item.retentionPct >= 80
+            ? "bg-emerald-500"
+            : "bg-amber-500";
+
+          return (
+            <div key={i} className="flex-1 flex flex-col items-center">
+              {/* Value */}
+              <span className="text-xs font-semibold text-foreground mb-1.5">
+                {item.retentionPct.toFixed(0)}%
+              </span>
+              {/* Bar with fixed-height container */}
+              <div className="w-full h-32 sm:h-40 flex items-end justify-center">
+                <motion.div
+                  className={`w-full max-w-14 rounded-t-md ${isNow ? "bg-emerald-600" : color}`}
+                  initial={{ height: 0 }}
+                  animate={{ height: `${pct}%` }}
+                  transition={{ duration: 0.6, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }}
                 />
-                <div className="text-xs text-muted-foreground mt-1 transform -rotate-45 origin-left">
-                  {item[xKey]}
+              </div>
+              {/* Label */}
+              <span className="text-xs text-muted-foreground font-medium mt-2">
+                {item.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Price projections row */}
+      <div className="grid grid-cols-4 gap-2 mt-4 pt-4 border-t border-border/40">
+        {prices.map((price, i) => (
+          <div key={i} className="text-center">
+            <p className="text-xs text-muted-foreground">{data[i]?.label}</p>
+            <p className="text-sm font-semibold text-foreground">{formatK(price)}</p>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+// Bar Chart 
+
+function BarChart({ data, title, icon, xLabel, yLabel, color, formatX, formatYVal }: {
+  data: { x: string; y: number }[];
+  title: string;
+  icon: React.ReactNode;
+  xLabel: string;
+  yLabel: string;
+  color: string;
+  formatX?: (v: string) => string;
+  formatYVal?: (v: number) => string;
+}) {
+  const maxY = Math.max(...data.map(d => d.y));
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const needsScroll = data.length > 8;
+
+  return (
+    <Card className="p-5">
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-2">
+          {icon}
+          <h4 className="font-semibold text-foreground">{title}</h4>
+        </div>
+        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+          <span>{xLabel}</span>
+          <span>vs</span>
+          <span>{yLabel}</span>
+        </div>
+      </div>
+
+      {/* Chart area scrollable on mobile if many bars */}
+      <div
+        ref={scrollRef}
+        className={`${needsScroll ? "overflow-x-auto scrollbar-hide" : ""}`}
+      >
+        <div
+          className="flex gap-1.5 sm:gap-2"
+          style={needsScroll ? { minWidth: `${data.length * 52}px` } : undefined}
+        >
+          {data.map((item, i) => {
+            const pct = maxY === 0 ? 0 : (item.y / maxY) * 100;
+            const barH = Math.max(pct, 2);
+            const displayY = formatYVal ? formatYVal(item.y) : formatK(item.y);
+            const displayX = formatX ? formatX(item.x) : item.x;
+
+            return (
+              <div key={i} className="flex-1 flex flex-col items-center min-w-[36px]">
+                {/* Value label */}
+                <span className="text-[10px] text-muted-foreground mb-1 whitespace-nowrap">
+                  {displayY}
+                </span>
+                {/* Bar wrapper with fixed height */}
+                <div className="w-full h-40 flex items-end justify-center">
+                  <motion.div
+                    className={`w-full max-w-10 ${color} rounded-t-sm`}
+                    initial={{ height: 0 }}
+                    animate={{ height: `${barH}%` }}
+                    transition={{ duration: 0.5, delay: i * 0.04, ease: [0.16, 1, 0.3, 1] }}
+                  />
                 </div>
+                {/* x label */}
+                <span className="text-[10px] text-muted-foreground mt-1.5 whitespace-nowrap">
+                  {displayX}
+                </span>
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* Labels */}
-      <div className="flex justify-between text-xs text-muted-foreground">
-        <span>{xLabel}</span>
-        <span>{yLabel}</span>
-      </div>
+      {needsScroll && (
+        <p className="text-[10px] text-muted-foreground text-center mt-2">Swipe to see more</p>
+      )}
     </Card>
   );
-};
+}
 
-// --- Empty State ---
+// Competitor Card 
+
+function CompetitorSection({ data, competitors }: { data: AnalysisData; competitors: Competitor[] }) {
+  const allPrices = [data.currentPrice, ...competitors.map(c => c.avgPrice)];
+  const maxPrice = Math.max(...allPrices);
+
+  return (
+    <Card className="p-5">
+      <div className="flex items-center gap-2 mb-5">
+        <BarChart3 className="h-4 w-4 text-primary" />
+        <h4 className="font-semibold text-foreground">Competitive Market Analysis</h4>
+      </div>
+
+      {competitors.length > 0 ? (
+        <div className="space-y-3">
+          {/* This car */}
+          <div className="p-3.5 rounded-xl bg-primary/8 border border-primary/20">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-foreground">
+                  {data.make} {data.model}
+                </span>
+                <Badge className="text-[10px] bg-primary text-primary-foreground">This Car</Badge>
+              </div>
+              <span className="text-sm font-bold text-primary">{formatAED(data.currentPrice)}</span>
+            </div>
+            <div className="h-2 bg-muted rounded-full overflow-hidden">
+              <div
+                className="h-full bg-primary rounded-full"
+                style={{ width: `${(data.currentPrice / maxPrice) * 100}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between mt-1.5 text-[11px] text-muted-foreground">
+              <span>AI Predicted: {formatAED(data.predictedPrice)}</span>
+              <span>{data.year}</span>
+            </div>
+          </div>
+
+          {/* Competitors */}
+          {competitors.map((comp, i) => (
+            <motion.div
+              key={i}
+              className="p-3.5 rounded-xl bg-muted/30 border border-border/40"
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 + i * 0.05 }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <span className="text-sm font-medium text-foreground">
+                    {comp.brand} {comp.model}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground ml-2">
+                    {comp.count} listing{comp.count !== 1 ? "s" : ""}
+                  </span>
+                </div>
+                <span className="text-sm font-semibold text-foreground">{formatAED(Math.round(comp.avgPrice))}</span>
+              </div>
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-muted-foreground/30 rounded-full"
+                  style={{ width: `${(comp.avgPrice / maxPrice) * 100}%` }}
+                />
+              </div>
+              <div className="flex items-center gap-3 mt-1.5 text-[11px] text-muted-foreground">
+                <span>~{Math.round(comp.avgKms).toLocaleString()} km</span>
+                <span>avg ~{Math.round(comp.avgYear)}</span>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground text-center py-8">No competitor data available</p>
+      )}
+    </Card>
+  );
+}
+
+// Empty State 
 
 const EmptyState = ({ message }: { message: string }) => (
-  <Card className="p-5 bg-card/50 backdrop-blur-sm">
+  <Card className="p-5">
     <p className="text-sm text-muted-foreground text-center py-8">{message}</p>
   </Card>
 );
 
-// --- Loading Skeleton ---
+//  Loading Skeleton 
 
 function AnalysisSkeleton() {
   return (
     <div className="flex flex-col h-full bg-background">
-      <div className="shrink-0 bg-card/80 backdrop-blur-xl border-b border-border/20 px-4 py-4 sticky top-0 z-10">
-        <div className="flex items-center justify-between">
-          <div className="h-10 w-10 skeleton rounded-lg" />
-          <div className="h-6 w-32 skeleton rounded" />
-          <div className="w-10" />
-        </div>
-      </div>
+      <header className="shrink-0 h-16 border-b border-border/40 bg-card/80 backdrop-blur-nav px-4 flex items-center gap-3 sticky top-0 z-10">
+        <div className="h-9 w-9 skeleton rounded-lg" />
+        <div className="h-5 w-32 skeleton rounded" />
+      </header>
       <div className="flex-1 overflow-y-auto scrollbar-hide">
-        <div className="px-4 py-6 space-y-6 pb-safe">
-          <div className="h-24 skeleton rounded-xl" />
-          <div className="h-64 skeleton rounded-xl" />
-          <div className="h-64 skeleton rounded-xl" />
-          <div className="h-64 skeleton rounded-xl" />
+        <div className="max-w-4xl mx-auto px-4 py-6 space-y-5 pb-safe">
+          <div className="h-20 skeleton rounded-xl" />
+          <div className="h-56 skeleton rounded-xl" />
+          <div className="h-56 skeleton rounded-xl" />
+          <div className="h-56 skeleton rounded-xl" />
           <div className="h-48 skeleton rounded-xl" />
         </div>
       </div>
@@ -156,7 +308,7 @@ function AnalysisSkeleton() {
   );
 }
 
-// --- Main Component ---
+//  Main Component 
 
 export default function DetailedAnalysis({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -184,15 +336,12 @@ export default function DetailedAnalysis({ params }: { params: Promise<{ id: str
   if (error || !data) {
     return (
       <div className="flex flex-col h-full bg-background">
-        <div className="shrink-0 bg-card/80 backdrop-blur-xl border-b border-border/20 px-4 py-4 sticky top-0 z-10">
-          <div className="flex items-center justify-between">
-            <Button variant="ghost" size="icon" onClick={() => router.back()} className="h-10 w-10">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <h1 className="text-lg font-semibold text-foreground">Market Analysis</h1>
-            <div className="w-10" />
-          </div>
-        </div>
+        <header className="shrink-0 h-16 border-b border-border/40 bg-card/80 backdrop-blur-nav px-4 flex items-center gap-3 sticky top-0 z-10">
+          <Button variant="ghost" size="icon" onClick={() => router.back()}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-lg font-semibold tracking-tight">Market Analysis</h1>
+        </header>
         <div className="flex-1 flex items-center justify-center px-4">
           <div className="text-center">
             <h3 className="font-semibold text-foreground mb-1">{error || "Analysis not available"}</h3>
@@ -204,7 +353,7 @@ export default function DetailedAnalysis({ params }: { params: Promise<{ id: str
     );
   }
 
-  // --- Prepare depreciation chart data ---
+  //  Prepare depreciation data 
   const depreciationData = [
     { label: "Now", retentionPct: 100 },
     ...data.depreciationCurve.map((d) => ({
@@ -213,158 +362,149 @@ export default function DetailedAnalysis({ params }: { params: Promise<{ id: str
     })),
   ];
 
-  // --- Bucket price vs mileage data ---
-  const BUCKET_SIZE = 20000;
-  const bucketedMileage = data.priceVsMileage.length > 0
-    ? Object.values(
-        data.priceVsMileage.reduce((acc, p) => {
-          const bucket = Math.floor(p.kms / BUCKET_SIZE) * BUCKET_SIZE;
-          const key = `${bucket}`;
-          if (!acc[key]) acc[key] = { label: `${bucket / 1000}-${(bucket + BUCKET_SIZE) / 1000}k`, prices: [] as number[] };
-          acc[key].prices.push(p.price);
-          return acc;
-        }, {} as Record<string, { label: string; prices: number[] }>)
-      )
-        .map(b => ({ label: b.label, avgPrice: Math.round(b.prices.reduce((a, c) => a + c, 0) / b.prices.length) }))
-        .sort((a, b) => parseInt(a.label) - parseInt(b.label))
-    : [];
+  //  Bucket mileage into ~8 groups 
+  const bucketMileage = () => {
+    if (data.priceVsMileage.length === 0) return [];
+    const kmsValues = data.priceVsMileage.map(p => p.kms);
+    const minKms = Math.min(...kmsValues);
+    const maxKms = Math.max(...kmsValues);
+    const range = maxKms - minKms;
+    if (range === 0) return [{ x: `${formatK(minKms)} km`, y: Math.round(data.priceVsMileage.reduce((a, c) => a + c.price, 0) / data.priceVsMileage.length) }];
+
+    // Target apprx 8 buckets, round to nice numbers
+    const TARGET_BUCKETS = 8;
+    const rawSize = range / TARGET_BUCKETS;
+    const magnitude = Math.pow(10, Math.floor(Math.log10(rawSize)));
+    const bucketSize = Math.ceil(rawSize / magnitude) * magnitude;
+
+    const buckets: Record<number, number[]> = {};
+    data.priceVsMileage.forEach(p => {
+      const key = Math.floor(p.kms / bucketSize) * bucketSize;
+      if (!buckets[key]) buckets[key] = [];
+      buckets[key].push(p.price);
+    });
+
+    return Object.entries(buckets)
+      .map(([key, prices]) => {
+        const start = Number(key);
+        return {
+          x: `${formatK(start)}`,
+          y: Math.round(prices.reduce((a, c) => a + c, 0) / prices.length),
+        };
+      })
+      .sort((a, b) => parseInt(a.x) - parseInt(b.x));
+  };
+
+  const mileageBuckets = bucketMileage();
+
+  //  Price vs Year data
+  const priceYearData = [...data.priceVsYear]
+    .sort((a, b) => a.year - b.year)
+    .map(d => ({ x: `${d.year}`, y: d.avgPrice }));
+
+  //  Deal assessment 
+  const priceDiff = data.predictedPrice - data.currentPrice;
+  const priceDiffPct = ((priceDiff) / data.predictedPrice * 100).toFixed(1);
+  const isGoodDeal = priceDiff > 0;
 
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
-      <div className="shrink-0 bg-card/80 backdrop-blur-xl border-b border-border/20 px-4 py-4 sticky top-0 z-10">
-        <div className="flex items-center justify-between">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.back()}
-            className="h-10 w-10"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-lg font-semibold text-foreground">Market Analysis</h1>
-          <div className="w-10" />
-        </div>
-      </div>
+      <header className="shrink-0 h-16 border-b border-border/40 bg-card/80 backdrop-blur-nav px-4 md:px-6 flex items-center gap-3 sticky top-0 z-10">
+        <Button variant="ghost" size="icon" onClick={() => router.back()}>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="text-lg font-semibold tracking-tight">Market Analysis</h1>
+      </header>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto scrollbar-hide">
-        <div className="px-4 py-6 space-y-6 pb-safe">
-          {/* Car Info Header */}
-          <Card className="p-4 bg-card/50 backdrop-blur-sm">
-            <h2 className="text-xl font-bold text-foreground">
-              {data.year} {data.make} {data.model}
-            </h2>
-            <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-muted-foreground">
-              <span>Current Price: <span className="font-semibold text-primary">{formatAED(data.currentPrice)}</span></span>
-              <span>AI Predicted: <span className="font-semibold text-foreground">{formatAED(data.predictedPrice)}</span></span>
-            </div>
-          </Card>
+        <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 space-y-5 pb-safe">
+          {/* Car Info + Deal Summary */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <Card className="p-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-bold text-foreground tracking-tight">
+                    {data.year} {data.make} {data.model}
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    ~{data.annualKms.toLocaleString()} km/year estimated usage
+                  </p>
+                </div>
+                <Badge
+                  className={`shrink-0 text-xs ${
+                    isGoodDeal
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800"
+                      : "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800"
+                  }`}
+                >
+                  {isGoodDeal ? `${priceDiffPct}% below market` : `${Math.abs(Number(priceDiffPct))}% above market`}
+                </Badge>
+              </div>
 
-          {/* 1. Depreciation Curve */}
+              <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-border/40">
+                <div>
+                  <p className="text-xs text-muted-foreground">Listed Price</p>
+                  <p className="text-lg font-bold text-primary">{formatAED(data.currentPrice)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">AI Predicted Value</p>
+                  <p className="text-lg font-bold text-foreground">{formatAED(data.predictedPrice)}</p>
+                </div>
+              </div>
+            </Card>
+          </motion.div>
+
+          {/* Depreciation Curve */}
           {depreciationData.length > 1 ? (
-            <SimpleChart
+            <RetentionChart
               data={depreciationData}
-              xKey="label"
-              yKey="retentionPct"
-              title="Value Retention Over Time"
-              xLabel="Time"
-              yLabel="Retention (%)"
-              color="bg-red-500"
-              formatY={(v) => `${v}%`}
+              depreciationCurve={data.depreciationCurve}
+              currentPrice={data.currentPrice}
             />
           ) : (
             <EmptyState message="No depreciation data available for this model" />
           )}
 
-          {/* 2. Price vs Mileage (bucketed) */}
-          {bucketedMileage.length > 0 ? (
-            <SimpleChart
-              data={bucketedMileage}
-              xKey="label"
-              yKey="avgPrice"
-              title="Price vs Mileage Analysis"
+          {/* Price vs Mileage */}
+          {mileageBuckets.length > 0 ? (
+            <BarChart
+              data={mileageBuckets}
+              title="Price vs Mileage"
+              icon={<Gauge className="h-4 w-4 text-blue-500" />}
               xLabel="Mileage (km)"
-              yLabel="Avg Price (AED)"
+              yLabel="Avg Price"
               color="bg-blue-500"
+              formatX={(v) => v}
+              formatYVal={(v) => formatK(v)}
             />
           ) : (
             <EmptyState message="No price vs mileage data available for this model" />
           )}
 
-          {/* 3. Price vs Year */}
-          {data.priceVsYear.length > 0 ? (
-            <SimpleChart
-              data={data.priceVsYear}
-              xKey="year"
-              yKey="avgPrice"
+          {/* Price vs Year */}
+          {priceYearData.length > 0 ? (
+            <BarChart
+              data={priceYearData}
               title="Price vs Model Year"
+              icon={<Calendar className="h-4 w-4 text-emerald-500" />}
               xLabel="Model Year"
-              yLabel="Avg Price (AED)"
-              color="bg-green-500"
+              yLabel="Avg Price"
+              color="bg-emerald-500"
+              formatX={(v) => `'${v.slice(-2)}`}
+              formatYVal={(v) => formatK(v)}
             />
           ) : (
             <EmptyState message="No price vs year data available for this model" />
           )}
 
-          {/* 4. Competitive Market Analysis */}
-          <Card className="p-5 bg-card/50 backdrop-blur-sm">
-            <h4 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-primary" />
-              Competitive Market Analysis
-            </h4>
-
-            {data.competitors.length > 0 ? (
-              <div className="space-y-3">
-                {/* Current car at the top */}
-                <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium text-foreground flex items-center gap-2">
-                        {data.year} {data.make} {data.model}
-                        <Badge variant="default" className="text-xs">This Car</Badge>
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        Listed at {formatAED(data.currentPrice)}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-semibold text-foreground">
-                        {formatAED(data.predictedPrice)}
-                      </div>
-                      <div className="text-xs text-muted-foreground">AI Predicted</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Competitors */}
-                {data.competitors.map((comp, index) => (
-                  <div key={index} className="p-3 rounded-lg bg-background/50">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium text-foreground">
-                          {comp.brand} {comp.model}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          ~{Math.round(comp.avgKms).toLocaleString()} km &middot; {comp.count} listing{comp.count !== 1 ? 's' : ''}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-semibold text-foreground">
-                          {formatAED(Math.round(comp.avgPrice))}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          avg ~{Math.round(comp.avgYear)}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">No competitor data available for this model</p>
-            )}
-          </Card>
+          {/* Competitive Market Analysis */}
+          <CompetitorSection data={data} competitors={data.competitors} />
         </div>
       </div>
     </div>

@@ -1,11 +1,13 @@
 "use client";
 
-import React from "react";
-import { Home, Search, List, MessageCircle, LogOut, User } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Home, Search, List, MessageCircle, LogOut, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/components/auth-provider";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { API_ENDPOINTS, apiRequest } from "@/lib/api";
 import { motion } from "framer-motion";
 
 const navItems = [
@@ -17,7 +19,39 @@ const navItems = [
 
 export function DesktopSidebar() {
   const pathname = usePathname();
-  const { user, signOut } = useAuth();
+  const { user, signOut, avatarSeed } = useAuth();
+  const userName = user?.user_metadata?.name || user?.email?.split("@")[0] || null;
+  const [watchlistBadge, setWatchlistBadge] = useState(0);
+  const [notifBadge, setNotifBadge] = useState(0);
+
+  useEffect(() => {
+    if (!user) {
+      setWatchlistBadge(0);
+      setNotifBadge(0);
+      return;
+    }
+
+    const fetchBadges = async () => {
+      try {
+        const data = await apiRequest<{ watchlists: { newCount: number }[] }>(
+          API_ENDPOINTS.watchlists.list
+        );
+        const total = data.watchlists.reduce((sum, w) => sum + (w.newCount || 0), 0);
+        setWatchlistBadge(total);
+      } catch {}
+
+      try {
+        const notifData = await apiRequest<{ unreadCount: number }>(
+          API_ENDPOINTS.notifications.unreadCount
+        );
+        setNotifBadge(notifData.unreadCount);
+      } catch {}
+    };
+
+    fetchBadges();
+    const interval = setInterval(fetchBadges, 30_000);
+    return () => clearInterval(interval);
+  }, [user]);
 
   return (
     <aside className="hidden md:flex flex-col w-72 shrink-0 border-r border-border/40 bg-card/50 backdrop-blur-sm h-screen sticky top-0">
@@ -42,6 +76,9 @@ export function DesktopSidebar() {
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+          const badge =
+            item.href === "/watchlist" ? watchlistBadge :
+            item.href === "/" ? notifBadge : 0;
 
           return (
             <Link
@@ -61,7 +98,18 @@ export function DesktopSidebar() {
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
               )}
-              <Icon className="h-[18px] w-[18px]" strokeWidth={isActive ? 2.25 : 1.75} />
+              <div className="relative">
+                <Icon className="h-[18px] w-[18px]" strokeWidth={isActive ? 2.25 : 1.75} />
+                {badge > 0 && (
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-1.5 -right-2 h-4 min-w-4 px-1 bg-primary text-primary-foreground text-[10px] font-semibold rounded-full flex items-center justify-center"
+                  >
+                    {badge}
+                  </motion.div>
+                )}
+              </div>
               {item.label}
             </Link>
           );
@@ -71,22 +119,44 @@ export function DesktopSidebar() {
       {/* User Section */}
       <div className="px-3 py-4 border-t border-border/30">
         {user ? (
-          <div className="space-y-1">
+          <div className="space-y-2">
+            {/* User info with avatar */}
             <Link
               href="/profile"
               className={cn(
-                "flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150",
                 pathname === "/profile"
-                  ? "text-primary bg-primary/8"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                  ? "bg-primary/8"
+                  : "hover:bg-accent"
               )}
             >
-              <User className="h-[18px] w-[18px]" />
-              Profile
+              <Avatar className="h-9 w-9 shrink-0 ring-2 ring-border">
+                <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`} />
+                <AvatarFallback className="text-xs font-medium">
+                  {(userName || "U")[0].toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground truncate">
+                  {userName || "User"}
+                </p>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  <span className="text-[11px] text-muted-foreground">Online</span>
+                  {notifBadge > 0 && (
+                    <span className="ml-auto flex items-center gap-1 text-[11px] text-primary font-medium">
+                      <Bell className="h-3 w-3" />
+                      {notifBadge}
+                    </span>
+                  )}
+                </div>
+              </div>
             </Link>
+
+            {/* Sign out */}
             <button
               onClick={signOut}
-              className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-all duration-150 w-full"
+              className="flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all duration-150 w-full"
             >
               <LogOut className="h-[18px] w-[18px]" />
               Sign Out
