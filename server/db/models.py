@@ -1,6 +1,3 @@
-"""
-SQLAlchemy ORM models – the actual DB tables.
-"""
 from datetime import datetime, timezone
 from sqlalchemy import (
     Column, Integer, String, Float, Boolean, DateTime,
@@ -26,6 +23,7 @@ class Listing(Base):
     trim = Column(String(200), nullable=True)
     year = Column(Integer, nullable=False, index=True)
     price = Column(Integer, nullable=False)             # AED, raw integer
+    favorite_count = Column(Integer, default=0, server_default='0', nullable=False)
     kms = Column(Integer, nullable=True)
     url = Column(Text, nullable=False, unique=True)      # natural unique key
     horsepower = Column(String(50), nullable=True)
@@ -43,7 +41,7 @@ class Listing(Base):
     images = Column(JSON, nullable=True)  # array of image URLs
     location = Column(String(100), nullable=True, default="Dubai, UAE")
 
-    # ML-derived fields (populated by prediction service)
+    # ML-derived fields 
     predicted_price = Column(Integer, nullable=True)
     deal_label = Column(String(20), nullable=True)       # "Good Deal" / "Fair" / "Overpriced"
     source = Column(String(50), nullable=False, default="dubizzle", index=True)

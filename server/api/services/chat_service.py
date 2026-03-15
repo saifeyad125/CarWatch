@@ -22,16 +22,19 @@ SYSTEM_PROMPT = (
     "RULES:\n"
     "- Always quote prices in AED.\n"
     "- Only reference data provided in the [CONTEXT FROM DATABASE] block — never fabricate listings or prices.\n"
-    "- When mentioning a specific car, include its listing ID so the user can look it up.\n"
+    "- When presenting cars, lead with the car description (year, brand, model, trim), then price and deal status. "
+    "Do NOT show raw database IDs to the user. If a listing has a [ref:ID] tag in the context, you may say "
+    "'(Listing #ID)' at the end only if the user asks for a reference number.\n"
     "- Deal labels: 'Good Deal' = priced below predicted market value, 'Fair' = around market value, 'Overpriced' = above predicted value.\n"
-    "- When showing listings, format them clearly with key details (year, brand, model, price, deal label).\n"
+    "- When showing listings, use a clean format like:\n"
+    "  **2020 Toyota Camry SE** — AED 65,000 (Good Deal, saves AED 8,000) — 45,000 km\n"
     "- If a user asks for deals or best listings, highlight savings (difference between price and predicted price).\n"
     "- When comparing brands or models, use the market statistics provided.\n"
     "- Be concise but thorough — show real data, not just counts.\n"
     "- If the context says 'No listings found', tell the user honestly and suggest broadening their search."
 )
 
-# ─────────── Brand detection ───────────
+# Brand detection 
 
 # We'll dynamically load brands from the DB on first call, but keep a fallback list
 # for keyword detection of common aliases
@@ -147,25 +150,28 @@ def _wants_newest(text: str) -> bool:
     return any(kw in text.lower() for kw in keywords)
 
 
-# ─────────── Listing formatter ───────────
+# Listing formatter 
 
 def _format_listing(li: Listing) -> str:
-    """Format a single listing into a context line."""
+    """Format a single listing into a human-friendly context line for the LLM."""
     pred = f"AED {li.predicted_price:,}" if li.predicted_price else "N/A"
     kms_str = f"{li.kms:,} km" if li.kms else "N/A"
     savings = ""
     if li.predicted_price and li.price and li.deal_label == "Good Deal":
         diff = li.predicted_price - li.price
-        savings = f" | Savings: AED {diff:,}"
+        savings = f" | You save: AED {diff:,}"
+    trim_str = f" {li.trim}" if li.trim else ""
+    location_str = f" | Location: {li.location}" if li.location else ""
     return (
-        f"  - ID {li.id}: {li.year} {li.brand} {li.model}"
-        f"{(' ' + li.trim) if li.trim else ''} | "
-        f"Price: AED {li.price:,} | Predicted: {pred} | "
-        f"Deal: {li.deal_label or 'N/A'}{savings} | Kms: {kms_str}"
+        f"  - {li.year} {li.brand} {li.model}{trim_str} — "
+        f"AED {li.price:,} (Market value: {pred}) — "
+        f"{li.deal_label or 'Unrated'}{savings} — "
+        f"{kms_str}{location_str} "
+        f"[ref:{li.id}]"
     )
 
 
-# ─────────── Context builder ───────────
+# Context builder 
 
 def build_context(message: str, user_id: int, db: Session) -> str:
     """
@@ -179,14 +185,14 @@ def build_context(message: str, user_id: int, db: Session) -> str:
     wants_compare = _wants_comparison(message) and len(brands) >= 2
     wants_newest = _wants_newest(message)
 
-    # ── Brand filter helper (uses % wildcards for partial matching) ──
+    # Brand filter helper (uses % wildcards for partial matching) 
     def _brand_filter(query, column=Listing.brand):
         """Apply brand filter with % wildcards so 'Mercedes' matches 'Mercedes-Benz'."""
         if brands:
             return query.filter(or_(*[column.ilike(f"%{b}%") for b in brands]))
         return query
 
-    # ── 1. Best deals (when user asks for deals/best/recommendations) ──
+    # 1. Best deals (when user asks for deals/best/recommendations) 
     if wants_deals and not brands and not price_range:
         good_deals = (
             db.query(Listing)
@@ -217,7 +223,7 @@ def build_context(message: str, user_id: int, db: Session) -> str:
                 lines.append(f"  - {label}: {count} listings")
             sections.append("\n".join(lines))
 
-    # ── 2. Comparison mode (two+ brands mentioned with "vs"/"compare") ──
+    #  2. Comparison mode (two+ brands mentioned with "vs"/"compare") 
     if wants_compare:
         lines = ["COMPARISON:"]
         for brand in brands:
@@ -263,7 +269,7 @@ def build_context(message: str, user_id: int, db: Session) -> str:
 
         sections.append("\n".join(lines))
 
-    # ── 3. Listing search (brands and/or price detected) ──
+    #  3. Listing search (brands and/or price detected) 
     if (brands or price_range) and not wants_compare:
         query = db.query(Listing)
         query = _brand_filter(query)
@@ -338,7 +344,7 @@ def build_context(message: str, user_id: int, db: Session) -> str:
                     filter_desc.append(f"above AED {min_p:,}")
             sections.append(f"No listings found matching: {', '.join(filter_desc)}.")
 
-    # ── 4. Market stats (if requested or brands detected) ──
+    #  4. Market stats (if requested or brands detected) 
     if _wants_market_stats(message) or (brands and not wants_compare):
         stats_query = db.query(
             Listing.brand,
@@ -366,7 +372,7 @@ def build_context(message: str, user_id: int, db: Session) -> str:
                 )
             sections.append("\n".join(lines))
 
-    # ── 5. Watchlist info ──
+    # 5. Watchlist info 
     if _wants_watchlist_info(message):
         watchlists = (
             db.query(Watchlist)
@@ -383,14 +389,14 @@ def build_context(message: str, user_id: int, db: Session) -> str:
                 )
                 status = "Active" if wl.is_active else "Inactive"
                 lines.append(
-                    f"  - \"{wl.title}\" (ID {wl.id}) | Status: {status} | "
+                    f"  - \"{wl.title}\" | Status: {status} | "
                     f"Matches: {match_count} | Criteria: {json.dumps(wl.criteria_json)}"
                 )
             sections.append("\n".join(lines))
         else:
             sections.append("You have no watchlists set up yet.")
 
-    # ── 6. Fallback: general DB overview + sample good deals ──
+    #  6. Fallback: general DB overview + sample good deals 
     if not sections:
         total_listings = db.query(func.count(Listing.id)).scalar()
         good_deals_count = (
@@ -438,7 +444,7 @@ def build_context(message: str, user_id: int, db: Session) -> str:
     return "\n\n".join(sections)
 
 
-# ─────────── Gemini streaming ───────────
+# Gemini streaming 
 
 async def stream_chat_response(
     message: str,

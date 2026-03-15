@@ -1,6 +1,3 @@
-"""
-Watchlist endpoints — authenticated, backed by Postgres.
-"""
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -90,4 +87,4 @@ def api_run_watchlist_scan(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return run_watchlist_scan(db, watchlist_id)
+    return run_watchlist_scan(db, watchlist_id, current_user.id)

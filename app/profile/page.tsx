@@ -47,6 +47,9 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [confirmDeleteWatchlists, setConfirmDeleteWatchlists] = useState(false);
+  const [confirmDeleteAccount, setConfirmDeleteAccount] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const { theme, toggleTheme } = useTheme();
   const [favoritesCount, setFavoritesCount] = useState(0);
@@ -90,6 +93,20 @@ export default function ProfilePage() {
       setShowAvatarPicker(false);
       setSaveError(null);
     } catch { setSaveError("Failed to update avatar."); }
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeletingAccount(true);
+    setDeleteError(null);
+    try {
+      await apiRequest(API_ENDPOINTS.profile, { method: "DELETE" });
+      await signOut();
+      router.push("/login");
+    } catch (err) {
+      console.error("Failed to delete account:", err);
+      setDeleteError("Failed to delete account. Please try again later.");
+      setDeletingAccount(false);
+    }
   };
 
   const statusInfo = STATUS_LABELS[profile?.status || "free"];
@@ -349,6 +366,50 @@ export default function ProfilePage() {
                   onClick={() => setConfirmDeleteWatchlists(true)}
                 >
                   <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete All Watchlists
+                </Button>
+              )}
+
+              {/* Spacer between two danger actions */}
+              <div className="border-b border-red-200/40 dark:border-red-900/20 my-3" />
+
+              {deleteError && (
+                <p className="text-sm text-red-600 dark:text-red-400 mb-2">{deleteError}</p>
+              )}
+
+              {confirmDeleteAccount ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-red-600 dark:text-red-400 font-medium">
+                    This will permanently delete your account, all watchlists, chat history, and notifications. This cannot be undone.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="flex-1"
+                      disabled={deletingAccount}
+                      onClick={handleDeleteAccount}
+                    >
+                      {deletingAccount ? "Deleting..." : "Yes, Delete My Account"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      disabled={deletingAccount}
+                      onClick={() => { setConfirmDeleteAccount(false); setDeleteError(null); }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-start text-red-600 border-red-200 hover:bg-red-50 dark:border-red-900/40 dark:hover:bg-red-950/20"
+                  onClick={() => setConfirmDeleteAccount(true)}
+                >
+                  <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete Account
                 </Button>
               )}
             </CardContent>

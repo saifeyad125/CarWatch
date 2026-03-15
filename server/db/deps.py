@@ -2,15 +2,18 @@
 FastAPI dependencies – DB session and auth.
 """
 import os
+import logging
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 import jwt
 from jwt import PyJWKClient
+import requests as http_requests
 
 from db.database import SessionLocal
 from db.models import User, UserStatus
 
+logger = logging.getLogger(__name__)
 
 security = HTTPBearer()
 
@@ -25,6 +28,7 @@ def get_db():
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", "")
+SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 
 # JWKS client for ES256 token verification (caches keys automatically)
 _jwks_client = None
@@ -94,3 +98,27 @@ def get_current_user(
         db.refresh(user)
 
     return user
+
+
+def delete_supabase_user(supabase_id: str) -> bool:
+    """Delete a user from Supabase Auth using the Admin API.
+    Returns True on success, False on failure. Logs errors."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+        logger.error("Cannot delete Supabase user: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set")
+        return False
+    try:
+        resp = http_requests.delete(
+            f"{SUPABASE_URL}/auth/v1/admin/users/{supabase_id}",
+            headers={
+                "apikey": SUPABASE_SERVICE_ROLE_KEY,
+                "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+            },
+            timeout=10,
+        )
+        if resp.status_code in (200, 204):
+            return True
+        logger.error(f"Supabase user deletion failed: {resp.status_code} {resp.text}")
+        return False
+    except Exception as e:
+        logger.error(f"Supabase user deletion error: {e}")
+        return False

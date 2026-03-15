@@ -58,7 +58,7 @@ interface AnalysisData {
 const formatAED = (price: number) => `د.إ ${price.toLocaleString()}`;
 const formatK = (v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`;
 
-// Retention Chart (line-style with dots and filled area)
+// Retention Chart (line style with dots and filled area)
 
 function RetentionChart({ data, depreciationCurve, currentPrice }: {
   data: { label: string; retentionPct: number }[];
@@ -77,14 +77,15 @@ function RetentionChart({ data, depreciationCurve, currentPrice }: {
       {/* Chart */}
       <div className="flex gap-3 sm:gap-6 mb-3">
         {data.map((item, i) => {
-          const isNow = i === 0;
-          const isLast = i === data.length - 1;
-          const pct = isNow ? 100 : Math.max(item.retentionPct, 2);
-          const color = isLast
-            ? "bg-red-500"
-            : item.retentionPct >= 80
-            ? "bg-emerald-500"
-            : "bg-amber-500";
+          const pct = Math.max(item.retentionPct, 2);
+          const color =
+            item.retentionPct >= 80
+              ? "bg-emerald-500"
+              : item.retentionPct >= 60
+              ? "bg-amber-500"
+              : item.retentionPct >= 50
+              ? "bg-orange-500"
+              : "bg-red-500";
 
           return (
             <div key={i} className="flex-1 flex flex-col items-center">
@@ -95,7 +96,7 @@ function RetentionChart({ data, depreciationCurve, currentPrice }: {
               {/* Bar with fixed-height container */}
               <div className="w-full h-32 sm:h-40 flex items-end justify-center">
                 <motion.div
-                  className={`w-full max-w-14 rounded-t-md ${isNow ? "bg-emerald-600" : color}`}
+                  className={`w-full max-w-14 rounded-t-md ${color}`}
                   initial={{ height: 0 }}
                   animate={{ height: `${pct}%` }}
                   transition={{ duration: 0.6, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }}
@@ -110,7 +111,7 @@ function RetentionChart({ data, depreciationCurve, currentPrice }: {
         })}
       </div>
 
-      {/* Price projections row */}
+      {/* Price projection row */}
       <div className="grid grid-cols-4 gap-2 mt-4 pt-4 border-t border-border/40">
         {prices.map((price, i) => (
           <div key={i} className="text-center">
@@ -362,7 +363,7 @@ export default function DetailedAnalysis({ params }: { params: Promise<{ id: str
     })),
   ];
 
-  //  Bucket mileage into ~8 groups 
+  //  Bucket mileage into 8 groups 
   const bucketMileage = () => {
     if (data.priceVsMileage.length === 0) return [];
     const kmsValues = data.priceVsMileage.map(p => p.kms);

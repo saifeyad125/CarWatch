@@ -1,0 +1,955 @@
+brand,model,sample_count
+Abarth,595,25
+Abarth,695,26
+AITO,M7,4
+Alfa Romeo,156/159,4
+Alfa Romeo,8C,3
+Alfa Romeo,Giulia,50
+Alfa Romeo,GIULIETTA,62
+Alfa Romeo,Stelvio,49
+Alfa Romeo,Tonale,6
+Ashok Leyland,Oyster,7
+Aston Martin,DB11,24
+Aston Martin,DB12,15
+Aston Martin,DB9,10
+Aston Martin,DBS,12
+Aston Martin,DBX,39
+Aston Martin,Rapide,11
+Aston Martin,Vanquish,27
+Aston Martin,Vantage,44
+Audi,A1,5
+Audi,A3,153
+Audi,A4,115
+Audi,A5,155
+Audi,A6,157
+Audi,A7,58
+Audi,A8,169
+Audi,e-tron,30
+Audi,e-tron GT,6
+Audi,Q2,14
+Audi,Q3,129
+Audi,Q4 e-tron,3
+Audi,Q5,226
+Audi,Q5 e-tron,3
+Audi,Q7,216
+Audi,Q8,115
+Audi,Q8 e-tron,8
+Audi,R8,44
+Audi,RS e-tron,9
+Audi,RS Q8,77
+Audi,RSQ3,25
+Audi,S3,55
+Audi,S3/RS3,71
+Audi,S4/RS4,20
+Audi,S5,16
+Audi,S5/RS5,29
+Audi,S6/RS6,54
+Audi,S7,12
+Audi,S7/RS7,31
+Audi,S8,42
+Audi,SQ5,34
+Audi,SQ7,10
+Audi,SQ8,21
+Audi,TT,42
+BAIC,BJ30,5
+BAIC,BJ40 C,13
+BAIC,BJ40 Pro,3
+BAIC,BJ40 SE,3
+BAIC,BJ40L,16
+BAIC,U5 Plus,5
+BAIC,X55,4
+BAIC,X7,6
+BAW,212 T01,19
+Bentley,Arnage,3
+Bentley,Azure,5
+Bentley,Bentayga,216
+Bentley,Continental,306
+Bentley,Flying Spur,93
+Bentley,Mulsanne,28
+Bentley,Other,4
+Bestune,B70,5
+Bestune,T77,16
+Bestune,T99,10
+BMW,1-Series,83
+BMW,2-Series,137
+BMW,3-Series,381
+BMW,4-Series,365
+BMW,5-Series,450
+BMW,6-Series,82
+BMW,7-Series,420
+BMW,8-Series,88
+BMW,i3,4
+BMW,i4,14
+BMW,i5,25
+BMW,i7,11
+BMW,i8,18
+BMW,iX,40
+BMW,iX1,8
+BMW,iX2,3
+BMW,iX3,11
+BMW,M2,49
+BMW,M3,55
+BMW,M4,106
+BMW,M5,115
+BMW,M6,15
+BMW,M8,31
+BMW,X1,109
+BMW,X2,139
+BMW,X3,157
+BMW,X4,159
+BMW,X5,622
+BMW,X6,358
+BMW,X7,161
+BMW,XM,38
+BMW,Z3,5
+BMW,Z4,58
+BMW Alpina,B5,3
+BMW Alpina,B7,3
+Bugatti,Chiron,27
+Bugatti,Veyron,7
+BYD,ATTO 3,6
+BYD,BYD,6
+BYD,Destroyer 05,24
+BYD,e2,5
+BYD,HAN,40
+BYD,Leopard,55
+BYD,Leopard 5,93
+BYD,Leopard 8,54
+BYD,Leopard Titanium 3,24
+BYD,Leopard Titanium 7,36
+BYD,Qin,3
+BYD,Qin L,17
+BYD,Qin Plus,39
+BYD,Seal,37
+BYD,Seal 06,8
+BYD,Seal 7,4
+BYD,SEALION,20
+BYD,SEALION 7,4
+BYD,Shark 6,3
+BYD,Song L,8
+BYD,Song Plus,42
+BYD,Song Pro,4
+BYD,Tang,9
+Cadillac,ATS,35
+Cadillac,CT4,15
+Cadillac,CT5,38
+Cadillac,CT6,9
+Cadillac,CTS/Catera,20
+Cadillac,DTS/De Ville,3
+Cadillac,Escalade,398
+Cadillac,SRX,36
+Cadillac,STS/Seville,4
+Cadillac,XT4,12
+Cadillac,XT5,33
+Cadillac,XT6,15
+Cadillac,XTR/Eldorado,3
+Cadillac,XTS,5
+Can-am,Maverick,4
+Caterham,Other,6
+Caterham,Seven 360,5
+Changan,Alsvin,15
+Changan,CS35,3
+Changan,CS35 Plus,28
+Changan,CS55 Plus,4
+Changan,CS75,5
+Changan,CS75 Plus,10
+Changan,CS85,14
+Changan,CS95,9
+Changan,Deepal G318,5
+Changan,E-Star,8
+Changan,Eado Plus,6
+Changan,Other,4
+Changan,UNI-K,32
+Changan,Uni-T,10
+Changan,Uni-V,15
+Changan,UNI-Z,5
+Changan,X5 Plus,16
+Chery,Arrizo 5,8
+Chery,iCar,10
+Chery,iCar 03,9
+Chery,Tiggo 4,6
+Chery,Tiggo 5,3
+Chery,Tiggo 7,15
+Chery,Tiggo 8,5
+Chery,Tiggo 8 Pro Max,3
+Chery,Tiggo7 Pro,6
+Chery,Tiggo7 Pro Max,6
+Chevrolet,Avalanche,5
+Chevrolet,Aveo,16
+Chevrolet,Blazer,36
+Chevrolet,Bolt,4
+Chevrolet,Camaro,171
+Chevrolet,Camaro Convertible,15
+Chevrolet,Captiva,189
+Chevrolet,Chevelle,4
+Chevrolet,Colorado,3
+Chevrolet,Corvette,140
+Chevrolet,Cruze,86
+Chevrolet,Equinox,30
+Chevrolet,Express,12
+Chevrolet,Groove,58
+Chevrolet,Impala,90
+Chevrolet,Malibu,115
+Chevrolet,Silverado,173
+Chevrolet,Sonic,11
+Chevrolet,Spark,49
+Chevrolet,Suburban,45
+Chevrolet,Tahoe,196
+Chevrolet,Trailblazer,34
+Chevrolet,Traverse,78
+Chevrolet,Trax,57
+Chrysler,200,3
+Chrysler,300,10
+Chrysler,300C,37
+Chrysler,300S,6
+Chrysler,Pacifica,5
+Chrysler,PT Cruiser,3
+Citroen,C3,3
+Citroen,C4,4
+Citroen,C5,9
+Citroen,SpaceTourer,5
+CMC,Veryca,17
+CMC,Z7,5
+Denza,N9,16
+DFSK,Fengon 580,10
+Dodge,Caliber,3
+Dodge,Caravan,4
+Dodge,Challenger,324
+Dodge,Charger,500
+Dodge,Dart,3
+Dodge,Durango,119
+Dodge,Journey,4
+Dodge,Neon,12
+Dodge,Nitro,8
+Dodge,Ram,145
+Dodge,Viper,6
+DongFeng,AX7,3
+DongFeng,M-Hero 917,7
+DongFeng,M817,5
+DongFeng,Mage,5
+DongFeng,Other,4
+DongFeng,Shine,4
+Exeed,Exlantix ES,4
+Exeed,LX,12
+Exeed,RX,11
+Exeed,TXL,7
+Exeed,VX,11
+Fengon,600,4
+Fengon,IX5,6
+Ferrari,12Cilindri,33
+Ferrari,296 GTB,56
+Ferrari,296 GTS,66
+Ferrari,348,7
+Ferrari,360,12
+Ferrari,458,7
+Ferrari,458 Italia,9
+Ferrari,458 Speciale,6
+Ferrari,488,6
+Ferrari,488 GTB,22
+Ferrari,488 Pista,13
+Ferrari,488 Pista Spider,11
+Ferrari,488 Spider,13
+Ferrari,550,4
+Ferrari,575M Maranello,5
+Ferrari,599 GTB,14
+Ferrari,612 Scaglietti,14
+Ferrari,812,29
+Ferrari,812 GTS,52
+Ferrari,812 Superfast,33
+Ferrari,California,5
+Ferrari,California T,15
+Ferrari,F12,4
+Ferrari,F12 Berlinetta,16
+Ferrari,F430,19
+Ferrari,F8 Spider,24
+Ferrari,F8 Tributo,19
+Ferrari,GTC4 Lusso,9
+Ferrari,GTC4 Lusso T,21
+Ferrari,La Ferrari Aperta,3
+Ferrari,LaFerrari,5
+Ferrari,Other,3
+Ferrari,Portofino,36
+Ferrari,Purosangue,115
+Ferrari,Roma,65
+Ferrari,SF90 Spider,63
+Ferrari,SF90 Stradale,62
+Ferrari,Super America,3
+Ferrari,Testarossa,9
+Fiat,500,61
+Fiat,500e,4
+Fiat,500L,4
+Fiat,500X,15
+Fiat,Ducato,4
+Ford,Bronco,90
+Ford,Crown Victoria,5
+Ford,E-150,3
+Ford,Ecosport,152
+Ford,Edge,374
+Ford,Escape,139
+Ford,Escort,11
+Ford,Everest,26
+Ford,Expedition,116
+Ford,Explorer,411
+Ford,F-Series,76
+Ford,F-Series Pickup,254
+Ford,Fiesta,26
+Ford,Figo,107
+Ford,Flex,8
+Ford,Focus,127
+Ford,Fusion,54
+Ford,GT,11
+Ford,Mustang,521
+Ford,Mustang Mach-E,8
+Ford,Other,3
+Ford,Pickup,10
+Ford,Ranger,76
+Ford,Shelby Cobra,12
+Ford,Super Duty,6
+Ford,Taurus,39
+Ford,Territory,103
+Ford,Tourneo,5
+Ford,Transit,27
+Forthing,Friday,4
+Forthing,S7,3
+Forthing,T5,6
+Forthing,T5 Evo,5
+Forthing,U-Tour,4
+Forthing,V9,3
+Foton,Cargo Van,4
+Foton,TUNLAND,5
+Foton,View,5
+Fuso,BA,4
+GAC,Aion Hyper,3
+GAC,EMKOO,22
+GAC,EMPOW,30
+GAC,EMZOOM,30
+GAC,GA8,9
+GAC,GN6,8
+GAC,GN8,9
+GAC,GS3,59
+GAC,GS4,6
+GAC,GS8,63
+GAC,M8,17
+GAC,S7,3
+Geely,CityRay,3
+Geely,Coolray,75
+Geely,Emgrand,32
+Geely,Monjaro,34
+Geely,Other,3
+Geely,Preface,12
+Geely,Starray,6
+Geely,Tugella,13
+Genesis,G70,34
+Genesis,G80,47
+Genesis,G90,18
+Genesis,GV70,37
+Genesis,GV80,66
+GMC,Acadia,90
+GMC,Canyon,6
+GMC,Hummer,18
+GMC,Savana,10
+GMC,Sierra,210
+GMC,Terrain,73
+GMC,Yukon,263
+GWM,Poer,14
+GWM,Tank 300,6
+GWM,Tank 500,4
+GWM,Tank 700,3
+GWM,Wingle 5,8
+GWM,Wingle 7,7
+Haval,H6,27
+Haval,H7,8
+Haval,H9,18
+Haval,Jolion,20
+Hino,300,10
+Honda,Accord,360
+Honda,City,72
+Honda,Civic,274
+Honda,CR-V,146
+Honda,Crosstour,6
+Honda,ENS1,6
+Honda,HR-V,51
+Honda,Jazz,8
+Honda,MR-V,5
+Honda,Odyssey,65
+Honda,Pilot,90
+Honda,ZR-V,19
+Hummer,H2,18
+Hummer,H3,26
+Hyundai,Accent,158
+Hyundai,Avante,26
+Hyundai,Azera,34
+Hyundai,Creta,143
+Hyundai,Elantra,259
+Hyundai,Genesis,27
+Hyundai,Getz,3
+Hyundai,Grand i10,15
+Hyundai,Grand Santa Fe,13
+Hyundai,Grandeur,9
+Hyundai,H1,103
+Hyundai,i10,10
+Hyundai,Ioniq,4
+Hyundai,Kona,63
+Hyundai,Palisade,100
+Hyundai,Porter,8
+Hyundai,Santa Cruz,5
+Hyundai,Santa Fe,236
+Hyundai,Sonata,298
+Hyundai,Staria,67
+Hyundai,Tucson,326
+Hyundai,Veloster,97
+Hyundai,Venue,12
+INEOS,Grenadier,13
+Infiniti,EX35,8
+Infiniti,FX45/FX35,24
+Infiniti,FX50,12
+Infiniti,G25,13
+Infiniti,G35,12
+Infiniti,G37,15
+Infiniti,JX-Series,12
+Infiniti,M-Series,5
+Infiniti,Q30,28
+Infiniti,Q50,107
+Infiniti,Q60,30
+Infiniti,Q70,11
+Infiniti,QX30,17
+Infiniti,QX50,148
+Infiniti,QX55,59
+Infiniti,QX56,32
+Infiniti,QX60,112
+Infiniti,QX70,97
+Infiniti,QX80,150
+Isuzu,D-Max,21
+Isuzu,F-SERIES,6
+Isuzu,N-SERIES,17
+Isuzu,Other,11
+JAC,J6,3
+JAC,J7,58
+JAC,JS3,10
+JAC,JS4,37
+JAC,JS6,13
+JAC,S3,49
+JAC,S3 Plus,9
+JAECOO,J5,3
+JAECOO,J7,7
+JAECOO,J7 SHS,4
+JAECOO,J8,8
+Jaguar,E-Pace,44
+Jaguar,F-Pace,100
+Jaguar,F-Type,40
+Jaguar,I-Pace,3
+Jaguar,XE,42
+Jaguar,XF,77
+Jaguar,XJ,32
+Jaguar,XJ-Series,8
+Jaguar,XJS,5
+Jaguar,XK,8
+Jaguar,XKR,4
+Jeep,Cherokee,77
+Jeep,Compass,52
+Jeep,Gladiator,58
+Jeep,Grand Cherokee,449
+Jeep,Grand Cherokee L,62
+Jeep,Grand Wagoneer,31
+Jeep,Liberty,5
+Jeep,Renegade,20
+Jeep,Wrangler,591
+Jeep,Wrangler 4xe,29
+Jeep,Wrangler Unlimited,355
+Jetour,Dashing,105
+Jetour,G700,13
+Jetour,T1,42
+Jetour,T2,352
+Jetour,T2 i-DM,8
+Jetour,X50,27
+Jetour,X70,24
+Jetour,X70 FL,9
+Jetour,X70 Plus,56
+Jetour,X70 S,5
+Jetour,X90,3
+Jetour,X90 Plus,17
+Kaiyi,X3 Pro,3
+Kaiyi,X7,8
+Kia,Bongo,38
+Kia,Cadenza,40
+Kia,Carens,21
+Kia,Carnival,75
+Kia,Cerato,65
+Kia,EV9,5
+Kia,Forte,26
+Kia,K3,35
+Kia,K4,10
+Kia,K5,86
+Kia,K8,13
+Kia,K9,3
+Kia,K900,4
+Kia,Koup,5
+Kia,KX1,10
+Kia,Mohave,8
+Kia,Morning,14
+Kia,Optima,190
+Kia,Pegas,89
+Kia,Picanto,94
+Kia,Quoris,3
+Kia,Rio,99
+Kia,Sedona,26
+Kia,Seltos,151
+Kia,Sonet,20
+Kia,Sorento,191
+Kia,Soul,47
+Kia,Sportage,415
+Kia,Stinger,32
+Kia,Telluride,58
+King Long,China Mini Van,7
+Koenigsegg,Regera,3
+KTM,X-Bow,4
+Lamborghini,Aventador,75
+Lamborghini,Aventador S,18
+Lamborghini,Gallardo,15
+Lamborghini,Huracan,166
+Lamborghini,Murcielago,14
+Lamborghini,Revuelto,71
+Lamborghini,Sián,3
+Lamborghini,Urus,358
+Lancia,Delta,4
+Land Rover,Defender,531
+Land Rover,Discovery,51
+Land Rover,Discovery Sport,81
+Land Rover,LR2,19
+Land Rover,LR3,7
+Land Rover,LR4,46
+Land Rover,Range Rover,1021
+Land Rover,Range Rover Evoque,302
+Land Rover,Range Rover Sport,863
+Land Rover,Range Rover Velar,268
+Leapmotor,C16,4
+Lexus,CT-Series,6
+Lexus,ES HYBRID,30
+Lexus,ES-Series,264
+Lexus,GS-Series,131
+Lexus,GX 460,83
+Lexus,GX 470,3
+Lexus,GX 550,3
+Lexus,IS-Series,334
+Lexus,LC 500,4
+Lexus,LC-Series,12
+Lexus,LM 350h,6
+Lexus,LM-Series,7
+Lexus,LS-Series,244
+Lexus,LX-Series,351
+Lexus,LX570,8
+Lexus,LX600,16
+Lexus,NX-Series,128
+Lexus,RC,10
+Lexus,RC F,14
+Lexus,RC-Series,9
+Lexus,RX-Series,324
+Lexus,SC-Series,5
+Lexus,TX,4
+Lexus,UX 200,18
+Lexus,UX-Series,40
+Li Auto,L6,5
+Li Auto,L7,15
+Li Auto,L9,22
+Lincoln,Aviator,42
+Lincoln,Continental,9
+Lincoln,Corsair,37
+Lincoln,MKC,36
+Lincoln,MKS,5
+Lincoln,MKT,4
+Lincoln,MKX,53
+Lincoln,MKZ,22
+Lincoln,Nautilus,47
+Lincoln,Navigator,107
+Lincoln,Town Car,9
+Lotus,Eletre,8
+Lotus,Emira,9
+Lotus,Evora,7
+Maextro,S800,6
+Mahindra,Scorpio Pickup,6
+Mahindra,XUV 500,3
+Maserati,Ghibli,68
+Maserati,GranCabrio,6
+Maserati,GranTurismo,18
+Maserati,Grecale,38
+Maserati,Levante,103
+Maserati,MC20,11
+Maserati,Quattroporte,40
+Maxus,G50,3
+Maxus,T60,3
+Maxus,V80,3
+Maybach,57,5
+Maybach,62,8
+Mazda,2,18
+Mazda,3,150
+Mazda,3 Hatchback,20
+Mazda,6,168
+Mazda,CX-3,61
+Mazda,CX-30,48
+Mazda,CX-5,154
+Mazda,CX-60,7
+Mazda,CX-9,118
+Mazda,CX-90,10
+Mazda,MX-5,11
+McLaren,570S,6
+McLaren,650S,3
+McLaren,675LT,5
+McLaren,720S,19
+McLaren,750S,7
+McLaren,765LT,12
+McLaren,Artura,16
+McLaren,Elva,5
+McLaren,GT,9
+McLaren,P1,8
+McLaren,Senna,10
+McLaren,Speedtail,5
+Mercedes-Benz,190,3
+Mercedes-Benz,240/260/280,3
+Mercedes-Benz,500/560,3
+Mercedes-Benz,A-Class,436
+Mercedes-Benz,AMG,248
+Mercedes-Benz,B-Class,4
+Mercedes-Benz,C-Class,1207
+Mercedes-Benz,CL-Class,43
+Mercedes-Benz,CLA,337
+Mercedes-Benz,CLC,5
+Mercedes-Benz,CLE-Class,99
+Mercedes-Benz,CLK-Class,22
+Mercedes-Benz,CLS-Class,198
+Mercedes-Benz,E-Class,1159
+Mercedes-Benz,EQA,15
+Mercedes-Benz,EQB,15
+Mercedes-Benz,EQC,7
+Mercedes-Benz,EQE,66
+Mercedes-Benz,EQG,8
+Mercedes-Benz,EQS,52
+Mercedes-Benz,G-Class,1011
+Mercedes-Benz,G-Class Brabus,155
+Mercedes-Benz,GL-Class,79
+Mercedes-Benz,GLA,143
+Mercedes-Benz,GLB,92
+Mercedes-Benz,GLC,353
+Mercedes-Benz,GLC Coupe,173
+Mercedes-Benz,GLE Coupe,262
+Mercedes-Benz,GLE-Class,265
+Mercedes-Benz,GLK-Class,50
+Mercedes-Benz,GLS-Class,211
+Mercedes-Benz,M-Class,77
+Mercedes-Benz,Other,5
+Mercedes-Benz,S-Class,1027
+Mercedes-Benz,S580e,4
+Mercedes-Benz,SEL-Class,17
+Mercedes-Benz,SL-Class,168
+Mercedes-Benz,SLC,18
+Mercedes-Benz,SLK-Class,44
+Mercedes-Benz,SLR,15
+Mercedes-Benz,SLS,21
+Mercedes-Benz,Sprinter,40
+Mercedes-Benz,V-Class,192
+Mercedes-Benz,Viano,19
+Mercedes-Benz,Vito,39
+Mercedes-Benz,Vito Tourer,6
+Mercedes-Benz,X Class,6
+Mercedes-Maybach,GLS-Class,72
+Mercedes-Maybach,Other,3
+Mercedes-Maybach,S-Class,87
+Mercury,Mountaineer,4
+MG,6,14
+MG,GS,8
+MG,GT,78
+MG,HS,69
+MG,MG 7,28
+MG,MG3,18
+MG,MG5,132
+MG,MG6,21
+MG,One,55
+MG,Other,5
+MG,RX5,83
+MG,RX8,57
+MG,RX9,6
+MG,T60,6
+MG,Whale,7
+MG,ZS,156
+MG,ZS EV,4
+MG,ZST,6
+MINI,Clubman,15
+MINI,Cooper,411
+MINI,Cooper Clubman,3
+MINI,Countryman,172
+MINI,Coupe,6
+MINI,Paceman,4
+MINI,Roadster,3
+Mitsubishi,ASX,110
+Mitsubishi,Attrage,208
+Mitsubishi,Canter,117
+Mitsubishi,Eclipse,5
+Mitsubishi,EclipseCross,44
+Mitsubishi,Evolution,5
+Mitsubishi,Galant,15
+Mitsubishi,Grandis,4
+Mitsubishi,L200,124
+Mitsubishi,Lancer,62
+Mitsubishi,Lancer EX,58
+Mitsubishi,Mirage,23
+Mitsubishi,Montero,7
+Mitsubishi,Montero Sport,105
+Mitsubishi,Other,10
+Mitsubishi,Outlander,127
+Mitsubishi,Pajero,470
+Mitsubishi,Pajero Sport,12
+Mitsubishi,Pickup,7
+Mitsubishi,Van,4
+Mitsubishi,Xpander,40
+Mitsubishi,Xpander Cross,14
+Nio,EL8,4
+Nio,ES6,4
+Nissan,350Z,4
+Nissan,370z,28
+Nissan,400Z,4
+Nissan,Altima,781
+Nissan,Armada,127
+Nissan,GT-R,19
+Nissan,Juke,98
+Nissan,Kicks,278
+Nissan,Magnite,21
+Nissan,Maxima,194
+Nissan,Micra,73
+Nissan,Murano,53
+Nissan,Navara,81
+Nissan,Pathfinder,309
+Nissan,Patrol,1160
+Nissan,Patrol Pickup,6
+Nissan,Patrol Safari,283
+Nissan,Pickup,26
+Nissan,Qashqai,22
+Nissan,Quest,14
+Nissan,Rogue,168
+Nissan,Sentra,302
+Nissan,Silvia,3
+Nissan,Skyline,26
+Nissan,Sunny,534
+Nissan,Tiida,189
+Nissan,Titan,3
+Nissan,Urvan,169
+Nissan,Versa,65
+Nissan,X-Trail,393
+Nissan,Xterra,178
+Nissan,Z,7
+OMODA,OMODA C5,3
+OMODA,Omoda E5,4
+Opel,Astra,5
+Opel,Corsa,5
+Opel,Crossland X,8
+Opel,Insignia,6
+Opel,Mokka,10
+Pagani,Huayra,7
+Peugeot,2008,39
+Peugeot,207,4
+Peugeot,208,32
+Peugeot,3008,90
+Peugeot,301,11
+Peugeot,308,24
+Peugeot,408,8
+Peugeot,5008,24
+Peugeot,508,18
+Peugeot,Boxer,21
+Peugeot,e-2008,3
+Peugeot,Expert,7
+Peugeot,Landtrek,18
+Peugeot,Partner,37
+Peugeot,RCZ,4
+Peugeot,Rifter,3
+Peugeot,Traveller,4
+Polaris,Slingshot,10
+Polestar,2,28
+Polestar,4,9
+Porsche,718 Spyder,36
+Porsche,918 Spyder,18
+Porsche,968,3
+Porsche,Boxster,110
+Porsche,Carrera / 911,760
+Porsche,Cayenne,617
+Porsche,Cayman,118
+Porsche,Macan,237
+Porsche,Panamera,170
+Porsche,Taycan,74
+Rabdan,One,14
+RAM,1500,111
+RAM,1500 TRX,39
+RAM,2500,5
+RAM,Warlock,3
+Renault,Arkana,9
+Renault,Captur,31
+Renault,Clio,7
+Renault,Dokker,24
+Renault,Duster,148
+Renault,Express Van,4
+Renault,Fluence,8
+Renault,Koleos,112
+Renault,Master,6
+Renault,Megane,27
+Renault,Safrane,9
+Renault,Symbol,32
+Renault,Talisman,5
+Rivian,R1T,3
+Rolls-Royce,Cullinan,356
+Rolls-Royce,Dawn,64
+Rolls-Royce,Ghost,147
+Rolls-Royce,Phantom,115
+Rolls-Royce,Spectre,90
+Rolls-Royce,Wraith,151
+Rolls-Royce Onyx,Cullinan,4
+Rox,01,131
+Rox,Adamas,5
+SAIC,Rising R7,3
+Seres,5,3
+Skoda,Fabia,3
+Skoda,Kamiq,12
+Skoda,Karoq,18
+Skoda,Kodiaq,19
+Skoda,Kushaq,13
+Skoda,Octavia,24
+Skoda,Scala,15
+Skoda,Superb,18
+Skywell,ET5,4
+Smart,#5,3
+Smart,Fortwo,12
+Smart,Other,7
+Subaru,BRZ,20
+Subaru,Forester,8
+Subaru,Impreza,5
+Subaru,Legacy,5
+Subaru,Outback,5
+Subaru,Tribeca,3
+Subaru,WRX,33
+Subaru,XV,10
+Suzuki,Baleno,40
+Suzuki,Carry,4
+Suzuki,Celerio,7
+Suzuki,Ciaz,89
+Suzuki,Dzire,37
+Suzuki,Eeco,7
+Suzuki,Ertiga,37
+Suzuki,Fronx,9
+Suzuki,Grand Vitara,30
+Suzuki,Jimny,129
+Suzuki,Kizashi,3
+Suzuki,Swift,96
+Suzuki,SX4,3
+Suzuki,Vitara,18
+TANK,300,15
+TANK,500,28
+TANK,700,3
+TATA,Other,4
+Tesla,Cybertruck,34
+Tesla,Model 3,284
+Tesla,Model S,62
+Tesla,Model X,84
+Tesla,Model Y,235
+Toyota,4Runner,23
+Toyota,86,23
+Toyota,Alphard,9
+Toyota,Aurion,20
+Toyota,Avalon,51
+Toyota,Avanza,44
+Toyota,bZ3,8
+Toyota,BZ4X,6
+Toyota,C-HR,54
+Toyota,Camry,475
+Toyota,Coaster,38
+Toyota,Corolla,492
+Toyota,Corolla Cross,115
+Toyota,Crown,28
+Toyota,Echo,3
+Toyota,FJ Cruiser,133
+Toyota,Fortuner,281
+Toyota,Frontlander,22
+Toyota,GR86,7
+Toyota,Grand Highlander,3
+Toyota,Granvia,17
+Toyota,Hiace,234
+Toyota,Highlander,99
+Toyota,Hilux,416
+Toyota,Innova,38
+Toyota,Land Cruiser,890
+Toyota,Land Cruiser 70,33
+Toyota,Land Cruiser 71,12
+Toyota,Land Cruiser 76,19
+Toyota,Land Cruiser 76 series,25
+Toyota,Land Cruiser 78 series,10
+Toyota,Land Cruiser 79 series,61
+Toyota,Levin,11
+Toyota,Lite Ace,8
+Toyota,Mirai,3
+Toyota,Other,4
+Toyota,Pickup,7
+Toyota,Prado,495
+Toyota,Previa,31
+Toyota,Prius,22
+Toyota,Raize,44
+Toyota,Rav 4,432
+Toyota,Rush,111
+Toyota,Sequoia,20
+Toyota,Sienna,43
+Toyota,Supra,75
+Toyota,Tacoma,28
+Toyota,Tundra,127
+Toyota,Urban Cruiser,35
+Toyota,Veloz,26
+Toyota,Wish,3
+Toyota,XA,3
+Toyota,Yaris,454
+Toyota,Zelas,3
+Victory,Other,3
+Victory,SCH 1025,7
+Victory,V1,20
+Victory,V2,7
+Volkswagen,Amarok,13
+Volkswagen,Arteon,4
+Volkswagen,Atlas,10
+Volkswagen,Beetle,50
+Volkswagen,CC,21
+Volkswagen,Eos,6
+Volkswagen,Golf,422
+Volkswagen,ID.4,37
+Volkswagen,ID.6,14
+Volkswagen,Jetta,89
+Volkswagen,Multivan,4
+Volkswagen,Passat,120
+Volkswagen,Polo,7
+Volkswagen,Scirocco,14
+Volkswagen,T-Roc,102
+Volkswagen,Teramont,185
+Volkswagen,Tiguan,246
+Volkswagen,Touareg,194
+Volkswagen,Transporter,4
+Volkswagen,Viloran,3
+Volvo,C-Class,5
+Volvo,C40,4
+Volvo,S40,4
+Volvo,S60,13
+Volvo,S80,3
+Volvo,S90,25
+Volvo,V-Class,25
+Volvo,XC40,23
+Volvo,XC60,81
+Volvo,XC90,72
+Voyah,Dreamer,5
+Voyah,Free,14
+Voyah,Taishan,3
+WEY,03,3
+Xiaomi,SU7,26
+Xiaomi,YU7,40
+XPeng,G9,5
+XPeng,P7,3
+YangWang,U8,16
+Zeekr,001,23
+Zeekr,007,3
+Zeekr,009,5
+Zeekr,7X,5
+Zeekr,9,18
+Zeekr,9X,37
+Zeekr,X,12
+ZNA,Rich,6
+Zotye,T600,3
+ZXAUTO,Grandlion,5

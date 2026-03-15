@@ -1,6 +1,3 @@
-"""
-Watchlist business logic – all queries go through SQLAlchemy.
-"""
 import re
 from datetime import datetime, timezone
 from typing import List
@@ -24,7 +21,7 @@ from models.schemas import (
 )
 
 
-# ─────────── helpers ───────────
+# helpers 
 
 def _fmt_price(aed: int) -> str:
     return f"د.إ {aed:,}"
@@ -129,7 +126,7 @@ def _watchlist_to_card(w: Watchlist, db: Session) -> WatchlistCard:
     )
 
 
-# ─────────── service API ───────────
+# service API 
 
 def _get_watchlist_or_404(db: Session, watchlist_id: int, user_id: int = None) -> Watchlist:
     q = db.query(Watchlist).filter(Watchlist.id == watchlist_id)
@@ -166,6 +163,8 @@ def get_watchlist_detail(db: Session, watchlist_id: int, user_id: int = None) ->
 
 
 MAX_ACTIVE_WATCHLISTS = 2
+MAX_TOTAL_WATCHLISTS = 10
+SCAN_COOLDOWN_SECONDS = 60
 
 def set_watchlist_status(db: Session, watchlist_id: int, payload: WatchlistStatusUpdate, user_id: int) -> WatchlistCard:
     """Toggle active/inactive. Enforces a limit of MAX_ACTIVE_WATCHLISTS active at once."""
@@ -237,12 +236,25 @@ def get_watchlist_matches(
     return WatchlistMatchesResponse(watchlistId=watchlist_id, matches=matches)
 
 
-def run_watchlist_scan(db: Session, watchlist_id: int) -> dict:
-    """
-    Scan listings via DB query, persist new matches into watchlist_matches table.
-    Uses the unique constraint to prevent duplicates.
-    """
-    w = _get_watchlist_or_404(db, watchlist_id)
+def run_watchlist_scan(db: Session, watchlist_id: int, user_id: int | None = None) -> dict:
+    w = _get_watchlist_or_404(db, watchlist_id, user_id)
+
+    # Manual scans (user_id provided) require active watchlist
+    if user_id is not None and not w.is_active:
+        raise HTTPException(
+            status_code=403,
+            detail="Cannot scan an inactive watchlist. Activate it first.",
+        )
+
+    # Rate limit manual scans
+    if user_id is not None and w.updated_at:
+        elapsed = (datetime.now(timezone.utc) - w.updated_at.replace(tzinfo=timezone.utc)).total_seconds()
+        if elapsed < SCAN_COOLDOWN_SECONDS:
+            raise HTTPException(
+                status_code=429,
+                detail=f"Please wait {int(SCAN_COOLDOWN_SECONDS - elapsed)} seconds before scanning again.",
+            )
+
     criteria = WatchlistSearchCriteria(**(w.criteria_json or {}))
 
     # Count total listings in DB for reporting
@@ -284,7 +296,7 @@ def run_watchlist_scan(db: Session, watchlist_id: int) -> dict:
     }
 
 
-# ─────────── normalisation helpers ───────────
+# normalisation helpers 
 
 def _normalise(value: str) -> str:
     """Collapse whitespace, strip, and title-case a brand/model string."""
@@ -293,9 +305,36 @@ def _normalise(value: str) -> str:
 
 def create_watchlist(db: Session, payload: WatchlistCreate, user_id: int) -> WatchlistCard:
     """Validate, normalise, persist a new watchlist, run initial scan, return card."""
+
+    # Enforce total watchlist cap 
+    total_count = (
+        db.query(func.count(Watchlist.id))
+        .filter(Watchlist.user_id == user_id)
+        .scalar() or 0
+    )
+    if total_count >= MAX_TOTAL_WATCHLISTS:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Maximum of {MAX_TOTAL_WATCHLISTS} watchlists reached. Delete one first.",
+        )
+
+    # Enforce active watchlist cap at creation 
+    if payload.isActive:
+        active_count = (
+            db.query(func.count(Watchlist.id))
+            .filter(Watchlist.is_active == True, Watchlist.user_id == user_id)
+            .scalar() or 0
+        )
+        if active_count >= MAX_ACTIVE_WATCHLISTS:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Free trial limited to {MAX_ACTIVE_WATCHLISTS} active watchlists. "
+                       "Pause another watchlist first or upgrade.",
+            )
+
     criteria = payload.searchCriteria
 
-    # Normalise make (strip + title-case) – DB uses ilike so matching is safe
+    # Normalise make (strip + title case) – DB uses ilike so matching is safe
     if criteria.make:
         criteria.make = _normalise(criteria.make)
 
@@ -341,8 +380,9 @@ def create_watchlist(db: Session, payload: WatchlistCreate, user_id: int) -> Wat
     db.add(w)
     db.flush()          # get w.id without committing
 
-    # Run initial scan so matches appear immediately
-    run_watchlist_scan(db, w.id)
+    # Run initial scan only for active watchlists
+    if w.is_active:
+        run_watchlist_scan(db, w.id)
 
     db.commit()
     db.refresh(w)
@@ -357,7 +397,10 @@ def delete_watchlist(db: Session, watchlist_id: int, user_id: int) -> None:
 
 
 def initialize_watchlists(db: Session):
-    """Run scan for every watchlist on startup."""
+    """Run scan for every watchlist on startup.
+    Note: scans inactive watchlists too — this is intentional for data freshness.
+    Manual scans via API are restricted to active watchlists only.
+    """
     total_listings = db.query(func.count(Listing.id)).scalar()
     watchlists = db.query(Watchlist).all()
     for w in watchlists:

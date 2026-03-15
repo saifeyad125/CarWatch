@@ -2,6 +2,7 @@
 
 import { Heart, Gauge, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { API_ENDPOINTS } from "@/lib/api";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
@@ -54,6 +55,10 @@ export function CarCard({ car, isFavorite = false, onToggleFavorite, index = 0 }
                   e.preventDefault();
                   e.stopPropagation();
                   onToggleFavorite(car.id);
+                  const isFav = !isFavorite;
+                  fetch(API_ENDPOINTS.cars.favorite(car.id), {
+                    method: isFav ? "POST" : "DELETE",
+                  }).catch(() => {});
                 }}
                 className="absolute top-3 right-3 h-9 w-9 rounded-full bg-white/90 dark:bg-black/50 backdrop-blur-sm flex items-center justify-center shadow-soft transition-all duration-150 hover:scale-110 active:scale-95"
               >
@@ -129,7 +134,7 @@ export function CarCard({ car, isFavorite = false, onToggleFavorite, index = 0 }
   );
 }
 
-/* Skeleton variant for loading states */
+/* Skeleton loading states */
 export function CarCardSkeleton() {
   return (
     <div className="bg-card rounded-xl border border-border/60 shadow-soft overflow-hidden">

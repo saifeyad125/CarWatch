@@ -1,13 +1,13 @@
-"""
-Profile endpoint — authenticated, backed by Postgres.
-"""
-from fastapi import APIRouter, Depends
+import logging
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from db.deps import get_db, get_current_user
+from db.deps import get_db, get_current_user, delete_supabase_user
 from db.models import User, Watchlist, Notification
 from models.schemas import ProfileResponse, ProfileUpdate, ProfileStats
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -82,3 +82,26 @@ def update_profile(
         avatarSeed=current_user.avatar_seed,
         stats=stats,
     )
+
+
+@router.delete("", status_code=204)
+def delete_account(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Delete the user's account entirely.
+    1. Attempt Supabase Auth deletion (best-effort, logged on failure)
+    2. Delete from local DB (cascades: watchlists, matches, notifications, chat)
+    """
+    supabase_ok = delete_supabase_user(current_user.supabase_id)
+    if not supabase_ok:
+        logger.warning(
+            f"Supabase deletion failed for user {current_user.id} "
+            f"(supabase_id={current_user.supabase_id}). "
+            "Local data will still be deleted."
+        )
+
+    db.delete(current_user)
+    db.commit()
+    return None

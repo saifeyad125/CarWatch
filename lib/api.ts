@@ -10,6 +10,7 @@ export const API_ENDPOINTS = {
     analysis: (id: number) => `${API_BASE_URL}/api/cars/${id}/analysis`,
     brands: `${API_BASE_URL}/api/cars/brands`,
     models: (brand: string) => `${API_BASE_URL}/api/cars/brands/${encodeURIComponent(brand)}/models`,
+    favorite: (id: number) => `${API_BASE_URL}/api/cars/${id}/favorite`,
   },
   
   // Prediction endpoints

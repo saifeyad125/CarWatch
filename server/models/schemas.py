@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import List, Optional, Literal
 
 
-# ───────────────────────── Listings ─────────────────────────
+# Listings 
 
 class CarListingSummary(BaseModel):
     id: int
@@ -16,6 +16,10 @@ class CarListingSummary(BaseModel):
     location: str
     image: str
     source: str = "dubizzle" # e.g. "dubizzle", "dubicar"
+
+class CarListingsResponse(BaseModel):
+    listings: List[CarListingSummary]
+    total: int
 
 class Seller(BaseModel):
     name: str
@@ -43,7 +47,7 @@ class CarListingDetail(CarListingSummary):
     similarListings: Optional[List[CarListingSummary]] = None
 
 
-# ───────────────────────── Detailed Analysis ───────────────────────
+# Detailed Analysis 
 
 class DepreciationPoint(BaseModel):
     yearsAhead: int
@@ -87,7 +91,7 @@ class AnalysisResponse(BaseModel):
     competitors: List[Competitor]
 
 
-# ───────────────────────── Watchlists ─────────────────────────
+# Watchlists 
 
 class WatchlistSearchCriteria(BaseModel):
     make: Optional[str] = None
@@ -136,7 +140,7 @@ class WatchlistMatchesResponse(BaseModel):
     matches: List[WatchlistMatch]
 
 
-# ───────────────────────── Create / Update ─────────────────────────
+# Create / Update 
 
 class WatchlistCreate(BaseModel):
     title: str
@@ -151,7 +155,7 @@ class WatchlistStatusUpdate(BaseModel):
     isActive: bool
 
 
-# ───────────────────────── Profile ─────────────────────────
+# Profile 
 
 class ProfileStats(BaseModel):
     watchlistsCount: int
@@ -176,7 +180,7 @@ class ProfileUpdate(BaseModel):
     avatarSeed: Optional[str] = None
 
 
-# ───────────────────────── Notifications ─────────────────────────
+# Notifications 
 
 class NotificationResponse(BaseModel):
     id: int
@@ -196,7 +200,7 @@ class NotificationsListResponse(BaseModel):
 class UnreadCountResponse(BaseModel):
     unreadCount: int
 
-# ───────────────────────── Chat ─────────────────────────
+# Chat 
 
 class ChatMessageResponse(BaseModel):
     id: int

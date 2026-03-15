@@ -1,6 +1,4 @@
-"""
-Car listings endpoints – reads from Postgres via SQLAlchemy.
-"""
+from collections import defaultdict
 from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import Optional, List
 from sqlalchemy.orm import Session
@@ -10,6 +8,7 @@ from db.deps import get_db
 from db.models import Listing, ModelAnalytics
 from models.schemas import (
     CarListingSummary,
+    CarListingsResponse,
     CarListingDetail,
     Seller,
     MarketAnalysis,
@@ -25,7 +24,7 @@ from models.schemas import (
 router = APIRouter()
 
 
-# ───── helpers ─────
+# helpers 
 
 def _fmt_price(aed: int) -> str:
     """Format integer AED price → 'د.إ 52,000' style string for the frontend."""
@@ -72,7 +71,7 @@ def _similarity_score(target: Listing, cand: Listing) -> float:
     """
     score = 0.0
 
-    # Model match (most important), same-model result always beat a different-model 
+    # Model match (most important), same model result always beat a different model 
     if target.model and cand.model and target.model.lower() == cand.model.lower():
         score += 10.0
 
@@ -258,17 +257,18 @@ def _listing_to_detail(row: Listing, db: Session) -> CarListingDetail:
     )
 
 
-# ───── routes ─────
+# routes 
 
-@router.get("", response_model=List[CarListingSummary])
+@router.get("", response_model=CarListingsResponse)
 def get_listings(
-    search: Optional[str] = Query(None),
+    search: Optional[str] = Query(None, max_length=200),
     make: Optional[str] = Query(None),
     model: Optional[str] = Query(None),
     min_year: Optional[int] = Query(None),
     max_year: Optional[int] = Query(None),
     min_price: Optional[int] = Query(None),
     max_price: Optional[int] = Query(None),
+    sort: Optional[str] = Query(None),
     source: Optional[str] = Query(None),
     limit: int = Query(20, ge=1, le=200),
     offset: int = Query(0, ge=0),
@@ -276,12 +276,15 @@ def get_listings(
 ):
     q = db.query(Listing)
     if search:
-        term = f"%{search}%"
-        q = q.filter(or_(
-            Listing.brand.ilike(term),
-            Listing.model.ilike(term),
-            Listing.location.ilike(term),
-        ))
+        search = search.replace('\x00', '')
+        tokens = search.strip().split()
+        for token in tokens:
+            term = f"%{token}%"
+            q = q.filter(or_(
+                Listing.brand.ilike(term),
+                Listing.model.ilike(term),
+                Listing.location.ilike(term),
+            ))
     if make:
         q = q.filter(Listing.brand.ilike(make))
     if model:
@@ -297,8 +300,15 @@ def get_listings(
     if source:
         q = q.filter(Listing.source == source)
 
-    rows = q.order_by(Listing.id.desc()).offset(offset).limit(limit).all()
-    return [_listing_to_summary(r) for r in rows]
+    total = q.count()
+    if sort == "popular":
+        rows = q.order_by(Listing.favorite_count.desc(), Listing.created_at.desc()).offset(offset).limit(limit).all()
+    else:
+        rows = q.order_by(Listing.id.desc()).offset(offset).limit(limit).all()
+    return CarListingsResponse(
+        listings=[_listing_to_summary(r) for r in rows],
+        total=total,
+    )
 
 
 @router.get("/brands")
@@ -318,6 +328,26 @@ def get_models_for_brand(brand: str, db: Session = Depends(get_db)):
         .all()
     )
     return {"models": [r[0] for r in rows]}
+
+
+@router.post("/{car_id}/favorite")
+def favorite_car(car_id: int, db: Session = Depends(get_db)):
+    row = db.query(Listing).filter(Listing.id == car_id).first()
+    if not row:
+        raise HTTPException(status_code=404, detail=f"Car with ID {car_id} not found")
+    row.favorite_count = (row.favorite_count or 0) + 1
+    db.commit()
+    return {"favorite_count": row.favorite_count}
+
+
+@router.delete("/{car_id}/favorite")
+def unfavorite_car(car_id: int, db: Session = Depends(get_db)):
+    row = db.query(Listing).filter(Listing.id == car_id).first()
+    if not row:
+        raise HTTPException(status_code=404, detail=f"Car with ID {car_id} not found")
+    row.favorite_count = max((row.favorite_count or 0) - 1, 0)
+    db.commit()
+    return {"favorite_count": row.favorite_count}
 
 
 @router.get("/{car_id}", response_model=CarListingDetail)
@@ -352,20 +382,57 @@ def get_car_analysis(car_id: int, db: Session = Depends(get_db)):
             retentionPct=retention,
         ))
 
-    # chart data from model_analytics table
+    # chart data from model_analytics table (keep priceVsMileage and priceVsYear)
     analytics = db.query(ModelAnalytics).filter(
         ModelAnalytics.brand == row.brand,
         ModelAnalytics.model == row.model,
     ).first()
 
+    if not analytics or not analytics.chart_data:
+        analytics = db.query(ModelAnalytics).filter(
+            ModelAnalytics.brand == row.brand,
+            ModelAnalytics.model == "__brand__",
+        ).first()
+
     if analytics and analytics.chart_data:
         chart = analytics.chart_data if isinstance(analytics.chart_data, dict) else {}
         price_vs_mileage = [PriceMileagePoint(**p) for p in chart.get("priceVsMileage", [])]
         price_vs_year = [PriceYearPoint(**p) for p in chart.get("priceVsYear", [])]
-        competitors = [Competitor(**c) for c in chart.get("competitors", [])]
     else:
         price_vs_mileage = []
         price_vs_year = []
+
+    # Live competitors from similarity scoring (cross-brand)
+    all_candidates = (
+        db.query(Listing)
+        .filter(Listing.id != row.id)
+        .order_by(Listing.id.desc())
+        .limit(500)
+        .all()
+    )
+
+    if all_candidates:
+        scored = sorted(all_candidates, key=lambda c: _similarity_score(row, c), reverse=True)[:30]
+        groups: dict = defaultdict(list)
+        for c in scored:
+            key = (c.brand, c.model)
+            groups[key].append(c)
+
+        competitors = []
+        for (brand, model), members in sorted(groups.items(), key=lambda x: -len(x[1])):
+            if brand == row.brand and model == row.model:
+                continue
+            competitors.append(Competitor(
+                brand=brand,
+                model=model,
+                avgPrice=int(sum(m.price for m in members) / len(members)),
+                avgKms=int(sum((m.kms or 0) for m in members) / len(members)),
+                avgYear=int(sum(m.year for m in members) / len(members)),
+                count=len(members),
+            ))
+            if len(competitors) >= 5:
+                break
+    else:
         competitors = []
 
     return AnalysisResponse(

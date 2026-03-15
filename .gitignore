@@ -75,7 +75,7 @@ ai_training/outputs/*.txt
 server/__pycache__/
 server/.env
 
-docs/plans/
+docs/
 
 # IDE
 .idea/

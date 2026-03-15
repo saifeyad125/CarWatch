@@ -55,10 +55,14 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isStreaming]);
 
-  // Load conversations on mount
+  // Load conversations when user is authenticated
   useEffect(() => {
-    fetchConversations();
-  }, []);
+    if (user) {
+      fetchConversations();
+    } else {
+      setIsLoading(false);
+    }
+  }, [user]);
 
   const fetchConversations = async () => {
     try {
@@ -312,8 +316,7 @@ export default function ChatPage() {
             animate={{ x: 0 }}
             exit={{ x: -288 }}
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed lg:relative inset-y-0 left-0 w-72 border-r border-border z-50 flex flex-col shadow-elevated"
-            style={{ backgroundColor: "hsl(223, 47%, 11%)" }}
+            className="fixed lg:relative inset-y-0 left-0 w-72 border-r border-border z-50 flex flex-col shadow-elevated bg-card"
           >
             <div className="p-4 border-b border-border/40 shrink-0">
               <div className="flex items-center justify-between mb-3">

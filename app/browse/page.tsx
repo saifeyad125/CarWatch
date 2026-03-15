@@ -22,6 +22,8 @@ export default function Browse() {
   const [priceMin, setPriceMin] = useState("");
   const [priceMax, setPriceMax] = useState("");
   const [selectedMake, setSelectedMake] = useState("");
+  const [selectedModel, setSelectedModel] = useState("");
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [selectedYear, setSelectedYear] = useState("");
   const [selectedSource, setSelectedSource] = useState("");
   const [sortBy, setSortBy] = useState("newest");
@@ -44,14 +46,15 @@ export default function Browse() {
         if (debouncedSearch) params.set("search", debouncedSearch);
         if (selectedSource) params.set("source", selectedSource);
         if (selectedMake) params.set("make", selectedMake);
+        if (selectedModel) params.set("model", selectedModel);
         if (selectedYear) {
           params.set("min_year", selectedYear);
           params.set("max_year", selectedYear);
         }
         if (debouncedPriceMin) params.set("min_price", debouncedPriceMin);
         if (debouncedPriceMax) params.set("max_price", debouncedPriceMax);
-        const data = await apiRequest<CarCardData[]>(`${API_ENDPOINTS.cars.list}?${params}`);
-        setAllListings(data);
+        const data = await apiRequest<{ listings: CarCardData[]; total: number }>(`${API_ENDPOINTS.cars.list}?${params}`);
+        setAllListings(data.listings);
       } catch {
         setError("Failed to load listings. Please try again later.");
       } finally {
@@ -59,7 +62,18 @@ export default function Browse() {
       }
     };
     fetchListings();
-  }, [debouncedSearch, selectedSource, selectedMake, selectedYear, debouncedPriceMin, debouncedPriceMax]);
+  }, [debouncedSearch, selectedSource, selectedMake, selectedModel, selectedYear, debouncedPriceMin, debouncedPriceMax]);
+
+  useEffect(() => {
+    if (selectedMake) {
+      apiRequest<{ models: string[] }>(API_ENDPOINTS.cars.models(selectedMake))
+        .then((data) => setAvailableModels(data.models || []))
+        .catch(() => setAvailableModels([]));
+    } else {
+      setAvailableModels([]);
+    }
+    setSelectedModel("");
+  }, [selectedMake]);
 
   useEffect(() => {
     const saved = localStorage.getItem("carFavorites");
@@ -94,11 +108,12 @@ export default function Browse() {
     });
   }, [allListings, sortBy]);
 
-  const activeFilters = [selectedMake, selectedYear, priceMin, priceMax, selectedSource].filter(Boolean);
+  const activeFilters = [selectedMake, selectedModel, selectedYear, priceMin, priceMax, selectedSource].filter(Boolean);
 
   const clearFilters = () => {
     setSearchQuery("");
     setSelectedMake("");
+    setSelectedModel("");
     setSelectedYear("");
     setPriceMin("");
     setPriceMax("");
@@ -196,6 +211,12 @@ export default function Browse() {
                     <button onClick={() => setSelectedMake("")}><X className="h-3 w-3" /></button>
                   </Badge>
                 )}
+                {selectedModel && (
+                  <Badge variant="secondary" className="whitespace-nowrap text-xs gap-1">
+                    {selectedModel}
+                    <button onClick={() => setSelectedModel("")}><X className="h-3 w-3" /></button>
+                  </Badge>
+                )}
                 {selectedYear && (
                   <Badge variant="secondary" className="whitespace-nowrap text-xs gap-1">
                     {selectedYear}
@@ -243,7 +264,7 @@ export default function Browse() {
             className="shrink-0 overflow-hidden border-b border-border/40 bg-card"
           >
             <div className="max-w-7xl mx-auto px-4 md:px-6 py-4">
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">Min Price (AED)</label>
                   <Input
@@ -275,6 +296,22 @@ export default function Browse() {
                       <option value="">All makes</option>
                       {makes.map((make) => (
                         <option key={make} value={make}>{make}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Model</label>
+                  <div className="relative">
+                    <select
+                      value={selectedModel}
+                      onChange={(e) => setSelectedModel(e.target.value)}
+                      disabled={!selectedMake}
+                      className="h-9 w-full px-3 rounded-lg border border-input bg-background text-sm appearance-none cursor-pointer focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <option value="">{selectedMake ? "All models" : "Select make first"}</option>
+                      {availableModels.map((model) => (
+                        <option key={model} value={model}>{model}</option>
                       ))}
                     </select>
                   </div>

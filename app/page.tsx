@@ -29,6 +29,7 @@ export default function Home() {
   const [showAllListings, setShowAllListings] = useState(false);
   const [popularListings, setPopularListings] = useState<CarCardData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [totalListings, setTotalListings] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [watchlists, setWatchlists] = useState<WatchlistItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -43,8 +44,9 @@ export default function Home() {
       try {
         setIsLoading(true);
         setError(null);
-        const data = await apiRequest<CarCardData[]>(`${API_ENDPOINTS.cars.list}?limit=8`);
-        setPopularListings(data);
+        const data = await apiRequest<{ listings: CarCardData[]; total: number }>(`${API_ENDPOINTS.cars.list}?sort=popular&limit=8`);
+        setPopularListings(data.listings);
+        setTotalListings(data.total);
       } catch {
         setError("Failed to load listings. Please try again later.");
       } finally {
@@ -170,7 +172,7 @@ export default function Home() {
                   </span>
                   <span className="inline-flex items-center gap-1.5">
                     <BarChart3 className="h-3.5 w-3.5 text-primary" />
-                    {popularListings.length > 0 ? `${popularListings.length}+ Listings` : "Live Listings"}
+                    {totalListings > 0 ? `${totalListings.toLocaleString()} Live Listings` : "Live Listings"}
                   </span>
                 </div>
               </div>
