@@ -24,6 +24,8 @@ from models.schemas import (
 # helpers 
 
 def _fmt_price(aed: int) -> str:
+    if not aed:
+        return "Price on Request"
     return f"د.إ {aed:,}"
 
 

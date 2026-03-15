@@ -196,8 +196,8 @@ def _extract_listings_from_browse(html: str) -> list[dict]:
             except (ValueError, TypeError):
                 year = None
 
-        # Skip if essential fields are missing
-        if not url or price is None or year is None:
+        # Skip if essential fields are missing (price=0 means "Price on request in dubicar")
+        if not url or not price or year is None:
             continue
 
         rows.append({
