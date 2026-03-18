@@ -46,7 +46,7 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <AuthProvider>
-            <div className="flex h-screen overflow-hidden">
+            <div className="flex h-dvh overflow-hidden">
               {/* Desktop sidebar (hidden on mobile) */}
               <DesktopSidebar />
 
