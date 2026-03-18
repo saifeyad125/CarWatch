@@ -11,6 +11,8 @@ class CarListingSummary(BaseModel):
     year: int
     price: str              #in DHS
     predictedPrice: Optional[str] = None
+    predictedPriceLgbm: Optional[str] = None
+    modelUsed: Optional[str] = None  # "LightGBM" or "CatBoost"
     dealLabel: Optional[Literal["Good Deal", "Fair", "Overpriced"]] = None
     mileage: str
     location: str

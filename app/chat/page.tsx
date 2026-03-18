@@ -139,13 +139,7 @@ export default function ChatPage() {
 
     setInputMessage("");
 
-    // make sure we have a convo
-    let convId = activeConvId;
-    if (!convId) {
-      convId = await createConversation();
-      if (!convId) return;
-    }
-
+    // Show user message immediately (before any async work)
     const userMsg: Message = {
       id: Date.now(),
       role: "user",
@@ -153,6 +147,13 @@ export default function ChatPage() {
       createdAt: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, userMsg]);
+
+    // make sure we have a convo
+    let convId = activeConvId;
+    if (!convId) {
+      convId = await createConversation();
+      if (!convId) return;
+    }
 
     // Add placeholder bot message
     const botMsgId = Date.now() + 1;
@@ -376,7 +377,7 @@ export default function ChatPage() {
         )}
       </AnimatePresence>
 
-      {/* Sidebar overlay — click anywhere outside to close */}
+      {/* Sidebar overlay */}
       {isSidebarOpen && (
         <div className="fixed inset-0 bg-black/30 z-40" onClick={() => setIsSidebarOpen(false)} />
       )}
@@ -491,7 +492,7 @@ export default function ChatPage() {
                     variant="outline"
                     size="sm"
                     className="whitespace-nowrap text-xs rounded-full"
-                    onClick={() => handleSendMessage(prompt)}
+                    onClick={() => setInputMessage(prompt)}
                   >
                     {prompt}
                   </Button>

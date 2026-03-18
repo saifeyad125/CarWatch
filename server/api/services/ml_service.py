@@ -1,14 +1,10 @@
 """
-ML Service – two-stage CatBoost inference with sigmoid-gated luxury correction.
-
-Stage 1: RMSEWithUncertainty base model → mu_log, sigma_log
-Sigmoid gate: w = sigmoid((mu1 - log1p(800k)) / TAU)
-Stage 2: Residual correction model → delta (log-space)
-Final: expm1(mu1 + w*delta + 0.5*sigma^2)  with calibrated 90% CI
+Two-stage CatBoost inference with sigmoid-gated luxury correction.
 """
 import os
 import json
 import numpy as np
+import pandas as pd
 from pathlib import Path
 from typing import Any, Dict
 
@@ -18,7 +14,6 @@ def _sigmoid(x: np.ndarray) -> np.ndarray:
 
 
 class MLService:
-    """Two-stage price prediction with calibrated uncertainty."""
 
     def __init__(self):
         self.stage1_model = None
@@ -36,7 +31,7 @@ class MLService:
 
         self._load_models()
 
-    # ── loading ──────────────────────────────────────────────
+    # loading
 
     def _load_models(self):
         try:
@@ -97,19 +92,13 @@ class MLService:
         else:
             print(f"Usage profiles not found: {profiles_path}")
 
-    # ── prediction ───────────────────────────────────────────
+    # prediction
 
     def predict_price(self, features: Dict[str, Any]) -> Dict[str, float]:
-        """
-        Two-stage price prediction with uncertainty.
-
-        Returns dict with predicted_price, confidence_low, confidence_high,
-        confidence_level, gate_weight.
-        """
         if not self.model_loaded:
             raise RuntimeError("Model not loaded.")
 
-        # ---- Stage 1 ----
+        # stage 1
         s1_vector = self._prepare_stage1_features(features)
         mu_log, sigma_log = self._predict_stage1(s1_vector)
 
@@ -117,23 +106,23 @@ class MLService:
         # narrow CIs for common feature combinations the model is overconfident on
         sigma_log = max(sigma_log, 0.08)
 
-        # ---- Sigmoid gate ----
+        # sigmoid gate
         w = float(_sigmoid(np.array((mu_log - np.log1p(self.lux_threshold)) / self.tau)))
 
-        # ---- Stage 2 (if model available) ----
+        # stage 2
         delta = 0.0
         if self.stage2_model is not None:
             s2_vector = self._prepare_stage2_features(features, mu_log, sigma_log)
             delta = float(self.stage2_model.predict(s2_vector)[0])
 
-        # ---- Final log prediction ----
+        # combine
         final_log = mu_log + w * delta
 
-        # ---- Back-transform with bias correction (log-normal) ----
+        # back-transform with log-normal bias correction
         predicted_price = float(np.expm1(final_log + 0.5 * sigma_log ** 2))
         predicted_price = max(predicted_price, 0.0)
 
-        # ---- Calibrated uncertainty with luxury inflation ----
+        # calibrated CI (inflated for luxury segment)
         sigma_cal = sigma_log * self.calibration_factor
         sigma_adj = sigma_cal * (1.0 + self.beta * w)
 
@@ -151,10 +140,9 @@ class MLService:
             "gate_weight": round(w, 4),
         }
 
-    # ── Stage 1 helpers ──────────────────────────────────────
+    # stage 1 helpers
 
     def _predict_stage1(self, feature_vector: list):
-        """Return (mu_log, sigma_log) from Stage 1."""
         try:
             pred = self.stage1_model.predict(
                 feature_vector, prediction_type="RMSEWithUncertainty"
@@ -171,75 +159,75 @@ class MLService:
             sigma_log = 0.25
         return mu_log, sigma_log
 
-    def _prepare_stage1_features(self, f: Dict[str, Any]) -> list:
-        """
-        Build the Stage 1 feature row.
-        Order must match training: cat_features + num_features
-          cat: brand, model, trim, fuel_type, body_type, steering_side,
-               regional_specs, doors, seating_capacity, cylinders, age_bucket
-          num: kms, vehicle_age, kms_per_year, horsepower_mid, engine_cc_mid
-        """
+    CAT_FEATURES_S1 = [
+        "brand", "model", "trim", "fuel_type", "body_type", "steering_side",
+        "regional_specs", "doors", "seating_capacity", "cylinders", "age_bucket",
+    ]
+    NUM_FEATURES_S1 = ["kms", "vehicle_age", "kms_per_year", "horsepower_mid", "engine_cc_mid"]
+
+    def _prepare_stage1_features(self, f: Dict[str, Any]) -> pd.DataFrame:
+        # DataFrame so CatBoost handles categoricals properly
         current_year = 2026
         vehicle_age = current_year - f.get("year", 2020)
         kms = f.get("mileage", 50_000)
         kms_per_year = kms / max(vehicle_age, 1)
 
-        row = [
-            # categorical (use `or` to handle explicit None values)
-            f.get("brand") or "Unknown",
-            f.get("model") or "Unknown",
-            f.get("trim") or "Unknown",
-            f.get("fuel_type") or "Petrol",
-            f.get("body_type") or "Unknown",
-            f.get("steering_side") or "Left",
-            f.get("regional_specs") or "GCC",
-            str(f.get("doors") or "4"),
-            str(f.get("seating_capacity") or "5"),
-            str(f.get("cylinders") or "4"),
-            self._age_bucket(vehicle_age),
-            # numerical (use `or` to handle explicit None values)
-            kms,
-            vehicle_age,
-            kms_per_year,
-            f.get("horsepower") or 200,
-            f.get("engine_cc") or 2000,
-        ]
-        return [row]  # CatBoost expects 2-D
+        row = {
+            "brand": f.get("brand") or "Unknown",
+            "model": f.get("model") or "Unknown",
+            "trim": f.get("trim") or "Unknown",
+            "fuel_type": f.get("fuel_type") or "Petrol",
+            "body_type": f.get("body_type") or "Unknown",
+            "steering_side": f.get("steering_side") or "Left",
+            "regional_specs": f.get("regional_specs") or "GCC",
+            "doors": str(f.get("doors") or "4"),
+            "seating_capacity": str(f.get("seating_capacity") or "5"),
+            "cylinders": str(f.get("cylinders") or "4"),
+            "age_bucket": self._age_bucket(vehicle_age),
+            "kms": kms,
+            "vehicle_age": vehicle_age,
+            "kms_per_year": kms_per_year,
+            "horsepower_mid": float(f["horsepower"]) if f.get("horsepower") is not None else np.nan,
+            "engine_cc_mid": float(f["engine_cc"]) if f.get("engine_cc") is not None else np.nan,
+        }
+        df = pd.DataFrame([row])
+        for col in self.CAT_FEATURES_S1:
+            df[col] = df[col].astype(str)
+        return df[self.CAT_FEATURES_S1 + self.NUM_FEATURES_S1]
 
-    # ── Stage 2 helpers ──────────────────────────────────────
+    # stage 2 helpers
+
+    S2_FEATURES = [
+        "brand", "model", "vehicle_age", "kms_per_year", "horsepower_mid",
+        "engine_cc_mid", "fuel_type", "body_type", "regional_specs", "trim",
+        "mu_log_stage1", "sigma_log_stage1",
+    ]
 
     def _prepare_stage2_features(
         self, f: Dict[str, Any], mu_log: float, sigma_log: float
-    ) -> list:
-        """
-        Build the Stage 2 feature row.
-        Order from calibration_info.json → stage2_features:
-          brand, model, vehicle_age, kms_per_year, horsepower_mid,
-          engine_cc_mid, fuel_type, body_type, regional_specs, trim,
-          mu_log_stage1, sigma_log_stage1
-        """
+    ) -> pd.DataFrame:
         current_year = 2026
         vehicle_age = current_year - f.get("year", 2020)
         kms = f.get("mileage", 50_000)
         kms_per_year = kms / max(vehicle_age, 1)
 
-        row = [
-            f.get("brand") or "Unknown",
-            f.get("model") or "Unknown",
-            vehicle_age,
-            kms_per_year,
-            f.get("horsepower") or 200,
-            f.get("engine_cc") or 2000,
-            f.get("fuel_type") or "Petrol",
-            f.get("body_type") or "Unknown",
-            f.get("regional_specs") or "GCC",
-            f.get("trim") or "Unknown",
-            mu_log,
-            sigma_log,
-        ]
-        return [row]
+        row = {
+            "brand": f.get("brand") or "Unknown",
+            "model": f.get("model") or "Unknown",
+            "vehicle_age": vehicle_age,
+            "kms_per_year": kms_per_year,
+            "horsepower_mid": float(f["horsepower"]) if f.get("horsepower") is not None else np.nan,
+            "engine_cc_mid": float(f["engine_cc"]) if f.get("engine_cc") is not None else np.nan,
+            "fuel_type": f.get("fuel_type") or "Petrol",
+            "body_type": f.get("body_type") or "Unknown",
+            "regional_specs": f.get("regional_specs") or "GCC",
+            "trim": f.get("trim") or "Unknown",
+            "mu_log_stage1": mu_log,
+            "sigma_log_stage1": sigma_log,
+        }
+        return pd.DataFrame([row])[self.S2_FEATURES]
 
-    # ── utilities ────────────────────────────────────────────
+    # utilities
 
     @staticmethod
     def _age_bucket(age: int) -> str:
@@ -254,7 +242,7 @@ class MLService:
         return "10+"
 
     def get_annual_kms(self, brand: str, model: str) -> int:
-        """Look up median annual kms: model → brand → global fallback."""
+        # model -> brand -> global fallback
         if not self.usage_profiles:
             return 20_000  # Safe default
 
@@ -271,13 +259,7 @@ class MLService:
     def compute_depreciation(
         self, features: Dict[str, Any], current_predicted_price: float | None = None
     ) -> Dict[str, Any]:
-        """
-        Run 3 forward projections (1, 3, 5 years) using usage profiles.
-        Returns depreciation_data dict ready for DB storage.
-
-        If current_predicted_price is provided (e.g., from a prior predict_price call),
-        it is reused to avoid a redundant model inference.
-        """
+        # reuses current_predicted_price if given to skip redundant inference
         if not self.model_loaded:
             return {}
 

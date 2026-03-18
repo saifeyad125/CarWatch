@@ -1,5 +1,5 @@
 """
-APScheduler setup — runs the periodic scrape-and-match job.
+APScheduler setup for the periodic scrape-and-match job.
 """
 import os
 import logging
@@ -15,6 +15,7 @@ from api.services.dubicars_scraper_service import scrape_dubicars_listings
 from api.services.expiry_service import expire_listings
 from api.services.notification_service import create_match_notifications
 from api.services.watchlists_service import run_watchlist_scan
+from api.services.constants import HYBRID_PRICE_THRESHOLD
 
 logger = logging.getLogger("scheduler")
 
@@ -30,29 +31,59 @@ def _safe_int(val: str | None) -> int | None:
         return None
 
 
-def _predict_and_label(listing, ml_service) -> None:
-    """Run ML prediction on a single listing and update its fields."""
+def _safe_float(val: str | None) -> float | None:
+    # handles range strings like '300 - 399 HP'
+    if val is None:
+        return None
     try:
-        features = {
-            "brand": listing.brand or "Unknown",
-            "model": listing.model or "Unknown",
-            "year": listing.year or 2020,
-            "mileage": listing.kms or 50000,
-            "fuel_type": listing.fuel_type or "Petrol",
-            "body_type": listing.body_type or "Unknown",
-            "trim": listing.trim or "Unknown",
-            "cylinders": _safe_int(listing.cylinders) or 4,
-            "horsepower": _safe_int(listing.horsepower) or 200,
-            "engine_cc": _safe_int(listing.engine_capacity) or 2000,
-            "regional_specs": listing.regional_specs or "GCC",
-            "steering_side": listing.steering_side or "Left",
-            "doors": getattr(listing, "doors", None),
-            "seating_capacity": getattr(listing, "seating_capacity", None),
-        }
-        result = ml_service.predict_price(features)
-        listing.predicted_price = int(result["predicted_price"])
+        return float(str(val).replace(",", "").strip())
+    except (ValueError, AttributeError):
+        return None
 
-        # Label the deal
+
+def _build_features(listing) -> dict:
+    return {
+        "brand": listing.brand or "Unknown",
+        "model": listing.model or "Unknown",
+        "year": listing.year or 2020,
+        "mileage": listing.kms or 50000,
+        "fuel_type": listing.fuel_type or "Petrol",
+        "body_type": listing.body_type or "Unknown",
+        "trim": listing.trim or "Unknown",
+        "cylinders": _safe_int(listing.cylinders) or 4,
+        "horsepower": _safe_float(listing.horsepower),     # allow None, keep float
+        "engine_cc": _safe_float(listing.engine_capacity),  # allow None, keep float
+        "regional_specs": listing.regional_specs or "GCC",
+        "steering_side": listing.steering_side or "Left",
+        "doors": getattr(listing, "doors", None),
+        "seating_capacity": getattr(listing, "seating_capacity", None),
+    }
+
+
+def _predict_and_label(listing, ml_service, lgbm_service=None) -> None:
+    try:
+        features = _build_features(listing)
+
+        # catboost always runs (need uncertainty + depreciation)
+        catboost_result = ml_service.predict_price(features)
+        catboost_price = int(catboost_result["predicted_price"])
+
+        lgbm_price = None
+        if lgbm_service and lgbm_service.model_loaded:
+            try:
+                lgbm_result = lgbm_service.predict_price(features)
+                lgbm_price = int(lgbm_result["predicted_price"])
+            except Exception as e:
+                logger.warning(f"LightGBM failed for listing {listing.id}: {e}")
+
+        # predicted_price_lgbm is the secondary model, not necessarily LightGBM
+        if lgbm_price is not None and listing.price and 0 < listing.price < HYBRID_PRICE_THRESHOLD:
+            listing.predicted_price = lgbm_price
+            listing.predicted_price_lgbm = catboost_price
+        else:
+            listing.predicted_price = catboost_price
+            listing.predicted_price_lgbm = lgbm_price  # may be None
+
         if listing.price and listing.predicted_price:
             diff_pct = (listing.predicted_price - listing.price) / listing.predicted_price * 100
             if diff_pct > 10:
@@ -62,9 +93,11 @@ def _predict_and_label(listing, ml_service) -> None:
             else:
                 listing.deal_label = "Fair"
 
-        # Compute depreciation projections (reuse predicted_price to avoid redundant inference)
+        # depreciation uses catboost for curve consistency
         try:
-            dep_data = ml_service.compute_depreciation(features, current_predicted_price=listing.predicted_price)
+            dep_data = ml_service.compute_depreciation(
+                features, current_predicted_price=catboost_price
+            )
             listing.depreciation_data = dep_data
         except Exception as e:
             logger.warning(f"Depreciation failed for listing {listing.id}: {e}")
@@ -73,14 +106,7 @@ def _predict_and_label(listing, ml_service) -> None:
 
 
 def hourly_scrape_and_match():
-    """
-    The main hourly job:
-      1. Scrape new Source (Dubizzile, DubiCars, etc.) listings
-      2. Run ML predictions on new listings
-      3. Expire old/dead listings
-      4. Re-scan all active watchlists
-      5. Create notifications for new matches
-    """
+    # scrape -> predict -> expire -> match -> notify
     logger.info("=== Hourly scrape-and-match job started ===")
     db = SessionLocal()
     try:
@@ -96,15 +122,22 @@ def hourly_scrape_and_match():
         except Exception as e:
             logger.error(f"Step 1b: DubiCars scrape failed (continuing): {e}")
 
-        # Step 2: Run ML predictions
+        # Step 2: ML predictions
         if new_listings:
             try:
                 from api.services.ml_service import MLService
                 ml_service = MLService()
+                lgbm_service = None
+                try:
+                    from api.services.lgbm_service import LightGBMService
+                    lgbm_service = LightGBMService()
+                except Exception as e:
+                    logger.warning(f"Step 2: LightGBM not available, using CatBoost only: {e}")
                 for listing in new_listings:
-                    _predict_and_label(listing, ml_service)
+                    _predict_and_label(listing, ml_service, lgbm_service)
                 db.commit()
-                logger.info(f"Step 2: ML predictions complete for {len(new_listings)} listings")
+                lgbm_status = "loaded" if lgbm_service and lgbm_service.model_loaded else "not available"
+                logger.info(f"Step 2: Hybrid predictions complete for {len(new_listings)} listings (LightGBM: {lgbm_status})")
             except Exception as e:
                 logger.warning(f"Step 2: ML prediction skipped: {e}")
 
@@ -143,7 +176,6 @@ def hourly_scrape_and_match():
 
 
 def start_scheduler():
-    """Start the APScheduler with the periodic scrape job."""
     scheduler.add_job(
         hourly_scrape_and_match,
         trigger=IntervalTrigger(hours=SCRAPE_INTERVAL_HOURS),
@@ -152,11 +184,10 @@ def start_scheduler():
         replace_existing=True,
     )
     scheduler.start()
-    logger.info(f"Scheduler started — scrape job every {SCRAPE_INTERVAL_HOURS} hours")
+    logger.info(f"Scheduler started - scrape job every {SCRAPE_INTERVAL_HOURS} hours")
 
 
 def stop_scheduler():
-    """Gracefully shut down the scheduler."""
     if scheduler.running:
         scheduler.shutdown(wait=False)
         logger.info("Scheduler stopped")

@@ -41,8 +41,9 @@ class Listing(Base):
     images = Column(JSON, nullable=True)  # array of image URLs
     location = Column(String(100), nullable=True, default="Dubai, UAE")
 
-    # ML-derived fields 
+    # ML-derived fields
     predicted_price = Column(Integer, nullable=True)
+    predicted_price_lgbm = Column(Integer, nullable=True)
     deal_label = Column(String(20), nullable=True)       # "Good Deal" / "Fair" / "Overpriced"
     source = Column(String(50), nullable=False, default="dubizzle", index=True)
     depreciation_data = Column(JSON, nullable=True)

@@ -1,0 +1,146 @@
+{
+  "model_type": "two_stage",
+  "stage1": {
+    "algorithm": "LightGBM",
+    "features": [
+      "brand",
+      "model",
+      "trim",
+      "fuel_type",
+      "body_type",
+      "steering_side",
+      "regional_specs",
+      "doors",
+      "seating_capacity",
+      "cylinders",
+      "age_bucket",
+      "kms",
+      "vehicle_age",
+      "kms_per_year",
+      "horsepower_mid",
+      "engine_cc_mid"
+    ],
+    "cat_features": [
+      "brand",
+      "model",
+      "trim",
+      "fuel_type",
+      "body_type",
+      "steering_side",
+      "regional_specs",
+      "doors",
+      "seating_capacity",
+      "cylinders",
+      "age_bucket"
+    ],
+    "num_features": [
+      "kms",
+      "vehicle_age",
+      "kms_per_year",
+      "horsepower_mid",
+      "engine_cc_mid"
+    ]
+  },
+  "stage1_only_metrics": {
+    "RMSE_log": 0.2053211010316532,
+    "R2_log": 0.9701352053245356,
+    "MAE_price": 35937.34817180736,
+    "RMSE_price": 346834.78572159645,
+    "R2_price": 0.7761289690570297,
+    "MedAPE": 8.758355368821293
+  },
+  "stage1_only_segments": {
+    "budget_<200k": {
+      "RMSE_log": 0.19799705082350172,
+      "R2_log": 0.9349203039409338,
+      "MAE_price": 8822.330281210412,
+      "RMSE_price": 16187.522782369228,
+      "R2_price": 0.896551223309745,
+      "MedAPE": 9.308510560274318,
+      "n": 10013
+    },
+    "mid_200k-800k": {
+      "RMSE_log": 0.19147518690286092,
+      "R2_log": 0.7485368656200436,
+      "MAE_price": 42973.837486353936,
+      "RMSE_price": 78983.27245721193,
+      "R2_price": 0.7423260289796353,
+      "MedAPE": 7.020446130295227,
+      "n": 2359
+    },
+    "luxury_>800k": {
+      "RMSE_log": 0.33021263423440356,
+      "R2_log": 0.6953338559515401,
+      "MAE_price": 436729.165538996,
+      "RMSE_price": 1559838.4734509727,
+      "R2_price": 0.6582879480321213,
+      "MedAPE": 7.553611548187044,
+      "n": 636
+    }
+  },
+  "stage2_config": {
+    "algorithm": "LightGBM",
+    "luxury_threshold_aed": 800000,
+    "sigmoid_tau": 0.3,
+    "stage2_features": [
+      "brand",
+      "model",
+      "vehicle_age",
+      "kms_per_year",
+      "horsepower_mid",
+      "engine_cc_mid",
+      "fuel_type",
+      "body_type",
+      "regional_specs",
+      "trim",
+      "mu_log_stage1"
+    ],
+    "stage2_cat_features": [
+      "brand",
+      "model",
+      "fuel_type",
+      "body_type",
+      "regional_specs",
+      "trim"
+    ],
+    "median_iterations": 31
+  },
+  "twostage_metrics": {
+    "RMSE_log": 0.2059987162288969,
+    "R2_log": 0.9699377562347444,
+    "MAE_price": 36284.422726865836,
+    "RMSE_price": 326918.08432119107,
+    "R2_price": 0.8011019647801773,
+    "MedAPE": 9.112948222379282
+  },
+  "twostage_segments": {
+    "budget_<200k": {
+      "RMSE_log": 0.19859951348457072,
+      "R2_log": 0.934523654216955,
+      "MAE_price": 8898.41561959986,
+      "RMSE_price": 16709.711883948305,
+      "R2_price": 0.8897693172400412,
+      "MedAPE": 9.353012408269425,
+      "n": 10013
+    },
+    "mid_200k-800k": {
+      "RMSE_log": 0.20351422752494483,
+      "R2_log": 0.715921169135213,
+      "MAE_price": 52081.88813326617,
+      "RMSE_price": 96889.02964403882,
+      "R2_price": 0.6122520449195503,
+      "MedAPE": 8.584674379522822,
+      "n": 2359
+    },
+    "luxury_>800k": {
+      "RMSE_log": 0.30551801334971224,
+      "R2_log": 0.7391982704057657,
+      "MAE_price": 408847.10868811706,
+      "RMSE_price": 1465158.669896725,
+      "R2_price": 0.6985117721803349,
+      "MedAPE": 7.634426532643138,
+      "n": 636
+    }
+  },
+  "recommendation": "two_stage"
+}

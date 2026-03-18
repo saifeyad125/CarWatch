@@ -6,6 +6,7 @@ from sqlalchemy import or_
 
 from db.deps import get_db
 from db.models import Listing, ModelAnalytics
+from api.services.constants import HYBRID_PRICE_THRESHOLD
 from models.schemas import (
     CarListingSummary,
     CarListingsResponse,
@@ -27,7 +28,6 @@ router = APIRouter()
 # helpers 
 
 def _fmt_price(aed: int) -> str:
-    """Format integer AED price → 'د.إ 52,000' style string for the frontend."""
     if not aed:
         return "Price on Request"
     return f"د.إ {aed:,}"
@@ -39,12 +39,7 @@ def _fmt_mileage(kms: Optional[int]) -> str:
 
 
 def _to_float(val) -> Optional[float]:
-    """
-    Convert a value to float for numeric comparison.
-    - int/float → cast directly
-    - Range strings like '100 - 199 HP' or '2,000 - 2,999 cc' → midpoint
-    - Single-number strings like '4 door' → first number found
-    """
+    # handles range strings like '100 - 199 HP' -> midpoint
     if val is None:
         return None
     if isinstance(val, (int, float)):
@@ -59,7 +54,6 @@ def _to_float(val) -> Optional[float]:
 
 
 def _norm_diff(a, b, scale: float) -> float:
-    """Normalised absolute difference between two values. Returns 0 if either is None or non-numeric."""
     fa, fb = _to_float(a), _to_float(b)
     if fa is None or fb is None:
         return 0.0
@@ -67,10 +61,7 @@ def _norm_diff(a, b, scale: float) -> float:
 
 
 def _similarity_score(target: Listing, cand: Listing) -> float:
-    """
-    Compute a similarity score between two listings.
-    Higher is more similar. Used to rank similar-listing candidates.
-    """
+    # higher = more similar
     score = 0.0
 
     # Model match (most important), same model result always beat a different model 
@@ -100,11 +91,6 @@ def _similarity_score(target: Listing, cand: Listing) -> float:
 
 
 def _get_similar_listings(row: Listing, db: Session) -> List[CarListingSummary]:
-    """
-    Return the 3 most similar listings to `row` using a scoring function.
-    Pulls all same-brand listings (up to 300), scores each, returns top 3.
-    The SQL filter narrows to same brand, Python scoring handles the rest.
-    """
     candidates = (
         db.query(Listing)
         .filter(
@@ -121,6 +107,14 @@ def _get_similar_listings(row: Listing, db: Session) -> List[CarListingSummary]:
     top3 = sorted(candidates, key=lambda c: _similarity_score(row, c), reverse=True)[:3]
     return [_listing_to_summary(r) for r in top3]
 
+def _derive_model_used(row: Listing) -> str:
+    if row.predicted_price_lgbm is None:
+        return "CatBoost"  # pre-hybrid listing
+    if row.price and 0 < row.price < HYBRID_PRICE_THRESHOLD:
+        return "LightGBM"
+    return "CatBoost"
+
+
 def _listing_to_summary(row: Listing) -> CarListingSummary:
     return CarListingSummary(
         id=row.id,
@@ -129,6 +123,8 @@ def _listing_to_summary(row: Listing) -> CarListingSummary:
         year=row.year,
         price=_fmt_price(row.price),
         predictedPrice=_fmt_price(row.predicted_price) if row.predicted_price else None,
+        predictedPriceLgbm=_fmt_price(row.predicted_price_lgbm) if row.predicted_price_lgbm else None,
+        modelUsed=_derive_model_used(row),
         dealLabel=row.deal_label,
         mileage=_fmt_mileage(row.kms),
         location=row.location or "Dubai, UAE",
@@ -138,7 +134,6 @@ def _listing_to_summary(row: Listing) -> CarListingSummary:
 
 
 def _listing_to_detail(row: Listing, db: Session) -> CarListingDetail:
-    """Convert DB Listing to full CarListingDetail with similar listings from DB."""
     
     # Generate features from DB fields
     features = []
@@ -244,6 +239,8 @@ def _listing_to_detail(row: Listing, db: Session) -> CarListingDetail:
         year=row.year,
         price=_fmt_price(row.price),
         predictedPrice=_fmt_price(row.predicted_price) if row.predicted_price else None,
+        predictedPriceLgbm=_fmt_price(row.predicted_price_lgbm) if row.predicted_price_lgbm else None,
+        modelUsed=_derive_model_used(row),
         dealLabel=row.deal_label,
         mileage=_fmt_mileage(row.kms),
         location=row.location or "Dubai, UAE",
@@ -321,7 +318,6 @@ def get_brands(db: Session = Depends(get_db)):
 
 @router.get("/brands/{brand}/models")
 def get_models_for_brand(brand: str, db: Session = Depends(get_db)):
-    """Return distinct model names for a given brand (case-insensitive)."""
     rows = (
         db.query(Listing.model)
         .filter(Listing.brand.ilike(brand.strip()))
@@ -362,7 +358,6 @@ def get_car_by_id(car_id: int, db: Session = Depends(get_db)):
 
 @router.get("/{car_id}/analysis", response_model=AnalysisResponse)
 def get_car_analysis(car_id: int, db: Session = Depends(get_db)):
-    """Return full analysis data for a listing: depreciation curve + model chart data."""
     row = db.query(Listing).filter(Listing.id == car_id).first()
     if not row:
         raise HTTPException(status_code=404, detail=f"Car with ID {car_id} not found")

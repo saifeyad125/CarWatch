@@ -326,7 +326,7 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
                   </div>
                   {car.predictedPrice && (
                     <div className="flex items-center gap-2 text-sm">
-                      <span className="text-muted-foreground">AI Predicted:</span>
+                      <span className="text-muted-foreground">AI Predicted ({car.modelUsed || "CatBoost"}):</span>
                       <span className="text-muted-foreground line-through">{car.predictedPrice}</span>
                       {priceDiff > 0 && (
                         <span className={`font-medium ${isGoodDeal ? "text-emerald-600" : car.dealLabel === "Overpriced" ? "text-red-600" : "text-muted-foreground"}`}>
@@ -430,7 +430,7 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
             </motion.div>
           </div>
 
-          {/* Similar Listings — full width */}
+          {/* Similar listings */}
           {car.similarListings && car.similarListings.length > 0 && (
             <motion.section
               className="px-4 md:px-6 py-8"

@@ -1,19 +1,24 @@
 """
-Price prediction endpoints using the CatBoost model.
+Price prediction endpoints (hybrid LightGBM/CatBoost routing).
 """
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from typing import Optional
 from api.services.ml_service import MLService
+from api.services.lgbm_service import LightGBMService
+from api.services.constants import HYBRID_PRICE_THRESHOLD
 
 router = APIRouter()
 
-# Initialize ML service
+# init ml services
 ml_service = MLService()
+try:
+    lgbm_service = LightGBMService()
+except Exception:
+    lgbm_service = None
 
 
 class CarFeatures(BaseModel):
-    """Input features for price prediction."""
     brand: str = Field(..., description="Car brand (e.g., Toyota, BMW)")
     model: str = Field(..., description="Car model (e.g., Camry, X5)")
     year: int = Field(..., ge=1990, le=2026, description="Year of manufacture")
@@ -29,7 +34,6 @@ class CarFeatures(BaseModel):
 
 
 class PredictionResponse(BaseModel):
-    """Response model for price prediction."""
     predicted_price: float = Field(..., description="Predicted price in AED")
     confidence_low: float = Field(..., description="Lower bound of confidence interval")
     confidence_high: float = Field(..., description="Upper bound of confidence interval")
@@ -38,7 +42,6 @@ class PredictionResponse(BaseModel):
 
 
 class DealAnalysis(BaseModel):
-    """Deal analysis response."""
     predicted_price: float
     actual_price: float
     difference: float
@@ -49,11 +52,7 @@ class DealAnalysis(BaseModel):
 
 @router.post("/predict", response_model=PredictionResponse)
 async def predict_price(features: CarFeatures):
-    """
-    Predict the price of a used car based on its features.
-    
-    Returns the predicted price along with confidence intervals.
-    """
+    # always CatBoost here (confidence intervals); for hybrid routing use /analyze-deal
     try:
         prediction = ml_service.predict_price(features.model_dump())
         return prediction
@@ -66,35 +65,42 @@ async def predict_price(features: CarFeatures):
 
 @router.post("/analyze-deal")
 async def analyze_deal(features: CarFeatures, asking_price: float):
-    """
-    Analyze if a car listing is a good deal.
-    
-    Compares the asking price against the predicted market value.
-    """
+    # routes LightGBM <800k, CatBoost >=800k
     try:
-        prediction = ml_service.predict_price(features.model_dump())
-        predicted = prediction["predicted_price"]
-        
+        feature_dict = features.model_dump()
+
+        # catboost always runs (we need the confidence intervals)
+        catboost_result = ml_service.predict_price(feature_dict)
+
+        if (asking_price > 0 and asking_price < HYBRID_PRICE_THRESHOLD
+                and lgbm_service and lgbm_service.model_loaded):
+            lgbm_result = lgbm_service.predict_price(feature_dict)
+            predicted = lgbm_result["predicted_price"]
+            model_used = "LightGBM"
+        else:
+            predicted = catboost_result["predicted_price"]
+            model_used = "CatBoost"
+
         difference = predicted - asking_price
-        difference_percent = (difference / predicted) * 100
-        
-        # Determine verdict
+        difference_percent = (difference / predicted) * 100 if predicted else 0
+
         if difference_percent > 10:
             verdict = "Great Deal"
         elif difference_percent > -5:
             verdict = "Fair Price"
         else:
             verdict = "Overpriced"
-        
+
         return {
             "predicted_price": predicted,
             "actual_price": asking_price,
             "difference": difference,
             "difference_percent": round(difference_percent, 2),
             "verdict": verdict,
+            "model_used": model_used,
             "confidence_interval": (
-                prediction["confidence_low"],
-                prediction["confidence_high"]
+                catboost_result["confidence_low"],
+                catboost_result["confidence_high"],
             )
         }
     except Exception as e:
@@ -106,5 +112,4 @@ async def analyze_deal(features: CarFeatures, asking_price: float):
 
 @router.get("/model-info")
 async def get_model_info():
-    """Get information about the ML model."""
     return ml_service.get_model_info()
