@@ -15,48 +15,29 @@ from api.services.dubicars_scraper_service import scrape_dubicars_listings
 from api.services.expiry_service import expire_listings
 from api.services.notification_service import create_match_notifications
 from api.services.watchlists_service import run_watchlist_scan
-from api.services.constants import HYBRID_PRICE_THRESHOLD
+from api.services.constants import HYBRID_PRICE_THRESHOLD, hp_to_midpoint, cc_to_midpoint
 
 logger = logging.getLogger("scheduler")
 
 scheduler = BackgroundScheduler()
 
 
-def _safe_int(val: str | None) -> int | None:
-    if val is None:
-        return None
-    try:
-        return int(str(val).replace(",", "").strip())
-    except (ValueError, AttributeError):
-        return None
-
-
-def _safe_float(val: str | None) -> float | None:
-    # handles range strings like '300 - 399 HP'
-    if val is None:
-        return None
-    try:
-        return float(str(val).replace(",", "").strip())
-    except (ValueError, AttributeError):
-        return None
-
-
 def _build_features(listing) -> dict:
     return {
-        "brand": listing.brand or "Unknown",
-        "model": listing.model or "Unknown",
-        "year": listing.year or 2020,
-        "mileage": listing.kms or 50000,
-        "fuel_type": listing.fuel_type or "Petrol",
-        "body_type": listing.body_type or "Unknown",
-        "trim": listing.trim or "Unknown",
-        "cylinders": _safe_int(listing.cylinders) or 4,
-        "horsepower": _safe_float(listing.horsepower),     # allow None, keep float
-        "engine_cc": _safe_float(listing.engine_capacity),  # allow None, keep float
-        "regional_specs": listing.regional_specs or "GCC",
-        "steering_side": listing.steering_side or "Left",
-        "doors": getattr(listing, "doors", None),
-        "seating_capacity": getattr(listing, "seating_capacity", None),
+        "brand": listing.brand,
+        "model": listing.model,
+        "year": listing.year,
+        "mileage": listing.kms,
+        "fuel_type": listing.fuel_type,
+        "body_type": listing.body_type,
+        "trim": listing.trim,
+        "cylinders": listing.cylinders,
+        "horsepower": hp_to_midpoint(listing.horsepower),
+        "engine_cc": cc_to_midpoint(listing.engine_capacity),
+        "regional_specs": listing.regional_specs,
+        "steering_side": listing.steering_side,
+        "doors": listing.doors,
+        "seating_capacity": listing.seating_capacity,
     }
 
 
