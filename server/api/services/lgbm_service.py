@@ -2,6 +2,7 @@
 LightGBM inference service (stage 1 only, no uncertainty).
 """
 import os
+import re
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -58,27 +59,27 @@ class LightGBMService:
 
     def _prepare_features(self, f: Dict[str, Any]) -> pd.DataFrame:
         current_year = 2026
-        vehicle_age = current_year - f.get("year", 2020)
-        kms = f.get("mileage", 50_000)
+        vehicle_age = current_year - (f.get("year") or 2020)
+        kms = f.get("mileage") or 50_000
         kms_per_year = kms / max(vehicle_age, 1)
 
         row = {
             "brand": f.get("brand") or "Unknown",
             "model": f.get("model") or "Unknown",
-            "trim": f.get("trim") or "Unknown",
-            "fuel_type": f.get("fuel_type") or "Petrol",
-            "body_type": f.get("body_type") or "Unknown",
-            "steering_side": f.get("steering_side") or "Left",
-            "regional_specs": f.get("regional_specs") or "GCC",
-            "doors": str(f.get("doors") or "4"),
-            "seating_capacity": str(f.get("seating_capacity") or "5"),
-            "cylinders": str(f.get("cylinders") or "4"),
+            "trim": f.get("trim"),
+            "fuel_type": f.get("fuel_type"),
+            "body_type": f.get("body_type"),
+            "steering_side": f.get("steering_side"),
+            "regional_specs": f.get("regional_specs"),
+            "doors": f.get("doors"),
+            "seating_capacity": f.get("seating_capacity"),
+            "cylinders": self._clean_cylinders(f.get("cylinders")),
             "age_bucket": self._age_bucket(vehicle_age),
             "kms": kms,
             "vehicle_age": vehicle_age,
             "kms_per_year": kms_per_year,
-            "horsepower_mid": f.get("horsepower") if f.get("horsepower") is not None else 249.5,  # training median
-            "engine_cc_mid": f.get("engine_cc") if f.get("engine_cc") is not None else 2749.5,  # training median
+            "horsepower_mid": f.get("horsepower") if f.get("horsepower") is not None else 249.5,
+            "engine_cc_mid": f.get("engine_cc") if f.get("engine_cc") is not None else 2749.5,
         }
 
         df = pd.DataFrame([row])
@@ -97,3 +98,15 @@ class LightGBMService:
         if age <= 10:
             return "7-10"
         return "10+"
+
+    @staticmethod
+    def _clean_cylinders(raw) -> str | None:
+        if raw is None:
+            return None
+        s = str(raw).strip()
+        if not s:
+            return None
+        m = re.match(r"(\d+)", s)
+        if m:
+            return m.group(1)
+        return None
