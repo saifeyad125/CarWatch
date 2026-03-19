@@ -3,6 +3,7 @@ Two-stage CatBoost inference with sigmoid-gated luxury correction.
 """
 import os
 import json
+import re
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -166,29 +167,28 @@ class MLService:
     NUM_FEATURES_S1 = ["kms", "vehicle_age", "kms_per_year", "horsepower_mid", "engine_cc_mid"]
 
     def _prepare_stage1_features(self, f: Dict[str, Any]) -> pd.DataFrame:
-        # DataFrame so CatBoost handles categoricals properly
         current_year = 2026
-        vehicle_age = current_year - f.get("year", 2020)
-        kms = f.get("mileage", 50_000)
+        vehicle_age = current_year - (f.get("year") or 2020)
+        kms = f.get("mileage") or 50_000
         kms_per_year = kms / max(vehicle_age, 1)
 
         row = {
             "brand": f.get("brand") or "Unknown",
             "model": f.get("model") or "Unknown",
             "trim": f.get("trim") or "Unknown",
-            "fuel_type": f.get("fuel_type") or "Petrol",
+            "fuel_type": f.get("fuel_type") or "Unknown",
             "body_type": f.get("body_type") or "Unknown",
-            "steering_side": f.get("steering_side") or "Left",
-            "regional_specs": f.get("regional_specs") or "GCC",
-            "doors": str(f.get("doors") or "4"),
-            "seating_capacity": str(f.get("seating_capacity") or "5"),
-            "cylinders": str(f.get("cylinders") or "4"),
+            "steering_side": f.get("steering_side") or "Unknown",
+            "regional_specs": f.get("regional_specs") or "Unknown",
+            "doors": f.get("doors") or "Unknown",
+            "seating_capacity": f.get("seating_capacity") or "Unknown",
+            "cylinders": self._clean_cylinders(f.get("cylinders")),
             "age_bucket": self._age_bucket(vehicle_age),
             "kms": kms,
             "vehicle_age": vehicle_age,
             "kms_per_year": kms_per_year,
-            "horsepower_mid": float(f["horsepower"]) if f.get("horsepower") is not None else np.nan,
-            "engine_cc_mid": float(f["engine_cc"]) if f.get("engine_cc") is not None else np.nan,
+            "horsepower_mid": f.get("horsepower") if f.get("horsepower") is not None else np.nan,
+            "engine_cc_mid": f.get("engine_cc") if f.get("engine_cc") is not None else np.nan,
         }
         df = pd.DataFrame([row])
         for col in self.CAT_FEATURES_S1:
@@ -207,8 +207,8 @@ class MLService:
         self, f: Dict[str, Any], mu_log: float, sigma_log: float
     ) -> pd.DataFrame:
         current_year = 2026
-        vehicle_age = current_year - f.get("year", 2020)
-        kms = f.get("mileage", 50_000)
+        vehicle_age = current_year - (f.get("year") or 2020)
+        kms = f.get("mileage") or 50_000
         kms_per_year = kms / max(vehicle_age, 1)
 
         row = {
@@ -216,11 +216,11 @@ class MLService:
             "model": f.get("model") or "Unknown",
             "vehicle_age": vehicle_age,
             "kms_per_year": kms_per_year,
-            "horsepower_mid": float(f["horsepower"]) if f.get("horsepower") is not None else np.nan,
-            "engine_cc_mid": float(f["engine_cc"]) if f.get("engine_cc") is not None else np.nan,
-            "fuel_type": f.get("fuel_type") or "Petrol",
+            "horsepower_mid": f.get("horsepower") if f.get("horsepower") is not None else np.nan,
+            "engine_cc_mid": f.get("engine_cc") if f.get("engine_cc") is not None else np.nan,
+            "fuel_type": f.get("fuel_type") or "Unknown",
             "body_type": f.get("body_type") or "Unknown",
-            "regional_specs": f.get("regional_specs") or "GCC",
+            "regional_specs": f.get("regional_specs") or "Unknown",
             "trim": f.get("trim") or "Unknown",
             "mu_log_stage1": mu_log,
             "sigma_log_stage1": sigma_log,
@@ -240,6 +240,18 @@ class MLService:
         if age <= 10:
             return "7-10"
         return "10+"
+
+    @staticmethod
+    def _clean_cylinders(raw) -> str:
+        if raw is None:
+            return "Unknown"
+        s = str(raw).strip()
+        if not s:
+            return "Unknown"
+        m = re.match(r"(\d+)", s)
+        if m:
+            return m.group(1)
+        return "Unknown"
 
     def get_annual_kms(self, brand: str, model: str) -> int:
         # model -> brand -> global fallback
