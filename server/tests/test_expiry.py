@@ -1,7 +1,3 @@
-"""
-Unit tests for image-based liveness checking in expiry_service.
-Run from server/: python -m pytest tests/test_expiry.py -v
-"""
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -61,6 +57,13 @@ def test_no_proxy_when_use_proxy_false():
         assert kwargs.get("proxies") is None
 
 
+def test_protocol_relative_url_gets_https_prefix():
+    with patch("api.services.expiry_service.requests.head", return_value=FakeResponse(200)) as mock_head:
+        check_image_alive("//www.dubicars.com/images/abc.jpeg", use_proxy=False)
+        args, _ = mock_head.call_args
+        assert args[0] == "https://www.dubicars.com/images/abc.jpeg"
+
+
 def _make_listing(id, image, source="dubizzle"):
     listing = MagicMock()
     listing.id = id
@@ -102,7 +105,11 @@ def test_batch_returns_dead_ids():
         _make_listing(2, "https://cdn.dubizzle.com/b.jpg"),
         _make_listing(3, "https://cdn.dubizzle.com/c.jpg"),
     ]
-    with patch("api.services.expiry_service.check_image_alive", side_effect=[True, False, True]):
+    # return alive/dead based on URL, not call order (threads are non-deterministic)
+    def fake_check(url, use_proxy=True):
+        return url != "https://cdn.dubizzle.com/b.jpg"
+
+    with patch("api.services.expiry_service.check_image_alive", side_effect=fake_check):
         dead, checked = check_images_alive(listings)
         assert dead == [2]
         assert checked == 3
@@ -122,3 +129,24 @@ def test_batch_dubizzle_uses_proxy():
         check_images_alive(listings)
         _, kwargs = mock_check.call_args
         assert kwargs["use_proxy"] is True
+
+
+def test_expire_listings_returns_all_keys():
+    # verify the return dict has all expected keys
+    from api.services.expiry_service import expire_listings
+
+    mock_db = MagicMock()
+    mock_db.query.return_value.filter.return_value.all.return_value = []
+    mock_db.query.return_value.all.return_value = []
+
+    with patch("api.services.expiry_service.check_images_alive", return_value=([], 0)), \
+         patch("api.services.expiry_service.check_listing_alive", return_value=True):
+        result = expire_listings(mock_db, max_age_days=30, recheck_batch=50)
+
+    assert result == {
+        "age_expired": 0,
+        "image_checked": 0,
+        "image_dead": 0,
+        "checked": 0,
+        "dead": 0,
+    }

@@ -124,8 +124,11 @@ def hourly_scrape_and_match():
 
         # Step 3: Expire old/dead listings
         expiry_result = expire_listings(db)
-        logger.info(f"Step 3: Expired {expiry_result['age_expired']} by age, "
-                     f"{expiry_result['dead']} by 404")
+        logger.info(f"Step 3a: Expired {expiry_result['age_expired']} by age")
+        logger.info(f"Step 3b: {expiry_result['image_dead']} dead by image check "
+                     f"(of {expiry_result['image_checked']} checked)")
+        logger.info(f"Step 3c: {expiry_result['dead']} dead by URL check "
+                     f"(of {expiry_result['checked']} sampled)")
 
         # Step 4 & 5: Re-scan active watchlists + create notifications
         active_watchlists = (

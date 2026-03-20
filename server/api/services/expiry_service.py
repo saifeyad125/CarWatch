@@ -1,9 +1,10 @@
 """
-Expiry service — removes stale or dead listings from the database.
+Expiry service - removes stale or dead listings from the database.
 
-Two expiry rules:
-  1. Age-based: DELETE listings older than MAX_AGE_DAYS
-  2. 404-check: Re-check a batch of existing URLs, DELETE if 404
+Three expiry rules:
+  Age-based: DELETE listings older than MAX_AGE_DAYS
+  Image liveness: HEAD-check image URLs concurrently, DELETE if 404
+  URL check: Re-check a random batch of existing URLs, DELETE if 404
 """
 import logging
 import random
@@ -23,13 +24,10 @@ RECHECK_BATCH_SIZE = 50
 
 
 def check_image_alive(url: str, use_proxy: bool = True) -> bool:
-    """HEAD-check a single image URL. Returns False if 404 (dead).
-
-    Uses requests.head() directly (not a shared Session) because this
-    function is called from multiple threads concurrently -- the shared
-    _get_session() singleton is not thread-safe.
-    """
+    # uses requests.head() directly instead of shared session for thread safety
     try:
+        if url.startswith("//"):
+            url = "https:" + url
         kwargs = {"timeout": 15, "headers": HEADERS, "allow_redirects": True}
         if use_proxy:
             kwargs["proxies"] = _get_proxies()
@@ -45,11 +43,7 @@ IMAGE_CHECK_WORKERS = 10
 
 
 def check_images_alive(listings) -> tuple[list[int], int]:
-    """
-    HEAD-check image URLs for all listings concurrently.
-    Returns (dead_ids, checked_count).
-    Skips listings with no usable image (None, empty, or default).
-    """
+    """Returns (dead_ids, checked_count). Skips listings with no usable image."""
     eligible = []
     for listing in listings:
         if not listing.image or listing.image == DEFAULT_IMAGE:
@@ -81,15 +75,10 @@ def expire_listings(
     max_age_days: int = MAX_AGE_DAYS,
     recheck_batch: int = RECHECK_BATCH_SIZE,
 ) -> dict:
-    """
-    1. Delete listings older than max_age_days.
-    2. Spot-check a random batch of remaining listings; delete any that 404.
-
-    Returns stats dict.
-    """
+    """Run all three expiry passes and return stats dict."""
     cutoff = datetime.now(timezone.utc) - timedelta(days=max_age_days)
 
-    # ── Age-based expiry ──
+    # age-based expiry
     age_expired = (
         db.query(Listing)
         .filter(Listing.created_at < cutoff)
@@ -97,7 +86,6 @@ def expire_listings(
     )
     age_expired_ids = [l.id for l in age_expired]
     if age_expired_ids:
-        # Delete watchlist matches first (cascade should handle, but be explicit)
         db.query(WatchlistMatch).filter(
             WatchlistMatch.listing_id.in_(age_expired_ids)
         ).delete(synchronize_session=False)
@@ -107,7 +95,20 @@ def expire_listings(
         db.flush()
     logger.info(f"Age-expired: {len(age_expired_ids)} listings older than {max_age_days} days")
 
-    # ── 404-check expiry ──
+    # image liveness check
+    remaining = db.query(Listing).all()
+    image_dead_ids, image_checked = check_images_alive(remaining)
+    if image_dead_ids:
+        db.query(WatchlistMatch).filter(
+            WatchlistMatch.listing_id.in_(image_dead_ids)
+        ).delete(synchronize_session=False)
+        db.query(Listing).filter(
+            Listing.id.in_(image_dead_ids)
+        ).delete(synchronize_session=False)
+        db.flush()
+    logger.info(f"Image-expired: {len(image_dead_ids)} of {image_checked} checked")
+
+    # url spot-check (random sample)
     remaining = db.query(Listing).all()
     sample = random.sample(remaining, min(recheck_batch, len(remaining)))
 
@@ -130,6 +131,8 @@ def expire_listings(
     db.commit()
     return {
         "age_expired": len(age_expired_ids),
+        "image_checked": image_checked,
+        "image_dead": len(image_dead_ids),
         "checked": len(sample),
         "dead": len(dead_ids),
     }

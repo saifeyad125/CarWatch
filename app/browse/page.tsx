@@ -114,8 +114,7 @@ export default function Browse() {
     () => Array.from({ length: currentYear - 1989 }, (_, i) => String(currentYear - i)),
     [currentYear]
   );
-
-  // Sorting is now server-side; allListings arrives pre-sorted
+  //we get presorted listings from server side
   const sortedListings = allListings;
 
   const activeFilters = [selectedMake, selectedModel, selectedYear, priceMin, priceMax, selectedSource].filter(Boolean);
