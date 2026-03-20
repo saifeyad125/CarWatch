@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup, Tag
 from sqlalchemy.orm import Session
 
 from db.models import Listing
+from api.services.model_normalizer import normalize_listing
 
 logger = logging.getLogger("dubicars")
 
@@ -415,6 +416,15 @@ def scrape_dubicars_listings(
             location=random.choice(UAE_LOCATIONS),
             source="dubicars",
         )
+
+        # Normalize DubiCars model names to match training data
+        norm_brand, norm_model, norm_trim = normalize_listing(
+            listing.brand, listing.model
+        )
+        listing.brand = norm_brand
+        listing.model = norm_model
+        if norm_trim and not listing.trim:
+            listing.trim = norm_trim
 
         db.add(listing)
         new_listings.append(listing)

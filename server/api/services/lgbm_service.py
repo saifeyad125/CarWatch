@@ -1,6 +1,3 @@
-"""
-LightGBM inference service (stage 1 only, no uncertainty).
-"""
 import os
 import re
 import numpy as np
