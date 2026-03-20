@@ -7,6 +7,7 @@ Two expiry rules:
 """
 import logging
 import random
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone, timedelta
 
 import requests
@@ -38,6 +39,41 @@ def check_image_alive(url: str, use_proxy: bool = True) -> bool:
         return resp.status_code != 404
     except Exception:
         return True
+
+
+IMAGE_CHECK_WORKERS = 10
+
+
+def check_images_alive(listings) -> tuple[list[int], int]:
+    """
+    HEAD-check image URLs for all listings concurrently.
+    Returns (dead_ids, checked_count).
+    Skips listings with no usable image (None, empty, or default).
+    """
+    eligible = []
+    for listing in listings:
+        if not listing.image or listing.image == DEFAULT_IMAGE:
+            continue
+        eligible.append(listing)
+
+    if not eligible:
+        return [], 0
+
+    dead_ids: list[int] = []
+
+    def _check(listing):
+        use_proxy = listing.source != "dubicars"
+        alive = check_image_alive(listing.image, use_proxy=use_proxy)
+        if not alive:
+            logger.info(f"Image 404 for listing {listing.id}: {listing.image}")
+        return listing.id, alive
+
+    with ThreadPoolExecutor(max_workers=IMAGE_CHECK_WORKERS) as pool:
+        for listing_id, alive in pool.map(_check, eligible):
+            if not alive:
+                dead_ids.append(listing_id)
+
+    return dead_ids, len(eligible)
 
 
 def expire_listings(

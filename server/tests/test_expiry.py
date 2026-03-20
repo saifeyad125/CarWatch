@@ -6,7 +6,8 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from unittest.mock import patch, MagicMock
-from api.services.expiry_service import check_image_alive
+from api.services.expiry_service import check_image_alive, check_images_alive
+from api.services.scraper_service import DEFAULT_IMAGE
 
 
 class FakeResponse:
@@ -58,3 +59,66 @@ def test_no_proxy_when_use_proxy_false():
         check_image_alive("https://cdn.dubicars.com/img/123.jpg", use_proxy=False)
         _, kwargs = mock_head.call_args
         assert kwargs.get("proxies") is None
+
+
+def _make_listing(id, image, source="dubizzle"):
+    listing = MagicMock()
+    listing.id = id
+    listing.image = image
+    listing.source = source
+    return listing
+
+
+def test_batch_skips_none_image():
+    listings = [_make_listing(1, None)]
+    with patch("api.services.expiry_service.check_image_alive") as mock_check:
+        dead, checked = check_images_alive(listings)
+        mock_check.assert_not_called()
+        assert dead == []
+        assert checked == 0
+
+
+def test_batch_skips_empty_string_image():
+    listings = [_make_listing(1, "")]
+    with patch("api.services.expiry_service.check_image_alive") as mock_check:
+        dead, checked = check_images_alive(listings)
+        mock_check.assert_not_called()
+        assert dead == []
+        assert checked == 0
+
+
+def test_batch_skips_default_image():
+    listings = [_make_listing(1, DEFAULT_IMAGE)]
+    with patch("api.services.expiry_service.check_image_alive") as mock_check:
+        dead, checked = check_images_alive(listings)
+        mock_check.assert_not_called()
+        assert dead == []
+        assert checked == 0
+
+
+def test_batch_returns_dead_ids():
+    listings = [
+        _make_listing(1, "https://cdn.dubizzle.com/a.jpg"),
+        _make_listing(2, "https://cdn.dubizzle.com/b.jpg"),
+        _make_listing(3, "https://cdn.dubizzle.com/c.jpg"),
+    ]
+    with patch("api.services.expiry_service.check_image_alive", side_effect=[True, False, True]):
+        dead, checked = check_images_alive(listings)
+        assert dead == [2]
+        assert checked == 3
+
+
+def test_batch_dubicars_uses_no_proxy():
+    listings = [_make_listing(1, "https://cdn.dubicars.com/a.jpg", source="dubicars")]
+    with patch("api.services.expiry_service.check_image_alive", return_value=True) as mock_check:
+        check_images_alive(listings)
+        _, kwargs = mock_check.call_args
+        assert kwargs["use_proxy"] is False
+
+
+def test_batch_dubizzle_uses_proxy():
+    listings = [_make_listing(1, "https://cdn.dubizzle.com/a.jpg", source="dubizzle")]
+    with patch("api.services.expiry_service.check_image_alive", return_value=True) as mock_check:
+        check_images_alive(listings)
+        _, kwargs = mock_check.call_args
+        assert kwargs["use_proxy"] is True
