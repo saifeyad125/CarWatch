@@ -9,16 +9,35 @@ import logging
 import random
 from datetime import datetime, timezone, timedelta
 
+import requests
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 from db.models import Listing, WatchlistMatch
-from api.services.scraper_service import check_listing_alive
+from api.services.scraper_service import check_listing_alive, DEFAULT_IMAGE, _get_proxies, HEADERS
 
 logger = logging.getLogger("expiry")
 
 MAX_AGE_DAYS = 30
 RECHECK_BATCH_SIZE = 50
+
+
+def check_image_alive(url: str, use_proxy: bool = True) -> bool:
+    """HEAD-check a single image URL. Returns False if 404 (dead).
+
+    Uses requests.head() directly (not a shared Session) because this
+    function is called from multiple threads concurrently -- the shared
+    _get_session() singleton is not thread-safe.
+    """
+    try:
+        kwargs = {"timeout": 15, "headers": HEADERS, "allow_redirects": True}
+        if use_proxy:
+            kwargs["proxies"] = _get_proxies()
+        resp = requests.head(url, **kwargs)
+        if resp.status_code in (401, 403):
+            return True
+        return resp.status_code != 404
+    except Exception:
+        return True
 
 
 def expire_listings(
