@@ -302,8 +302,14 @@ def get_listings(
     total = q.count()
     if sort == "popular":
         rows = q.order_by(Listing.favorite_count.desc(), Listing.created_at.desc()).offset(offset).limit(limit).all()
+    elif sort == "price-low":
+        rows = q.order_by(Listing.price.asc()).offset(offset).limit(limit).all()
+    elif sort == "price-high":
+        rows = q.order_by(Listing.price.desc()).offset(offset).limit(limit).all()
+    elif sort == "oldest":
+        rows = q.order_by(Listing.year.asc(), Listing.id.desc()).offset(offset).limit(limit).all()
     else:
-        rows = q.order_by(Listing.id.desc()).offset(offset).limit(limit).all()
+        rows = q.order_by(Listing.year.desc(), Listing.id.desc()).offset(offset).limit(limit).all()
     return CarListingsResponse(
         listings=[_listing_to_summary(r) for r in rows],
         total=total,

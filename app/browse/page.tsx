@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { Search, SlidersHorizontal, X, ArrowUpDown, LogIn } from "lucide-react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { Search, SlidersHorizontal, X, ArrowUpDown, LogIn, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -29,20 +29,31 @@ export default function Browse() {
   const [sortBy, setSortBy] = useState("newest");
   const [favorites, setFavorites] = useState<number[]>([]);
   const [allListings, setAllListings] = useState<CarCardData[]>([]);
+  const [totalListings, setTotalListings] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const PAGE_SIZE = 20;
+  const totalPages = Math.ceil(totalListings / PAGE_SIZE);
 
   // Debounce typed inputs so the API isn't called on every keystroke
   const debouncedSearch = useDebounce(searchQuery, 300);
   const debouncedPriceMin = useDebounce(priceMin, 300);
   const debouncedPriceMax = useDebounce(priceMax, 300);
 
+  // Reset to page 1 when filters or sort change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch, selectedSource, selectedMake, selectedModel, selectedYear, debouncedPriceMin, debouncedPriceMax, sortBy]);
+
   useEffect(() => {
     const fetchListings = async () => {
       try {
         setIsLoading(true);
         setError(null);
-        const params = new URLSearchParams({ limit: "200" });
+        const offset = (currentPage - 1) * PAGE_SIZE;
+        const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(offset) });
         if (debouncedSearch) params.set("search", debouncedSearch);
         if (selectedSource) params.set("source", selectedSource);
         if (selectedMake) params.set("make", selectedMake);
@@ -53,8 +64,10 @@ export default function Browse() {
         }
         if (debouncedPriceMin) params.set("min_price", debouncedPriceMin);
         if (debouncedPriceMax) params.set("max_price", debouncedPriceMax);
+        if (sortBy) params.set("sort", sortBy);
         const data = await apiRequest<{ listings: CarCardData[]; total: number }>(`${API_ENDPOINTS.cars.list}?${params}`);
         setAllListings(data.listings);
+        setTotalListings(data.total);
       } catch {
         setError("Failed to load listings. Please try again later.");
       } finally {
@@ -62,7 +75,7 @@ export default function Browse() {
       }
     };
     fetchListings();
-  }, [debouncedSearch, selectedSource, selectedMake, selectedModel, selectedYear, debouncedPriceMin, debouncedPriceMax]);
+  }, [debouncedSearch, selectedSource, selectedMake, selectedModel, selectedYear, debouncedPriceMin, debouncedPriceMax, sortBy, currentPage]);
 
   useEffect(() => {
     if (selectedMake) {
@@ -88,25 +101,22 @@ export default function Browse() {
     localStorage.setItem("carFavorites", JSON.stringify(next));
   };
 
-  const makes = useMemo(() => Array.from(new Set(allListings.map((l) => l.make))).sort(), [allListings]);
+  const [allBrands, setAllBrands] = useState<string[]>([]);
+  useEffect(() => {
+    apiRequest<{ brands: string[] }>(API_ENDPOINTS.cars.brands)
+      .then((data) => setAllBrands(data.brands || []))
+      .catch(() => setAllBrands([]));
+  }, []);
+
+  const makes = allBrands;
+  const currentYear = new Date().getFullYear();
   const years = useMemo(
-    () => Array.from(new Set(allListings.map((l) => l.year.toString()))).sort((a, b) => +b - +a),
-    [allListings]
+    () => Array.from({ length: currentYear - 1989 }, (_, i) => String(currentYear - i)),
+    [currentYear]
   );
 
-  const sortedListings = useMemo(() => {
-    return [...allListings].sort((a, b) => {
-      const pA = parseInt(a.price.replace(/[^\d]/g, "")) || 0;
-      const pB = parseInt(b.price.replace(/[^\d]/g, "")) || 0;
-      switch (sortBy) {
-        case "price-low": return pA - pB;
-        case "price-high": return pB - pA;
-        case "newest": return b.year - a.year;
-        case "oldest": return a.year - b.year;
-        default: return 0;
-      }
-    });
-  }, [allListings, sortBy]);
+  // Sorting is now server-side; allListings arrives pre-sorted
+  const sortedListings = allListings;
 
   const activeFilters = [selectedMake, selectedModel, selectedYear, priceMin, priceMax, selectedSource].filter(Boolean);
 
@@ -120,6 +130,24 @@ export default function Browse() {
     setSelectedSource("");
   };
 
+  const goToPage = useCallback((page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  const getPageNumbers = (current: number, total: number): (number | "...")[] => {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages: (number | "...")[] = [];
+    pages.push(1);
+    if (current > 3) pages.push("...");
+    for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) {
+      pages.push(i);
+    }
+    if (current < total - 2) pages.push("...");
+    pages.push(total);
+    return pages;
+  };
+
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden">
       {/* Header */}
@@ -128,7 +156,7 @@ export default function Browse() {
           <h1 className="text-lg font-semibold text-foreground tracking-tight">Browse</h1>
           {!isLoading && (
             <Badge variant="secondary" className="text-xs font-medium">
-              {sortedListings.length} cars
+              {totalListings} cars
             </Badge>
           )}
         </div>
@@ -402,6 +430,45 @@ export default function Browse() {
                   onToggleFavorite={toggleFavorite}
                 />
               ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {!isLoading && !error && totalPages > 1 && (
+            <div className="flex items-center justify-center gap-1.5 pt-8 pb-24 md:pb-8">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage === 1}
+                onClick={() => goToPage(currentPage - 1)}
+                className="h-9 w-9 p-0"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              {getPageNumbers(currentPage, totalPages).map((page, i) =>
+                page === "..." ? (
+                  <span key={`dots-${i}`} className="px-1 text-muted-foreground text-sm">...</span>
+                ) : (
+                  <Button
+                    key={page}
+                    variant={page === currentPage ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => goToPage(page as number)}
+                    className="h-9 w-9 p-0 text-sm"
+                  >
+                    {page}
+                  </Button>
+                )
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage === totalPages}
+                onClick={() => goToPage(currentPage + 1)}
+                className="h-9 w-9 p-0"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
           )}
         </div>
