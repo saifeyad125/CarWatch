@@ -109,16 +109,6 @@ export function CarCard({ car, isFavorite = false, onToggleFavorite, index = 0 }
               )}
             </div>
 
-            {/* LightGBM prediction comparison */}
-            {car.predictedPriceLgbm && (
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-[10px] font-medium text-blue-500 dark:text-blue-400">LightGBM:</span>
-                <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">
-                  {car.predictedPriceLgbm}
-                </span>
-              </div>
-            )}
-
             {/* Meta */}
             <div className="flex items-center gap-3 text-xs text-muted-foreground pt-0.5">
               <span className="inline-flex items-center gap-1">
