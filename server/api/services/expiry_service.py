@@ -7,6 +7,7 @@ Three expiry rules:
   URL check: Re-check a random batch of existing URLs, DELETE if 404
 """
 import logging
+import os
 import random
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone, timedelta
@@ -21,6 +22,7 @@ logger = logging.getLogger("expiry")
 
 MAX_AGE_DAYS = 30
 RECHECK_BATCH_SIZE = 50
+ENABLE_IMAGE_EXPIRY = os.getenv("ENABLE_IMAGE_EXPIRY", "true").lower() in ("true", "1", "yes")
 
 
 def check_image_alive(url: str, use_proxy: bool = True) -> bool:
@@ -96,17 +98,21 @@ def expire_listings(
     logger.info(f"Age-expired: {len(age_expired_ids)} listings older than {max_age_days} days")
 
     # image liveness check
-    remaining = db.query(Listing).all()
-    image_dead_ids, image_checked = check_images_alive(remaining)
-    if image_dead_ids:
-        db.query(WatchlistMatch).filter(
-            WatchlistMatch.listing_id.in_(image_dead_ids)
-        ).delete(synchronize_session=False)
-        db.query(Listing).filter(
-            Listing.id.in_(image_dead_ids)
-        ).delete(synchronize_session=False)
-        db.flush()
-    logger.info(f"Image-expired: {len(image_dead_ids)} of {image_checked} checked")
+    if ENABLE_IMAGE_EXPIRY:
+        remaining = db.query(Listing).all()
+        image_dead_ids, image_checked = check_images_alive(remaining)
+        if image_dead_ids:
+            db.query(WatchlistMatch).filter(
+                WatchlistMatch.listing_id.in_(image_dead_ids)
+            ).delete(synchronize_session=False)
+            db.query(Listing).filter(
+                Listing.id.in_(image_dead_ids)
+            ).delete(synchronize_session=False)
+            db.flush()
+        logger.info(f"Image-expired: {len(image_dead_ids)} of {image_checked} checked")
+    else:
+        image_dead_ids, image_checked = [], 0
+        logger.info("Image expiry disabled, skipping")
 
     # url spot-check (random sample)
     remaining = db.query(Listing).all()
