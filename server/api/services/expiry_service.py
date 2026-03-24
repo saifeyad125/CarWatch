@@ -1,11 +1,3 @@
-"""
-Expiry service - removes stale or dead listings from the database.
-
-Three expiry rules:
-  Age-based: DELETE listings older than MAX_AGE_DAYS
-  Image liveness: HEAD-check image URLs concurrently, DELETE if 404
-  URL check: Re-check a random batch of existing URLs, DELETE if 404
-"""
 import logging
 import os
 import random
@@ -45,7 +37,6 @@ IMAGE_CHECK_WORKERS = 10
 
 
 def check_images_alive(listings) -> tuple[list[int], int]:
-    """Returns (dead_ids, checked_count). Skips listings with no usable image."""
     eligible = []
     for listing in listings:
         if not listing.image or listing.image == DEFAULT_IMAGE:
@@ -77,7 +68,6 @@ def expire_listings(
     max_age_days: int = MAX_AGE_DAYS,
     recheck_batch: int = RECHECK_BATCH_SIZE,
 ) -> dict:
-    """Run all three expiry passes and return stats dict."""
     cutoff = datetime.now(timezone.utc) - timedelta(days=max_age_days)
 
     # age-based expiry
