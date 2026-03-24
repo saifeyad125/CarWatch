@@ -353,7 +353,6 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
                   {car.confidenceLow && car.confidenceHigh && (
                     <p className="text-xs text-muted-foreground mt-1">
                       Estimated range: {car.confidenceLow} – {car.confidenceHigh}
-                      <span className="text-muted-foreground/60 ml-1">(90% confidence)</span>
                     </p>
                   )}
                 </Card>

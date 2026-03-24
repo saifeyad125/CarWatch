@@ -127,7 +127,7 @@ class MLService:
         sigma_cal = sigma_log * self.calibration_factor
         sigma_adj = sigma_cal * (1.0 + self.beta * w)
 
-        z = 1.645  # 90 % CI
+        z = 0.842  # 60 % CI
         confidence_low = float(np.expm1(final_log - z * sigma_adj))
         confidence_high = float(np.expm1(final_log + z * sigma_adj))
         confidence_low = max(confidence_low, 0.0)
@@ -137,7 +137,7 @@ class MLService:
             "predicted_price": round(predicted_price, 0),
             "confidence_low": round(confidence_low, 0),
             "confidence_high": round(confidence_high, 0),
-            "confidence_level": 0.90,
+            "confidence_level": 0.60,
             "gate_weight": round(w, 4),
             "sigma_log": round(sigma_log, 6),
         }
