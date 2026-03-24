@@ -130,6 +130,7 @@ def _listing_to_summary(row: Listing) -> CarListingSummary:
         id=row.id,
         make=row.brand,
         model=row.model,
+        trim=row.trim,
         year=row.year,
         price=_fmt_price(row.price),
         predictedPrice=_fmt_price(row.predicted_price) if row.predicted_price else None,
@@ -247,6 +248,7 @@ def _listing_to_detail(row: Listing, db: Session) -> CarListingDetail:
         id=row.id,
         make=row.brand,
         model=row.model,
+        trim=row.trim,
         year=row.year,
         price=_fmt_price(row.price),
         predictedPrice=_fmt_price(row.predicted_price) if row.predicted_price else None,
@@ -277,6 +279,7 @@ def get_listings(
     search: Optional[str] = Query(None, max_length=200),
     make: Optional[str] = Query(None),
     model: Optional[str] = Query(None),
+    trim: Optional[str] = Query(None),
     min_year: Optional[int] = Query(None),
     max_year: Optional[int] = Query(None),
     min_price: Optional[int] = Query(None),
@@ -296,12 +299,15 @@ def get_listings(
             q = q.filter(or_(
                 Listing.brand.ilike(term),
                 Listing.model.ilike(term),
+                Listing.trim.ilike(term),
                 Listing.location.ilike(term),
             ))
     if make:
         q = q.filter(Listing.brand.ilike(make))
     if model:
         q = q.filter(Listing.model.ilike(model))
+    if trim:
+        q = q.filter(Listing.trim.ilike(trim))
     if min_year:
         q = q.filter(Listing.year >= min_year)
     if max_year:
@@ -346,6 +352,23 @@ def get_models_for_brand(brand: str, db: Session = Depends(get_db)):
         .all()
     )
     return {"models": [r[0] for r in rows]}
+
+
+@router.get("/brands/{brand}/models/{model}/trims")
+def get_trims_for_model(brand: str, model: str, db: Session = Depends(get_db)):
+    rows = (
+        db.query(Listing.trim)
+        .filter(
+            Listing.brand.ilike(brand.strip()),
+            Listing.model.ilike(model.strip()),
+            Listing.trim.isnot(None),
+            Listing.trim != "",
+        )
+        .distinct()
+        .order_by(Listing.trim)
+        .all()
+    )
+    return {"trims": [r[0] for r in rows]}
 
 
 @router.post("/{car_id}/favorite")
@@ -446,6 +469,7 @@ def get_car_analysis(car_id: int, db: Session = Depends(get_db)):
                 avgKms=int(sum((m.kms or 0) for m in members) / len(members)),
                 avgYear=int(sum(m.year for m in members) / len(members)),
                 count=len(members),
+                listings=[_listing_to_summary(m) for m in members],
             ))
             if len(competitors) >= 5:
                 break
@@ -456,6 +480,7 @@ def get_car_analysis(car_id: int, db: Session = Depends(get_db)):
         listingId=row.id,
         make=row.brand,
         model=row.model,
+        trim=row.trim,
         year=row.year,
         currentPrice=row.price,
         predictedPrice=row.predicted_price or row.price,

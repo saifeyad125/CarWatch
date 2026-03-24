@@ -1,13 +1,14 @@
 "use client"
 
-import { ArrowLeft, BarChart3, TrendingDown, Gauge, Calendar } from "lucide-react";
+import { ArrowLeft, BarChart3, TrendingDown, Gauge, Calendar, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useState, useRef } from "react";
 import { API_ENDPOINTS, apiRequest } from "@/lib/api";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { CarCard, CarCardData } from "@/components/ui/car-card";
 
 // TypeScript Interfaces 
 
@@ -37,12 +38,14 @@ interface Competitor {
   avgKms: number;
   avgYear: number;
   count: number;
+  listings: CarCardData[];
 }
 
 interface AnalysisData {
   listingId: number;
   make: string;
   model: string;
+  trim?: string;
   year: number;
   currentPrice: number;
   predictedPrice: number;
@@ -206,6 +209,19 @@ function BarChart({ data, title, icon, xLabel, yLabel, color, formatX, formatYVa
 function CompetitorSection({ data, competitors }: { data: AnalysisData; competitors: Competitor[] }) {
   const allPrices = [data.currentPrice, ...competitors.map(c => c.avgPrice)];
   const maxPrice = Math.max(...allPrices);
+  const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set());
+
+  const toggleGroup = (index: number) => {
+    setExpandedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
+  };
 
   return (
     <Card className="p-5">
@@ -216,7 +232,7 @@ function CompetitorSection({ data, competitors }: { data: AnalysisData; competit
 
       {competitors.length > 0 ? (
         <div className="space-y-3">
-          {/* This car */}
+          {/* this car */}
           <div className="p-3.5 rounded-xl bg-primary/8 border border-primary/20">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
@@ -239,38 +255,85 @@ function CompetitorSection({ data, competitors }: { data: AnalysisData; competit
             </div>
           </div>
 
-          {/* Competitors */}
-          {competitors.map((comp, i) => (
-            <motion.div
-              key={i}
-              className="p-3.5 rounded-xl bg-muted/30 border border-border/40"
-              initial={{ opacity: 0, x: -12 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3, delay: 0.1 + i * 0.05 }}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <span className="text-sm font-medium text-foreground">
-                    {comp.brand} {comp.model}
-                  </span>
-                  <span className="text-[11px] text-muted-foreground ml-2">
-                    {comp.count} listing{comp.count !== 1 ? "s" : ""}
-                  </span>
-                </div>
-                <span className="text-sm font-semibold text-foreground">{formatAED(Math.round(comp.avgPrice))}</span>
-              </div>
-              <div className="h-2 bg-muted rounded-full overflow-hidden">
+          {/* competitors */}
+          {competitors.map((comp, i) => {
+            const isExpanded = expandedGroups.has(i);
+            const hasListings = comp.listings && comp.listings.length > 0;
+
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0.1 + i * 0.05 }}
+              >
                 <div
-                  className="h-full bg-muted-foreground/30 rounded-full"
-                  style={{ width: `${(comp.avgPrice / maxPrice) * 100}%` }}
-                />
-              </div>
-              <div className="flex items-center gap-3 mt-1.5 text-[11px] text-muted-foreground">
-                <span>~{Math.round(comp.avgKms).toLocaleString()} km</span>
-                <span>avg ~{Math.round(comp.avgYear)}</span>
-              </div>
-            </motion.div>
-          ))}
+                  className={`p-3.5 rounded-xl bg-muted/30 border border-border/40 transition-colors ${
+                    hasListings ? "cursor-pointer hover:bg-muted/50" : ""
+                  }`}
+                  onClick={() => hasListings && toggleGroup(i)}
+                  onKeyDown={(e) => {
+                    if (hasListings && (e.key === "Enter" || e.key === " ")) {
+                      e.preventDefault();
+                      toggleGroup(i);
+                    }
+                  }}
+                  role={hasListings ? "button" : undefined}
+                  tabIndex={hasListings ? 0 : undefined}
+                  aria-expanded={hasListings ? isExpanded : undefined}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <span className="text-sm font-medium text-foreground">
+                        {comp.brand} {comp.model}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground ml-2">
+                        {comp.count} listing{comp.count !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-foreground">{formatAED(Math.round(comp.avgPrice))}</span>
+                      {hasListings && (
+                        <ChevronDown
+                          className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
+                            isExpanded ? "rotate-180" : ""
+                          }`}
+                        />
+                      )}
+                    </div>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-muted-foreground/30 rounded-full"
+                      style={{ width: `${(comp.avgPrice / maxPrice) * 100}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center gap-3 mt-1.5 text-[11px] text-muted-foreground">
+                    <span>~{Math.round(comp.avgKms).toLocaleString()} km</span>
+                    <span>avg ~{Math.round(comp.avgYear)}</span>
+                  </div>
+                </div>
+
+                {/* expanded listings */}
+                <AnimatePresence>
+                  {isExpanded && hasListings && (
+                    <motion.div
+                      key={`expanded-${i}`}
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                      className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-3 overflow-hidden"
+                    >
+                      {comp.listings.map((listing, j) => (
+                        <CarCard key={listing.id} car={listing} index={j} />
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            );
+          })}
         </div>
       ) : (
         <p className="text-sm text-muted-foreground text-center py-8">No competitor data available</p>
@@ -431,7 +494,7 @@ export default function DetailedAnalysis({ params }: { params: Promise<{ id: str
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h2 className="text-xl font-bold text-foreground tracking-tight">
-                    {data.year} {data.make} {data.model}
+                    {data.year} {data.make} {data.model}{data.trim ? ` ${data.trim}` : ""}
                   </h2>
                   <p className="text-sm text-muted-foreground mt-0.5">
                     ~{data.annualKms.toLocaleString()} km/year estimated usage

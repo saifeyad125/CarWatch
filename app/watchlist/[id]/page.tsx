@@ -14,6 +14,7 @@ interface CarListing {
   id: number;
   make: string;
   model: string;
+  trim?: string;
   year: number;
   price: string;
   predictedPrice?: string;
@@ -306,7 +307,7 @@ export default function WatchlistDetailPage({ params }: { params: Promise<{ id: 
                       <div className="relative w-32 h-24 rounded-xl overflow-hidden shrink-0">
                         <img
                           src={match.listing.image}
-                          alt={`${match.listing.year} ${match.listing.make} ${match.listing.model}`}
+                          alt={`${match.listing.year} ${match.listing.make} ${match.listing.model}${match.listing.trim ? ` ${match.listing.trim}` : ""}`}
                           className="w-full h-full object-cover"
                         />
                         {match.isNew && (
@@ -320,7 +321,7 @@ export default function WatchlistDetailPage({ params }: { params: Promise<{ id: 
                         <div className="flex items-start justify-between">
                           <div>
                             <h3 className="font-bold text-foreground">
-                              {match.listing.year} {match.listing.make} {match.listing.model}
+                              {match.listing.year} {match.listing.make} {match.listing.model}{match.listing.trim ? ` ${match.listing.trim}` : ""}
                             </h3>
                             <p className="text-sm text-muted-foreground flex items-center gap-1">
                               <MapPin className="h-3 w-3" />

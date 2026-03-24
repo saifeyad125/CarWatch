@@ -10,6 +10,7 @@ export interface CarCardData {
   id: number;
   make: string;
   model: string;
+  trim?: string;
   year: number;
   price: string;
   predictedPrice?: string;
@@ -47,7 +48,7 @@ export function CarCard({ car, isFavorite = false, onToggleFavorite, index = 0 }
           <div className="relative aspect-[16/10] overflow-hidden">
             <img
               src={car.image}
-              alt={`${car.year} ${car.make} ${car.model}`}
+              alt={`${car.year} ${car.make} ${car.model}${car.trim ? ` ${car.trim}` : ""}`}
               className="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03]"
             />
 
@@ -110,7 +111,7 @@ export function CarCard({ car, isFavorite = false, onToggleFavorite, index = 0 }
           <div className="p-4 space-y-2.5">
             {/* Title */}
             <h4 className="font-semibold text-base text-foreground leading-tight truncate">
-              {car.year} {car.make} {car.model}
+              {car.year} {car.make} {car.model}{car.trim ? ` ${car.trim}` : ""}
             </h4>
 
             {/* Price row */}

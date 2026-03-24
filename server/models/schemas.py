@@ -8,6 +8,7 @@ class CarListingSummary(BaseModel):
     id: int
     make: str
     model: str
+    trim: Optional[str] = None
     year: int
     price: str              #in DHS
     predictedPrice: Optional[str] = None
@@ -80,12 +81,14 @@ class Competitor(BaseModel):
     avgKms: int
     avgYear: int
     count: int
+    listings: List[CarListingSummary] = []
 
 
 class AnalysisResponse(BaseModel):
     listingId: int
     make: str
     model: str
+    trim: Optional[str] = None
     year: int
     currentPrice: int
     predictedPrice: int

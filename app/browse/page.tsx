@@ -23,7 +23,9 @@ export default function Browse() {
   const [priceMax, setPriceMax] = useState("");
   const [selectedMake, setSelectedMake] = useState("");
   const [selectedModel, setSelectedModel] = useState("");
+  const [selectedTrim, setSelectedTrim] = useState("");
   const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const [availableTrims, setAvailableTrims] = useState<string[]>([]);
   const [selectedYear, setSelectedYear] = useState("");
   const [selectedSource, setSelectedSource] = useState("");
   const [sortBy, setSortBy] = useState("newest");
@@ -45,7 +47,7 @@ export default function Browse() {
   // Reset to page 1 when filters or sort change
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearch, selectedSource, selectedMake, selectedModel, selectedYear, debouncedPriceMin, debouncedPriceMax, sortBy]);
+  }, [debouncedSearch, selectedSource, selectedMake, selectedModel, selectedTrim, selectedYear, debouncedPriceMin, debouncedPriceMax, sortBy]);
 
   useEffect(() => {
     const fetchListings = async () => {
@@ -58,6 +60,7 @@ export default function Browse() {
         if (selectedSource) params.set("source", selectedSource);
         if (selectedMake) params.set("make", selectedMake);
         if (selectedModel) params.set("model", selectedModel);
+        if (selectedTrim) params.set("trim", selectedTrim);
         if (selectedYear) {
           params.set("min_year", selectedYear);
           params.set("max_year", selectedYear);
@@ -75,7 +78,7 @@ export default function Browse() {
       }
     };
     fetchListings();
-  }, [debouncedSearch, selectedSource, selectedMake, selectedModel, selectedYear, debouncedPriceMin, debouncedPriceMax, sortBy, currentPage]);
+  }, [debouncedSearch, selectedSource, selectedMake, selectedModel, selectedTrim, selectedYear, debouncedPriceMin, debouncedPriceMax, sortBy, currentPage]);
 
   useEffect(() => {
     if (selectedMake) {
@@ -87,6 +90,17 @@ export default function Browse() {
     }
     setSelectedModel("");
   }, [selectedMake]);
+
+  useEffect(() => {
+    if (selectedMake && selectedModel) {
+      apiRequest<{ trims: string[] }>(API_ENDPOINTS.cars.trims(selectedMake, selectedModel))
+        .then((data) => setAvailableTrims(data.trims || []))
+        .catch(() => setAvailableTrims([]));
+    } else {
+      setAvailableTrims([]);
+    }
+    setSelectedTrim("");
+  }, [selectedMake, selectedModel]);
 
   useEffect(() => {
     const saved = localStorage.getItem("carFavorites");
@@ -117,12 +131,13 @@ export default function Browse() {
   //we get presorted listings from server side
   const sortedListings = allListings;
 
-  const activeFilters = [selectedMake, selectedModel, selectedYear, priceMin, priceMax, selectedSource].filter(Boolean);
+  const activeFilters = [selectedMake, selectedModel, selectedTrim, selectedYear, priceMin, priceMax, selectedSource].filter(Boolean);
 
   const clearFilters = () => {
     setSearchQuery("");
     setSelectedMake("");
     setSelectedModel("");
+    setSelectedTrim("");
     setSelectedYear("");
     setPriceMin("");
     setPriceMax("");
@@ -183,7 +198,7 @@ export default function Browse() {
           <div className="relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by make, model, or location..."
+              placeholder="Search by make, model, trim, or location..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 pr-10 h-11 bg-background"
@@ -244,6 +259,12 @@ export default function Browse() {
                     <button onClick={() => setSelectedModel("")}><X className="h-3 w-3" /></button>
                   </Badge>
                 )}
+                {selectedTrim && (
+                  <Badge variant="secondary" className="whitespace-nowrap text-xs gap-1">
+                    {selectedTrim}
+                    <button onClick={() => setSelectedTrim("")}><X className="h-3 w-3" /></button>
+                  </Badge>
+                )}
                 {selectedYear && (
                   <Badge variant="secondary" className="whitespace-nowrap text-xs gap-1">
                     {selectedYear}
@@ -291,7 +312,7 @@ export default function Browse() {
             className="shrink-0 overflow-hidden border-b border-border/40 bg-card"
           >
             <div className="max-w-7xl mx-auto px-4 md:px-6 py-4">
-              <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-7 gap-3">
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">Min Price (AED)</label>
                   <Input
@@ -339,6 +360,22 @@ export default function Browse() {
                       <option value="">{selectedMake ? "All models" : "Select make first"}</option>
                       {availableModels.map((model) => (
                         <option key={model} value={model}>{model}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Trim</label>
+                  <div className="relative">
+                    <select
+                      value={selectedTrim}
+                      onChange={(e) => setSelectedTrim(e.target.value)}
+                      disabled={!selectedModel}
+                      className="h-9 w-full px-3 rounded-lg border border-input bg-background text-sm appearance-none cursor-pointer focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <option value="">{selectedModel ? "All trims" : "Select model first"}</option>
+                      {availableTrims.map((trim) => (
+                        <option key={trim} value={trim}>{trim}</option>
                       ))}
                     </select>
                   </div>

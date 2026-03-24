@@ -170,7 +170,7 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
 
   const handleShare = async () => {
     const url = window.location.href;
-    const title = car ? `${car.year} ${car.make} ${car.model} - ${car.price}` : "Car Listing";
+    const title = car ? `${car.year} ${car.make} ${car.model}${car.trim ? ` ${car.trim}` : ""} - ${car.price}` : "Car Listing";
     if (navigator.share) {
       try { await navigator.share({ title, url }); } catch {}
     } else {
@@ -278,7 +278,7 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
             >
               <ImageCarousel
                 images={allImages}
-                alt={`${car.year} ${car.make} ${car.model}`}
+                alt={`${car.year} ${car.make} ${car.model}${car.trim ? ` ${car.trim}` : ""}`}
                 activeIndex={activeImageIndex}
                 onIndexChange={setActiveImageIndex}
                 isGoodDeal={isGoodDeal}
@@ -296,7 +296,7 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
                 {/* Title */}
                 <div>
                   <h2 className="text-2xl font-bold text-foreground tracking-tight">
-                    {car.year} {car.make} {car.model}
+                    {car.year} {car.make} {car.model}{car.trim ? ` ${car.trim}` : ""}
                   </h2>
                   <div className="flex items-center gap-3 mt-1.5 text-sm text-muted-foreground">
                     <span className="inline-flex items-center gap-1">
