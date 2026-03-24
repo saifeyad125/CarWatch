@@ -14,6 +14,7 @@ class CarListingSummary(BaseModel):
     predictedPriceLgbm: Optional[str] = None
     modelUsed: Optional[str] = None  # "LightGBM" or "CatBoost"
     dealLabel: Optional[Literal["Good Deal", "Fair", "Overpriced"]] = None
+    confidenceLabel: Optional[str] = None
     mileage: str
     location: str
     image: str
@@ -47,6 +48,8 @@ class CarListingDetail(CarListingSummary):
     images: List[str] = []
     marketAnalysis: MarketAnalysis
     similarListings: Optional[List[CarListingSummary]] = None
+    confidenceLow: Optional[str] = None
+    confidenceHigh: Optional[str] = None
 
 
 # Detailed Analysis 

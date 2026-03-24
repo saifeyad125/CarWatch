@@ -15,6 +15,7 @@ export interface CarCardData {
   predictedPrice?: string;
   predictedPriceLgbm?: string;
   dealLabel?: "Good Deal" | "Fair" | "Overpriced";
+  confidenceLabel?: "Very Confident" | "Confident" | null;
   mileage: string;
   location: string;
   image: string;
@@ -74,20 +75,33 @@ export function CarCard({ car, isFavorite = false, onToggleFavorite, index = 0 }
               </button>
             )}
 
-            {/* Deal badge */}
-            {car.dealLabel && (
-              <div className="absolute top-3 left-3">
-                <Badge
-                  className={`text-xs font-medium shadow-sm ${
-                    car.dealLabel === "Good Deal"
-                      ? "bg-emerald-500 text-white border-emerald-500 hover:bg-emerald-500"
-                      : car.dealLabel === "Overpriced"
-                        ? "bg-red-500 text-white border-red-500 hover:bg-red-500"
-                        : "bg-slate-500 text-white border-slate-500 hover:bg-slate-500"
-                  }`}
-                >
-                  {car.dealLabel}
-                </Badge>
+            {/* Deal + confidence badges */}
+            {(car.dealLabel || car.confidenceLabel) && (
+              <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5">
+                {car.dealLabel && (
+                  <Badge
+                    className={`text-xs font-medium shadow-sm ${
+                      car.dealLabel === "Good Deal"
+                        ? "bg-emerald-500 text-white border-emerald-500 hover:bg-emerald-500"
+                        : car.dealLabel === "Overpriced"
+                          ? "bg-red-500 text-white border-red-500 hover:bg-red-500"
+                          : "bg-slate-500 text-white border-slate-500 hover:bg-slate-500"
+                    }`}
+                  >
+                    {car.dealLabel}
+                  </Badge>
+                )}
+                {car.confidenceLabel && (
+                  <Badge
+                    className={`text-xs font-medium shadow-sm ${
+                      car.confidenceLabel === "Very Confident"
+                        ? "bg-blue-500/90 text-white border-blue-500/90 hover:bg-blue-500/90"
+                        : "bg-blue-400/70 text-white border-blue-400/70 hover:bg-blue-400/70"
+                    }`}
+                  >
+                    {car.confidenceLabel}
+                  </Badge>
+                )}
               </div>
             )}
           </div>

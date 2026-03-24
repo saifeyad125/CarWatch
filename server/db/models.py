@@ -47,6 +47,9 @@ class Listing(Base):
     deal_label = Column(String(20), nullable=True)       # "Good Deal" / "Fair" / "Overpriced"
     source = Column(String(50), nullable=False, default="dubizzle", index=True)
     depreciation_data = Column(JSON, nullable=True)
+    sigma_log = Column(Float, nullable=True)
+    confidence_low = Column(Integer, nullable=True)
+    confidence_high = Column(Integer, nullable=True)
 
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),

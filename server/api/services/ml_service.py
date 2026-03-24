@@ -139,6 +139,7 @@ class MLService:
             "confidence_high": round(confidence_high, 0),
             "confidence_level": 0.90,
             "gate_weight": round(w, 4),
+            "sigma_log": round(sigma_log, 6),
         }
 
     # stage 1 helpers

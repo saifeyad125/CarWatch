@@ -49,6 +49,10 @@ def _predict_and_label(listing, ml_service, lgbm_service=None) -> None:
         catboost_result = ml_service.predict_price(features)
         catboost_price = int(catboost_result["predicted_price"])
 
+        listing.sigma_log = catboost_result.get("sigma_log")
+        listing.confidence_low = int(catboost_result.get("confidence_low", 0)) or None
+        listing.confidence_high = int(catboost_result.get("confidence_high", 0)) or None
+
         lgbm_price = None
         if lgbm_service and lgbm_service.model_loaded:
             try:

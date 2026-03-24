@@ -115,6 +115,16 @@ def _derive_model_used(row: Listing) -> str:
     return "CatBoost"
 
 
+def _derive_confidence_label(sigma_log) -> str | None:
+    if sigma_log is None:
+        return None
+    if sigma_log < 0.18:
+        return "Very Confident"
+    if sigma_log < 0.25:
+        return "Confident"
+    return None
+
+
 def _listing_to_summary(row: Listing) -> CarListingSummary:
     return CarListingSummary(
         id=row.id,
@@ -126,6 +136,7 @@ def _listing_to_summary(row: Listing) -> CarListingSummary:
         predictedPriceLgbm=_fmt_price(row.predicted_price_lgbm) if row.predicted_price_lgbm else None,
         modelUsed=_derive_model_used(row),
         dealLabel=row.deal_label,
+        confidenceLabel=_derive_confidence_label(row.sigma_log),
         mileage=_fmt_mileage(row.kms),
         location=row.location or "Dubai, UAE",
         image=row.image or "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&h=600&fit=crop",
@@ -242,6 +253,9 @@ def _listing_to_detail(row: Listing, db: Session) -> CarListingDetail:
         predictedPriceLgbm=_fmt_price(row.predicted_price_lgbm) if row.predicted_price_lgbm else None,
         modelUsed=_derive_model_used(row),
         dealLabel=row.deal_label,
+        confidenceLabel=_derive_confidence_label(row.sigma_log),
+        confidenceLow=_fmt_price(row.confidence_low) if (row.confidence_low and _derive_model_used(row) == "CatBoost") else None,
+        confidenceHigh=_fmt_price(row.confidence_high) if (row.confidence_high and _derive_model_used(row) == "CatBoost") else None,
         mileage=_fmt_mileage(row.kms),
         location=row.location or "Dubai, UAE",
         image=row.image or "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&h=600&fit=crop",

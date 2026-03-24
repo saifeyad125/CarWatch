@@ -26,6 +26,8 @@ interface CarListing extends CarCardData {
     priceHistory: Array<{ month: string; averagePrice: number }>;
   };
   similarListings?: CarCardData[];
+  confidenceLow?: string | null;
+  confidenceHigh?: string | null;
 }
 
 function ImageCarousel({
@@ -310,19 +312,32 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
                 <Card className="p-5">
                   <div className="flex items-start justify-between mb-2">
                     <span className="text-3xl font-bold text-primary tracking-tight">{car.price}</span>
-                    {car.dealLabel && (
-                      <Badge
-                        className={`text-xs font-medium ${
-                          isGoodDeal
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800 hover:bg-emerald-50"
-                            : car.dealLabel === "Overpriced"
-                              ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800 hover:bg-red-50"
-                              : "bg-muted text-muted-foreground hover:bg-muted"
-                        }`}
-                      >
-                        {car.dealLabel}
-                      </Badge>
-                    )}
+                    <div className="flex items-center gap-1.5">
+                      {car.dealLabel && (
+                        <Badge
+                          className={`text-xs font-medium ${
+                            isGoodDeal
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800 hover:bg-emerald-50"
+                              : car.dealLabel === "Overpriced"
+                                ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800 hover:bg-red-50"
+                                : "bg-muted text-muted-foreground hover:bg-muted"
+                          }`}
+                        >
+                          {car.dealLabel}
+                        </Badge>
+                      )}
+                      {car.confidenceLabel && (
+                        <Badge
+                          className={`text-xs font-medium ${
+                            car.confidenceLabel === "Very Confident"
+                              ? "bg-blue-500/90 text-white border-blue-500/90 hover:bg-blue-500/90"
+                              : "bg-blue-400/70 text-white border-blue-400/70 hover:bg-blue-400/70"
+                          }`}
+                        >
+                          {car.confidenceLabel}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                   {car.predictedPrice && (
                     <div className="flex items-center gap-2 text-sm">
@@ -334,6 +349,12 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
                         </span>
                       )}
                     </div>
+                  )}
+                  {car.confidenceLow && car.confidenceHigh && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Estimated range: {car.confidenceLow} – {car.confidenceHigh}
+                      <span className="text-muted-foreground/60 ml-1">(90% confidence)</span>
+                    </p>
                   )}
                 </Card>
 
