@@ -26,12 +26,10 @@ export function BottomNavigation() {
   const pathname = usePathname();
   const { user } = useAuth();
   const [watchlistBadge, setWatchlistBadge] = useState(0);
-  const [notifBadge, setNotifBadge] = useState(0);
 
   useEffect(() => {
     if (!user) {
       setWatchlistBadge(0);
-      setNotifBadge(0);
       return;
     }
 
@@ -42,13 +40,6 @@ export function BottomNavigation() {
         );
         const total = data.watchlists.reduce((sum, w) => sum + (w.newCount || 0), 0);
         setWatchlistBadge(total);
-      } catch {}
-
-      try {
-        const notifData = await apiRequest<{ unreadCount: number }>(
-          API_ENDPOINTS.notifications.unreadCount
-        );
-        setNotifBadge(notifData.unreadCount);
       } catch {}
     };
 
@@ -83,9 +74,7 @@ export function BottomNavigation() {
           {navItems.map((item, i) => {
             const Icon = item.icon;
             const isActive = i === activeIndex;
-            const badge =
-              item.href === "/watchlist" ? watchlistBadge :
-              item.href === "/" ? notifBadge : 0;
+            const badge = item.href === "/watchlist" ? watchlistBadge : 0;
 
             return (
               <Link

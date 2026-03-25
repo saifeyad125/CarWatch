@@ -50,6 +50,7 @@ export default function Browse() {
   }, [debouncedSearch, selectedSource, selectedMake, selectedModel, selectedTrim, selectedYear, debouncedPriceMin, debouncedPriceMax, sortBy]);
 
   useEffect(() => {
+    const controller = new AbortController();
     const fetchListings = async () => {
       try {
         setIsLoading(true);
@@ -68,16 +69,21 @@ export default function Browse() {
         if (debouncedPriceMin) params.set("min_price", debouncedPriceMin);
         if (debouncedPriceMax) params.set("max_price", debouncedPriceMax);
         if (sortBy) params.set("sort", sortBy);
-        const data = await apiRequest<{ listings: CarCardData[]; total: number }>(`${API_ENDPOINTS.cars.list}?${params}`);
+        const data = await apiRequest<{ listings: CarCardData[]; total: number }>(
+          `${API_ENDPOINTS.cars.list}?${params}`,
+          { signal: controller.signal }
+        );
         setAllListings(data.listings);
         setTotalListings(data.total);
-      } catch {
+      } catch (err) {
+        if ((err as Error).name === "AbortError") return;
         setError("Failed to load listings. Please try again later.");
       } finally {
-        setIsLoading(false);
+        if (!controller.signal.aborted) setIsLoading(false);
       }
     };
     fetchListings();
+    return () => controller.abort();
   }, [debouncedSearch, selectedSource, selectedMake, selectedModel, selectedTrim, selectedYear, debouncedPriceMin, debouncedPriceMax, sortBy, currentPage]);
 
   useEffect(() => {

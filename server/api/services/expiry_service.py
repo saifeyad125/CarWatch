@@ -36,31 +36,27 @@ def check_image_alive(url: str, use_proxy: bool = True) -> bool:
 IMAGE_CHECK_WORKERS = 10
 
 
-def check_images_alive(listings) -> tuple[list[int], int]:
-    eligible = []
-    for listing in listings:
-        if not listing.image or listing.image == DEFAULT_IMAGE:
-            continue
-        eligible.append(listing)
-
-    if not eligible:
+def check_images_alive(rows) -> tuple[list[int], int]:
+    """rows: list of (id, image_url, source) tuples."""
+    if not rows:
         return [], 0
 
     dead_ids: list[int] = []
 
-    def _check(listing):
-        use_proxy = listing.source != "dubicars"
-        alive = check_image_alive(listing.image, use_proxy=use_proxy)
+    def _check(row):
+        lid, image, source = row[0], row[1], row[2]
+        use_proxy = source != "dubicars"
+        alive = check_image_alive(image, use_proxy=use_proxy)
         if not alive:
-            logger.info(f"Image 404 for listing {listing.id}: {listing.image}")
-        return listing.id, alive
+            logger.info(f"Image 404 for listing {lid}: {image}")
+        return lid, alive
 
     with ThreadPoolExecutor(max_workers=IMAGE_CHECK_WORKERS) as pool:
-        for listing_id, alive in pool.map(_check, eligible):
+        for listing_id, alive in pool.map(_check, rows):
             if not alive:
                 dead_ids.append(listing_id)
 
-    return dead_ids, len(eligible)
+    return dead_ids, len(rows)
 
 
 def expire_listings(
@@ -89,8 +85,12 @@ def expire_listings(
 
     # image liveness check
     if ENABLE_IMAGE_EXPIRY:
-        remaining = db.query(Listing).all()
-        image_dead_ids, image_checked = check_images_alive(remaining)
+        image_rows = (
+            db.query(Listing.id, Listing.image, Listing.source)
+            .filter(Listing.image.isnot(None), Listing.image != DEFAULT_IMAGE)
+            .all()
+        )
+        image_dead_ids, image_checked = check_images_alive(image_rows)
         if image_dead_ids:
             db.query(WatchlistMatch).filter(
                 WatchlistMatch.listing_id.in_(image_dead_ids)
@@ -105,14 +105,14 @@ def expire_listings(
         logger.info("Image expiry disabled, skipping")
 
     # url spot-check (random sample)
-    remaining = db.query(Listing).all()
-    sample = random.sample(remaining, min(recheck_batch, len(remaining)))
+    url_rows = db.query(Listing.id, Listing.url).all()
+    sample = random.sample(url_rows, min(recheck_batch, len(url_rows)))
 
     dead_ids: list[int] = []
-    for listing in sample:
-        if not check_listing_alive(listing.url):
-            dead_ids.append(listing.id)
-            logger.info(f"404 detected: {listing.url}")
+    for row in sample:
+        if not check_listing_alive(row[1]):
+            dead_ids.append(row[0])
+            logger.info(f"404 detected: {row[1]}")
 
     if dead_ids:
         db.query(WatchlistMatch).filter(

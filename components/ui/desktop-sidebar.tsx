@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Home, Search, List, MessageCircle, LogOut, Bell } from "lucide-react";
+import { Home, Search, List, MessageCircle, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -22,12 +22,10 @@ export function DesktopSidebar() {
   const { user, signOut, avatarSeed } = useAuth();
   const userName = user?.user_metadata?.name || user?.email?.split("@")[0] || null;
   const [watchlistBadge, setWatchlistBadge] = useState(0);
-  const [notifBadge, setNotifBadge] = useState(0);
 
   useEffect(() => {
     if (!user) {
       setWatchlistBadge(0);
-      setNotifBadge(0);
       return;
     }
 
@@ -38,13 +36,6 @@ export function DesktopSidebar() {
         );
         const total = data.watchlists.reduce((sum, w) => sum + (w.newCount || 0), 0);
         setWatchlistBadge(total);
-      } catch {}
-
-      try {
-        const notifData = await apiRequest<{ unreadCount: number }>(
-          API_ENDPOINTS.notifications.unreadCount
-        );
-        setNotifBadge(notifData.unreadCount);
       } catch {}
     };
 
@@ -76,9 +67,7 @@ export function DesktopSidebar() {
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
-          const badge =
-            item.href === "/watchlist" ? watchlistBadge :
-            item.href === "/" ? notifBadge : 0;
+          const badge = item.href === "/watchlist" ? watchlistBadge : 0;
 
           return (
             <Link
@@ -143,12 +132,6 @@ export function DesktopSidebar() {
                 <div className="flex items-center gap-1.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                   <span className="text-[11px] text-muted-foreground">Online</span>
-                  {notifBadge > 0 && (
-                    <span className="ml-auto flex items-center gap-1 text-[11px] text-primary font-medium">
-                      <Bell className="h-3 w-3" />
-                      {notifBadge}
-                    </span>
-                  )}
                 </div>
               </div>
             </Link>

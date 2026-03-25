@@ -47,7 +47,7 @@ class CarListingDetail(CarListingSummary):
     url: str
     features: List[str]
     images: List[str] = []
-    marketAnalysis: MarketAnalysis
+    marketAnalysis: Optional[MarketAnalysis] = None
     similarListings: Optional[List[CarListingSummary]] = None
     confidenceLow: Optional[str] = None
     confidenceHigh: Optional[str] = None
@@ -132,7 +132,7 @@ class WatchlistsListResponse(BaseModel):
 class WatchlistStats(BaseModel):
     totalMatches: int
     newToday: int
-    avgMatch: int
+    avgMatch: Optional[int] = None
 
 class WatchlistDetailResponse(BaseModel):
     watchlist: WatchlistCard

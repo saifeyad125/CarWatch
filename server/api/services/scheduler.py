@@ -1,6 +1,3 @@
-"""
-APScheduler setup for the periodic scrape-and-match job.
-"""
 import os
 import logging
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -95,19 +92,17 @@ def hourly_scrape_and_match():
     logger.info("=== Hourly scrape-and-match job started ===")
     db = SessionLocal()
     try:
-        # Step 1a: Discover + insert new Dubizzle listings
         new_listings = scrape_new_listings(db, pages=5)
-        logger.info(f"Step 1a: {len(new_listings)} new Dubizzle listings scraped")
+        logger.info(f"Dubizzle: {len(new_listings)} new listings scraped")
 
-        # Step 1b: Discover + insert new DubiCars listings
         try:
             dubicars_listings = scrape_dubicars_listings(db, pages=int(os.getenv("DUBICARS_MAX_PAGES", "5")))
             new_listings.extend(dubicars_listings)
-            logger.info(f"Step 1b: {len(dubicars_listings)} new DubiCars listings scraped")
+            logger.info(f"DubiCars: {len(dubicars_listings)} new listings scraped")
         except Exception as e:
-            logger.error(f"Step 1b: DubiCars scrape failed (continuing): {e}")
+            logger.error(f"DubiCars scrape failed (continuing): {e}")
 
-        # Step 2: ML predictions
+        # ml predictions
         if new_listings:
             try:
                 from api.services.ml_service import MLService
@@ -117,24 +112,24 @@ def hourly_scrape_and_match():
                     from api.services.lgbm_service import LightGBMService
                     lgbm_service = LightGBMService()
                 except Exception as e:
-                    logger.warning(f"Step 2: LightGBM not available, using CatBoost only: {e}")
+                    logger.warning(f"LightGBM not available, using CatBoost only: {e}")
                 for listing in new_listings:
                     _predict_and_label(listing, ml_service, lgbm_service)
                 db.commit()
                 lgbm_status = "loaded" if lgbm_service and lgbm_service.model_loaded else "not available"
-                logger.info(f"Step 2: Hybrid predictions complete for {len(new_listings)} listings (LightGBM: {lgbm_status})")
+                logger.info(f"Hybrid predictions complete for {len(new_listings)} listings (LightGBM: {lgbm_status})")
             except Exception as e:
-                logger.warning(f"Step 2: ML prediction skipped: {e}")
+                logger.warning(f"ML prediction skipped: {e}")
 
-        # Step 3: Expire old/dead listings
+        # expire old/dead listings
         expiry_result = expire_listings(db)
-        logger.info(f"Step 3a: Expired {expiry_result['age_expired']} by age")
-        logger.info(f"Step 3b: {expiry_result['image_dead']} dead by image check "
+        logger.info(f"Expired {expiry_result['age_expired']} by age")
+        logger.info(f"{expiry_result['image_dead']} dead by image check "
                      f"(of {expiry_result['image_checked']} checked)")
-        logger.info(f"Step 3c: {expiry_result['dead']} dead by URL check "
+        logger.info(f"{expiry_result['dead']} dead by URL check "
                      f"(of {expiry_result['checked']} sampled)")
 
-        # Step 4 & 5: Re-scan active watchlists + create notifications
+        # re-scan active watchlists + create notifications
         active_watchlists = (
             db.query(Watchlist)
             .filter(Watchlist.is_active == True)
@@ -170,6 +165,7 @@ def start_scheduler():
         id="hourly_scrape_and_match",
         name=f"Scrape (Dubizzle+DubiCars) + watchlist match (every {SCRAPE_INTERVAL_HOURS}h)",
         replace_existing=True,
+        max_instances=1,
     )
     scheduler.start()
     logger.info(f"Scheduler started - scrape job every {SCRAPE_INTERVAL_HOURS} hours")

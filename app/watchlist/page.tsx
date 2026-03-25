@@ -308,7 +308,7 @@ export default function WatchlistPage() {
                     )}
                   </div>
                   {showBrandDropdown && brandSuggestions.length > 0 && (
-                    <div className="absolute z-50 w-full mt-1 bg-white dark:bg-zinc-900 border border-border rounded-lg shadow-elevated max-h-48 overflow-y-auto backdrop-blur-none">
+                    <div className="absolute z-50 w-full mt-1 bg-[hsl(var(--popover))] text-[hsl(var(--popover-foreground))] border border-border rounded-lg shadow-elevated max-h-48 overflow-y-auto">
                       {brandSuggestions.map((brand) => (
                         <button
                           key={brand}
@@ -346,7 +346,7 @@ export default function WatchlistPage() {
                     />
                   </div>
                   {showModelDropdown && modelSuggestions.length > 0 && (
-                    <div className="absolute z-50 w-full mt-1 bg-white dark:bg-zinc-900 border border-border rounded-lg shadow-elevated max-h-48 overflow-y-auto backdrop-blur-none">
+                    <div className="absolute z-50 w-full mt-1 bg-[hsl(var(--popover))] text-[hsl(var(--popover-foreground))] border border-border rounded-lg shadow-elevated max-h-48 overflow-y-auto">
                       {modelSuggestions.map((model) => (
                         <button
                           key={model}

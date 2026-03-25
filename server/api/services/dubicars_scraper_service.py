@@ -209,6 +209,7 @@ def _extract_listings_from_browse(html: str) -> list[dict]:
             "kms": km_numeric,
             "url": url,
             "image": image,
+            "city": str(city) if city else None,
         })
 
     logger.info("DubiCars browse: %d cards parsed, %d valid rows", len(cards), len(rows))
@@ -413,7 +414,7 @@ def scrape_dubicars_listings(
             regional_specs=details.get("regional_specs"),
             image=scraped_images[0] if scraped_images else DEFAULT_IMAGE,
             images=scraped_images if scraped_images else None,
-            location=random.choice(UAE_LOCATIONS),
+            location=f"{stub['city']}, UAE" if stub.get("city") else "Dubai, UAE",
             source="dubicars",
         )
 

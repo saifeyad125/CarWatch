@@ -20,11 +20,11 @@ interface CarListing extends CarCardData {
   seller: { name: string; avatar: string; phone: string; type: string };
   features: string[];
   images?: string[];
-  marketAnalysis: {
-    depreciation: { oneYear: number; threeYear: number; fiveYear: number };
+  marketAnalysis?: {
+    depreciation?: { oneYear: number; threeYear: number; fiveYear: number } | null;
     marketTrend: string;
     priceHistory: Array<{ month: string; averagePrice: number }>;
-  };
+  } | null;
   similarListings?: CarCardData[];
   confidenceLow?: string | null;
   confidenceHigh?: string | null;
@@ -373,60 +373,64 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
                 </div>
 
                 {/* Market Analysis */}
-                <Card className="p-5">
-                  <div className="flex items-center gap-2 mb-4">
-                    <TrendingUp className="h-4 w-4 text-primary" />
-                    <h3 className="font-semibold text-foreground">Market Analysis</h3>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2.5">Depreciation</h4>
-                      <div className="grid grid-cols-3 gap-2">
-                        {[
-                          { label: "1 Year", value: car.marketAnalysis.depreciation.oneYear },
-                          { label: "3 Years", value: car.marketAnalysis.depreciation.threeYear },
-                          { label: "5 Years", value: car.marketAnalysis.depreciation.fiveYear },
-                        ].map((d) => (
-                          <div key={d.label} className="text-center p-2.5 bg-muted/50 rounded-lg">
-                            <div className="text-sm font-bold text-red-600 dark:text-red-400">-{d.value}%</div>
-                            <div className="text-[11px] text-muted-foreground">{d.label}</div>
-                          </div>
-                        ))}
-                      </div>
+                {car.marketAnalysis && (
+                  <Card className="p-5">
+                    <div className="flex items-center gap-2 mb-4">
+                      <TrendingUp className="h-4 w-4 text-primary" />
+                      <h3 className="font-semibold text-foreground">Market Analysis</h3>
                     </div>
 
-                    <div>
-                      <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2.5">Price Projections</h4>
-                      <div className="space-y-2">
-                        {(() => {
-                          const maxPrice = Math.max(...car.marketAnalysis.priceHistory.map((d: any) => d.averagePrice));
-                          return car.marketAnalysis.priceHistory.map((data) => (
-                            <div key={data.month} className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground w-12 text-xs">{data.month}</span>
-                              <div className="flex-1 mx-3 h-1.5 bg-muted rounded-full overflow-hidden">
-                                <div
-                                  className="h-full bg-primary/60 rounded-full transition-all"
-                                  style={{ width: `${(data.averagePrice / maxPrice) * 100}%` }}
-                                />
+                    <div className="space-y-4">
+                      {car.marketAnalysis.depreciation && (
+                        <div>
+                          <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2.5">Depreciation</h4>
+                          <div className="grid grid-cols-3 gap-2">
+                            {[
+                              { label: "1 Year", value: car.marketAnalysis.depreciation.oneYear },
+                              { label: "3 Years", value: car.marketAnalysis.depreciation.threeYear },
+                              { label: "5 Years", value: car.marketAnalysis.depreciation.fiveYear },
+                            ].map((d) => (
+                              <div key={d.label} className="text-center p-2.5 bg-muted/50 rounded-lg">
+                                <div className="text-sm font-bold text-red-600 dark:text-red-400">-{d.value}%</div>
+                                <div className="text-[11px] text-muted-foreground">{d.label}</div>
                               </div>
-                              <span className="text-xs font-medium w-14 text-right">{(data.averagePrice / 1000).toFixed(0)}k</span>
-                            </div>
-                          ));
-                        })()}
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div>
+                        <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2.5">Price Projections</h4>
+                        <div className="space-y-2">
+                          {(() => {
+                            const maxPrice = Math.max(...car.marketAnalysis.priceHistory.map((d: any) => d.averagePrice));
+                            return car.marketAnalysis.priceHistory.map((data) => (
+                              <div key={data.month} className="flex items-center justify-between text-sm">
+                                <span className="text-muted-foreground w-12 text-xs">{data.month}</span>
+                                <div className="flex-1 mx-3 h-1.5 bg-muted rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full bg-primary/60 rounded-full transition-all"
+                                    style={{ width: `${(data.averagePrice / maxPrice) * 100}%` }}
+                                  />
+                                </div>
+                                <span className="text-xs font-medium w-14 text-right">{(data.averagePrice / 1000).toFixed(0)}k</span>
+                              </div>
+                            ));
+                          })()}
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-border/60">
+                        <Link href={`/listing/${car.id}/analysis`}>
+                          <Button variant="outline" className="w-full">
+                            <TrendingUp className="mr-2 h-4 w-4" />
+                            Detailed Analysis
+                          </Button>
+                        </Link>
                       </div>
                     </div>
-
-                    <div className="pt-3 border-t border-border/60">
-                      <Link href={`/listing/${car.id}/analysis`}>
-                        <Button variant="outline" className="w-full">
-                          <TrendingUp className="mr-2 h-4 w-4" />
-                          Detailed Analysis
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                </Card>
+                  </Card>
+                )}
 
                 {/* Features */}
                 <Card className="p-5">

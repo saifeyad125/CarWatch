@@ -18,7 +18,7 @@ interface CarListing {
   year: number;
   price: string;
   predictedPrice?: string;
-  dealLabel?: "Good Deal" | "Fair" | "Overpriced";
+  dealLabel?: string;
   mileage: string;
   location: string;
   image: string;
@@ -46,7 +46,7 @@ interface WatchlistCard {
 interface WatchlistStats {
   totalMatches: number;
   newToday: number;
-  avgMatch: number;
+  avgMatch: number | null;
 }
 
 interface WatchlistDetailResponse {
@@ -254,7 +254,7 @@ export default function WatchlistDetailPage({ params }: { params: Promise<{ id: 
       <div className="flex-1 overflow-y-auto scrollbar-hide">
         <div className="p-4 space-y-6 pb-safe">
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className={`grid gap-4 ${stats.avgMatch != null ? "grid-cols-3" : "grid-cols-2"}`}>
             <Card className="text-center p-4 border-0 bg-card/50 backdrop-blur-sm rounded-2xl">
               <div className="text-2xl font-bold text-primary">{stats.totalMatches}</div>
               <div className="text-xs text-muted-foreground">Total Matches</div>
@@ -263,10 +263,12 @@ export default function WatchlistDetailPage({ params }: { params: Promise<{ id: 
               <div className="text-2xl font-bold text-primary">{stats.newToday}</div>
               <div className="text-xs text-muted-foreground">New Today</div>
             </Card>
-            <Card className="text-center p-4 border-0 bg-card/50 backdrop-blur-sm rounded-2xl">
-              <div className="text-2xl font-bold text-primary">{stats.avgMatch}%</div>
-              <div className="text-xs text-muted-foreground">Avg Match</div>
-            </Card>
+            {stats.avgMatch != null && (
+              <Card className="text-center p-4 border-0 bg-card/50 backdrop-blur-sm rounded-2xl">
+                <div className="text-2xl font-bold text-primary">{stats.avgMatch}%</div>
+                <div className="text-xs text-muted-foreground">Avg Match</div>
+              </Card>
+            )}
           </div>
 
           {/* Sort Controls */}

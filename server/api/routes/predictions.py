@@ -1,9 +1,9 @@
-"""
-Price prediction endpoints (hybrid LightGBM/CatBoost routing).
-"""
+import logging
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 from api.services.ml_service import MLService
 from api.services.lgbm_service import LightGBMService
 from api.services.constants import HYBRID_PRICE_THRESHOLD
@@ -14,7 +14,8 @@ router = APIRouter()
 ml_service = MLService()
 try:
     lgbm_service = LightGBMService()
-except Exception:
+except Exception as e:
+    logger.error(f"LightGBM service failed to load: {e}")
     lgbm_service = None
 
 
@@ -46,7 +47,8 @@ class DealAnalysis(BaseModel):
     actual_price: float
     difference: float
     difference_percent: float
-    verdict: str  # "Great Deal", "Fair Price", "Overpriced"
+    verdict: str
+    model_used: str
     confidence_interval: tuple[float, float]
 
 
@@ -63,7 +65,7 @@ async def predict_price(features: CarFeatures):
         )
 
 
-@router.post("/analyze-deal")
+@router.post("/analyze-deal", response_model=DealAnalysis)
 async def analyze_deal(features: CarFeatures, asking_price: float):
     # routes LightGBM <800k, CatBoost >=800k
     try:
@@ -85,9 +87,9 @@ async def analyze_deal(features: CarFeatures, asking_price: float):
         difference_percent = (difference / predicted) * 100 if predicted else 0
 
         if difference_percent > 10:
-            verdict = "Great Deal"
+            verdict = "Good Deal"
         elif difference_percent > -5:
-            verdict = "Fair Price"
+            verdict = "Fair"
         else:
             verdict = "Overpriced"
 

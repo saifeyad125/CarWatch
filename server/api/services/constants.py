@@ -2,6 +2,24 @@ import re
 
 HYBRID_PRICE_THRESHOLD = 800_000  # AED, below this LightGBM is primary
 
+
+def derive_model_used(predicted_price_lgbm, price) -> str:
+    if predicted_price_lgbm is None:
+        return "CatBoost"
+    if price and 0 < price < HYBRID_PRICE_THRESHOLD:
+        return "LightGBM"
+    return "CatBoost"
+
+
+def derive_confidence_label(sigma_log) -> str | None:
+    if sigma_log is None:
+        return None
+    if sigma_log < 0.18:
+        return "Very Confident"
+    if sigma_log < 0.25:
+        return "Confident"
+    return None
+
 HP_MIDPOINTS = {
     "0 - 99 HP": 49.5,
     "100 - 199 HP": 149.5,

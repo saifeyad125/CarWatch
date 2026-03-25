@@ -47,6 +47,7 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [confirmDeleteWatchlists, setConfirmDeleteWatchlists] = useState(false);
+  const [deletingWatchlists, setDeletingWatchlists] = useState(false);
   const [confirmDeleteAccount, setConfirmDeleteAccount] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -93,6 +94,26 @@ export default function ProfilePage() {
       setShowAvatarPicker(false);
       setSaveError(null);
     } catch { setSaveError("Failed to update avatar."); }
+  };
+
+  const handleDeleteAllWatchlists = async () => {
+    setDeletingWatchlists(true);
+    setDeleteError(null);
+    try {
+      const data = await apiRequest<{ watchlists: { id: number }[] }>(API_ENDPOINTS.watchlists.list);
+      await Promise.all(
+        data.watchlists.map((w) =>
+          apiRequest(API_ENDPOINTS.watchlists.delete(w.id), { method: "DELETE" })
+        )
+      );
+      setConfirmDeleteWatchlists(false);
+      const refreshed = await apiRequest<ProfileData>(API_ENDPOINTS.profile);
+      setProfile(refreshed);
+    } catch {
+      setDeleteError("Failed to delete watchlists. Please try again.");
+    } finally {
+      setDeletingWatchlists(false);
+    }
   };
 
   const handleDeleteAccount = async () => {
@@ -344,14 +365,16 @@ export default function ProfilePage() {
                       variant="destructive"
                       size="sm"
                       className="flex-1"
-                      onClick={() => { setConfirmDeleteWatchlists(false); }}
+                      disabled={deletingWatchlists}
+                      onClick={handleDeleteAllWatchlists}
                     >
-                      Yes, Delete All
+                      {deletingWatchlists ? "Deleting..." : "Yes, Delete All"}
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       className="flex-1"
+                      disabled={deletingWatchlists}
                       onClick={() => setConfirmDeleteWatchlists(false)}
                     >
                       Cancel
@@ -363,7 +386,7 @@ export default function ProfilePage() {
                   variant="outline"
                   size="sm"
                   className="w-full justify-start text-red-600 border-red-200 hover:bg-red-50 dark:border-red-900/40 dark:hover:bg-red-950/20"
-                  onClick={() => setConfirmDeleteWatchlists(true)}
+                  onClick={() => { setConfirmDeleteWatchlists(true); setDeleteError(null); }}
                 >
                   <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete All Watchlists
                 </Button>

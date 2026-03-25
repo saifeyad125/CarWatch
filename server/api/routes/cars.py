@@ -1,12 +1,12 @@
 from collections import defaultdict
 from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import Optional, List
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, load_only
 from sqlalchemy import or_
 
 from db.deps import get_db
 from db.models import Listing, ModelAnalytics
-from api.services.constants import HYBRID_PRICE_THRESHOLD
+from api.services.constants import HYBRID_PRICE_THRESHOLD, derive_model_used, derive_confidence_label
 from models.schemas import (
     CarListingSummary,
     CarListingsResponse,
@@ -28,7 +28,7 @@ router = APIRouter()
 # helpers 
 
 def _fmt_price(aed: int) -> str:
-    if not aed:
+    if aed is None:
         return "Price on Request"
     return f"د.إ {aed:,}"
 
@@ -108,21 +108,11 @@ def _get_similar_listings(row: Listing, db: Session) -> List[CarListingSummary]:
     return [_listing_to_summary(r) for r in top3]
 
 def _derive_model_used(row: Listing) -> str:
-    if row.predicted_price_lgbm is None:
-        return "CatBoost"  # pre-hybrid listing
-    if row.price and 0 < row.price < HYBRID_PRICE_THRESHOLD:
-        return "LightGBM"
-    return "CatBoost"
+    return derive_model_used(row.predicted_price_lgbm, row.price)
 
 
 def _derive_confidence_label(sigma_log) -> str | None:
-    if sigma_log is None:
-        return None
-    if sigma_log < 0.18:
-        return "Very Confident"
-    if sigma_log < 0.25:
-        return "Confident"
-    return None
+    return derive_confidence_label(sigma_log)
 
 
 def _listing_to_summary(row: Listing) -> CarListingSummary:
@@ -228,20 +218,8 @@ def _listing_to_detail(row: Listing, db: Session) -> CarListingDetail:
             ],
         )
     else:
-        # fallback for listings without depreciation data
-        base_price = row.price
-        market_analysis = MarketAnalysis(
-            depreciation={"oneYear": 12, "threeYear": 35, "fiveYear": 55},
-            marketTrend="stable",
-            priceHistory=[
-                PricePoint(month="Now", averagePrice=base_price),
-                PricePoint(month="+1 yr", averagePrice=int(base_price * 0.88)),
-                PricePoint(month="+3 yr", averagePrice=int(base_price * 0.65)),
-                PricePoint(month="+5 yr", averagePrice=int(base_price * 0.45)),
-            ],
-        )
+        market_analysis = None
     
-    # Find the 3 most similar listings using scored similarity
     similar_listings = _get_similar_listings(row, db)
     
     return CarListingDetail(
@@ -320,8 +298,8 @@ def get_listings(
         q = q.filter(Listing.source == source)
 
     total = q.count()
-    if sort == "popular":
-        rows = q.order_by(Listing.favorite_count.desc(), Listing.created_at.desc()).offset(offset).limit(limit).all()
+    if sort == "newest":
+        rows = q.order_by(Listing.created_at.desc()).offset(offset).limit(limit).all()
     elif sort == "price-low":
         rows = q.order_by(Listing.price.asc()).offset(offset).limit(limit).all()
     elif sort == "price-high":
@@ -369,26 +347,6 @@ def get_trims_for_model(brand: str, model: str, db: Session = Depends(get_db)):
         .all()
     )
     return {"trims": [r[0] for r in rows]}
-
-
-@router.post("/{car_id}/favorite")
-def favorite_car(car_id: int, db: Session = Depends(get_db)):
-    row = db.query(Listing).filter(Listing.id == car_id).first()
-    if not row:
-        raise HTTPException(status_code=404, detail=f"Car with ID {car_id} not found")
-    row.favorite_count = (row.favorite_count or 0) + 1
-    db.commit()
-    return {"favorite_count": row.favorite_count}
-
-
-@router.delete("/{car_id}/favorite")
-def unfavorite_car(car_id: int, db: Session = Depends(get_db)):
-    row = db.query(Listing).filter(Listing.id == car_id).first()
-    if not row:
-        raise HTTPException(status_code=404, detail=f"Car with ID {car_id} not found")
-    row.favorite_count = max((row.favorite_count or 0) - 1, 0)
-    db.commit()
-    return {"favorite_count": row.favorite_count}
 
 
 @router.get("/{car_id}", response_model=CarListingDetail)
@@ -442,9 +400,16 @@ def get_car_analysis(car_id: int, db: Session = Depends(get_db)):
         price_vs_mileage = []
         price_vs_year = []
 
-    # Live competitors from similarity scoring (cross-brand)
     all_candidates = (
         db.query(Listing)
+        .options(load_only(
+            Listing.id, Listing.brand, Listing.model, Listing.trim,
+            Listing.year, Listing.price, Listing.kms, Listing.body_type,
+            Listing.fuel_type, Listing.regional_specs, Listing.horsepower,
+            Listing.cylinders, Listing.predicted_price, Listing.predicted_price_lgbm,
+            Listing.deal_label, Listing.sigma_log, Listing.image,
+            Listing.location, Listing.source,
+        ))
         .filter(Listing.id != row.id)
         .order_by(Listing.id.desc())
         .limit(500)

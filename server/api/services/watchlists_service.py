@@ -5,6 +5,7 @@ from typing import List
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 
 from db.models import Listing, Watchlist, WatchlistMatch as WatchlistMatchDB
 from models.schemas import (
@@ -19,12 +20,13 @@ from models.schemas import (
     WatchlistsListResponse,
     WatchlistStats,
 )
+from api.services.constants import HYBRID_PRICE_THRESHOLD, derive_model_used, derive_confidence_label
 
 
 # helpers 
 
 def _fmt_price(aed: int) -> str:
-    if not aed:
+    if aed is None:
         return "Price on Request"
     return f"د.إ {aed:,}"
 
@@ -35,15 +37,27 @@ def _fmt_mileage(kms: int | None) -> str:
     return f"{kms:,} km"
 
 
+def _derive_model_used(row: Listing) -> str:
+    return derive_model_used(row.predicted_price_lgbm, row.price)
+
+
+def _derive_confidence_label(sigma_log) -> str | None:
+    return derive_confidence_label(sigma_log)
+
+
 def _listing_to_summary(row: Listing) -> CarListingSummary:
     return CarListingSummary(
         id=row.id,
         make=row.brand,
         model=row.model,
+        trim=row.trim,
         year=row.year,
         price=_fmt_price(row.price),
         predictedPrice=_fmt_price(row.predicted_price) if row.predicted_price else None,
+        predictedPriceLgbm=_fmt_price(row.predicted_price_lgbm) if row.predicted_price_lgbm else None,
+        modelUsed=_derive_model_used(row),
         dealLabel=row.deal_label,
+        confidenceLabel=_derive_confidence_label(row.sigma_log),
         mileage=_fmt_mileage(row.kms),
         location=row.location or "Dubai, UAE",
         image=row.image or "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&h=600&fit=crop",
@@ -63,10 +77,6 @@ def _time_ago(dt: datetime) -> str:
 
 
 def _build_criteria_query(db: Session, criteria: WatchlistSearchCriteria):
-    """
-    Build a SQLAlchemy query on the Listing table filtered by search criteria.
-    ALL filtering happens at the DB level — no Python-side loops.
-    """
     q = db.query(Listing)
 
     if criteria.make:
@@ -91,20 +101,25 @@ def _build_criteria_query(db: Session, criteria: WatchlistSearchCriteria):
     return q
 
 
-def _watchlist_to_card(w: Watchlist, db: Session) -> WatchlistCard:
-    total = db.query(func.count(WatchlistMatchDB.id)).filter(
-        WatchlistMatchDB.watchlist_id == w.id
-    ).scalar() or 0
+def _watchlist_to_card(w: Watchlist, db: Session = None, *, total: int = None, new_count: int = None) -> WatchlistCard:
+    # pre-computed counts from batch query, or fallback for single-card callers
+    if total is None and db is not None:
+        total = db.query(func.count(WatchlistMatchDB.id)).filter(
+            WatchlistMatchDB.watchlist_id == w.id
+        ).scalar() or 0
+    elif total is None:
+        total = 0
 
-    # Count unseen matches (is_new=True means user hasn't viewed them yet)
-    new_count = db.query(func.count(WatchlistMatchDB.id)).filter(
-        WatchlistMatchDB.watchlist_id == w.id,
-        WatchlistMatchDB.is_new == True,
-    ).scalar() or 0
+    if new_count is None and db is not None:
+        new_count = db.query(func.count(WatchlistMatchDB.id)).filter(
+            WatchlistMatchDB.watchlist_id == w.id,
+            WatchlistMatchDB.is_new == True,
+        ).scalar() or 0
+    elif new_count is None:
+        new_count = 0
 
     criteria = WatchlistSearchCriteria(**(w.criteria_json or {}))
 
-    # Build subtitle from criteria
     year_part = ""
     if criteria.year_min and criteria.year_max:
         year_part = f"{criteria.year_min}–{criteria.year_max}"
@@ -142,7 +157,25 @@ def _get_watchlist_or_404(db: Session, watchlist_id: int, user_id: int = None) -
 
 def list_watchlists(db: Session, user_id: int) -> WatchlistsListResponse:
     rows = db.query(Watchlist).filter(Watchlist.user_id == user_id).order_by(Watchlist.id).all()
-    cards = [_watchlist_to_card(w, db) for w in rows]
+    if not rows:
+        return WatchlistsListResponse(summary={"active": 0, "matches": 0, "withAlerts": 0}, watchlists=[])
+
+    wl_ids = [w.id for w in rows]
+
+    total_counts = dict(
+        db.query(WatchlistMatchDB.watchlist_id, func.count(WatchlistMatchDB.id))
+        .filter(WatchlistMatchDB.watchlist_id.in_(wl_ids))
+        .group_by(WatchlistMatchDB.watchlist_id)
+        .all()
+    )
+    new_counts = dict(
+        db.query(WatchlistMatchDB.watchlist_id, func.count(WatchlistMatchDB.id))
+        .filter(WatchlistMatchDB.watchlist_id.in_(wl_ids), WatchlistMatchDB.is_new == True)
+        .group_by(WatchlistMatchDB.watchlist_id)
+        .all()
+    )
+
+    cards = [_watchlist_to_card(w, total=total_counts.get(w.id, 0), new_count=new_counts.get(w.id, 0)) for w in rows]
 
     summary = {
         "active": sum(1 for c in cards if c.isActive),
@@ -158,7 +191,7 @@ def get_watchlist_detail(db: Session, watchlist_id: int, user_id: int = None) ->
 
     total = card.totalMatches
     new_today = card.newCount
-    avg_match = 88 if total > 0 else 0
+    avg_match = None
 
     stats = WatchlistStats(totalMatches=total, newToday=new_today, avgMatch=avg_match)
     return WatchlistDetailResponse(watchlist=card, stats=stats)
@@ -169,7 +202,6 @@ MAX_TOTAL_WATCHLISTS = 10
 SCAN_COOLDOWN_SECONDS = 60
 
 def set_watchlist_status(db: Session, watchlist_id: int, payload: WatchlistStatusUpdate, user_id: int) -> WatchlistCard:
-    """Toggle active/inactive. Enforces a limit of MAX_ACTIVE_WATCHLISTS active at once."""
     w = _get_watchlist_or_404(db, watchlist_id, user_id)
 
     if payload.isActive and not w.is_active:
@@ -217,7 +249,10 @@ def get_watchlist_matches(
         ))
 
     if sort == "price":
-        matches.sort(key=lambda m: int(re.sub(r"[^\d]", "", m.listing.price)))
+        def _price_sort_key(m):
+            digits = re.sub(r"[^\d]", "", m.listing.price)
+            return int(digits) if digits else float('inf')
+        matches.sort(key=_price_sort_key)
     elif sort == "newest":
         matches.sort(key=lambda m: m.isNew, reverse=True)
 
@@ -284,9 +319,21 @@ def run_watchlist_scan(db: Session, watchlist_id: int, user_id: int | None = Non
             ))
             new_match_listing_ids.append(listing.id)
 
-    # Update watchlist timestamp
     w.updated_at = datetime.now(timezone.utc)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # concurrent scan already inserted some of these — recover gracefully
+        db.rollback()
+        actually_new = set(
+            r[0] for r in db.query(WatchlistMatchDB.listing_id)
+            .filter(WatchlistMatchDB.watchlist_id == watchlist_id)
+            .all()
+        ) - existing_ids
+        new_match_listing_ids = list(actually_new)
+        w = db.query(Watchlist).filter(Watchlist.id == watchlist_id).first()
+        w.updated_at = datetime.now(timezone.utc)
+        db.commit()
 
     return {
         "watchlistId": watchlist_id,
@@ -301,13 +348,10 @@ def run_watchlist_scan(db: Session, watchlist_id: int, user_id: int | None = Non
 # normalisation helpers 
 
 def _normalise(value: str) -> str:
-    """Collapse whitespace, strip, and title-case a brand/model string."""
     return re.sub(r"\s+", " ", value.strip()).title()
 
 
 def create_watchlist(db: Session, payload: WatchlistCreate, user_id: int) -> WatchlistCard:
-    """Validate, normalise, persist a new watchlist, run initial scan, return card."""
-
     # Enforce total watchlist cap 
     total_count = (
         db.query(func.count(Watchlist.id))
@@ -392,17 +436,12 @@ def create_watchlist(db: Session, payload: WatchlistCreate, user_id: int) -> Wat
 
 
 def delete_watchlist(db: Session, watchlist_id: int, user_id: int) -> None:
-    """Delete a watchlist and all its matches (cascade)."""
     w = _get_watchlist_or_404(db, watchlist_id, user_id)
     db.delete(w)
     db.commit()
 
 
 def initialize_watchlists(db: Session):
-    """Run scan for every watchlist on startup.
-    Note: scans inactive watchlists too — this is intentional for data freshness.
-    Manual scans via API are restricted to active watchlists only.
-    """
     total_listings = db.query(func.count(Listing.id)).scalar()
     watchlists = db.query(Watchlist).all()
     for w in watchlists:

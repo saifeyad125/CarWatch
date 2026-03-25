@@ -1,6 +1,3 @@
-"""
-Notification service — creates notifications when watchlist matches are found.
-"""
 from sqlalchemy.orm import Session
 from db.models import Notification, Watchlist, Listing
 
@@ -21,7 +18,7 @@ def create_match_notifications(
     count = len(new_listing_ids)
     title = "New Match Found!" if count == 1 else f"{count} New Matches!"
     message = (
-        f"{count} new {'car matches' if count == 1 else 'cars match'} "
+        f"{count} new {'car match' if count == 1 else 'car matches'} "
         f"your \"{watchlist.title}\" watchlist"
     )
 

@@ -363,6 +363,19 @@ def _parse_detail_page(html: str) -> dict[str, Any]:
                 }
                 result = {col: slug_map.get(slug) for col, slug in wanted.items()}
                 result["_images"] = _extract_images(payload)
+
+                # extract location from slug_map or listing payload city fields
+                loc_value = slug_map.get("location")
+                if not loc_value:
+                    city = listing.get("city") or listing.get("location")
+                    if isinstance(city, dict):
+                        loc_value = city.get("name") or city.get("en")
+                    elif isinstance(city, str):
+                        loc_value = city
+                if loc_value and not loc_value.endswith(", UAE"):
+                    loc_value = f"{loc_value}, UAE"
+                result["location"] = loc_value
+
                 return result
         except json.JSONDecodeError:
             pass
@@ -429,12 +442,7 @@ def scrape_new_listings(db: Session, pages: int = MAX_PAGES) -> list[Listing]:
         logger.warning("OXY_PROXY_USER not set — skipping scrape")
         return []
 
-    existing_urls: set[str] = set(
-        r[0] for r in db.query(Listing.url).all()
-    )
-    logger.info(f"Existing URLs in DB: {len(existing_urls)}")
-
-    # Step 1: Discover listings from browse pages (Web Scraper API)
+    # discover listings from browse pages
     discovered: list[dict] = []
     seen_urls: set[str] = set()
 
@@ -454,14 +462,20 @@ def scrape_new_listings(db: Session, pages: int = MAX_PAGES) -> list[Listing]:
 
         time.sleep(SLEEP_BETWEEN)
 
-    # Filter to only new URLs
+    # check only discovered URLs against DB instead of loading entire table
+    discovered_urls = [s["url"] for s in discovered]
+    existing_urls = set(
+        r[0] for r in db.query(Listing.url)
+        .filter(Listing.url.in_(discovered_urls))
+        .all()
+    ) if discovered_urls else set()
     new_stubs = [s for s in discovered if s["url"] not in existing_urls]
-    logger.info(f"Discovered {len(discovered)} total, {len(new_stubs)} new")
+    logger.info(f"Discovered {len(discovered)} total, {len(new_stubs)} new (checked {len(discovered_urls)} URLs against DB)")
 
     if not new_stubs:
         return []
 
-    # Step 2: Enrich each new listing via detail page (mobile proxy)
+    # enrich each new listing via detail page
     BATCH_SIZE = 20
     new_listings: list[Listing] = []
     for i, stub in enumerate(new_stubs):
@@ -491,7 +505,7 @@ def scrape_new_listings(db: Session, pages: int = MAX_PAGES) -> list[Listing]:
             regional_specs=details.get("regional_specs"),
             image=scraped_images[0] if scraped_images else DEFAULT_IMAGE,
             images=scraped_images if scraped_images else None,
-            location=random.choice(UAE_LOCATIONS),
+            location=details.get("location") or "Dubai, UAE",
             source="dubizzle",
         )
         db.add(listing)

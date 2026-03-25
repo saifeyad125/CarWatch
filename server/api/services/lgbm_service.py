@@ -2,6 +2,7 @@ import os
 import re
 import numpy as np
 import pandas as pd
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
 
@@ -55,7 +56,7 @@ class LightGBMService:
         return {"predicted_price": round(predicted_price, 0)}
 
     def _prepare_features(self, f: Dict[str, Any]) -> pd.DataFrame:
-        current_year = 2026
+        current_year = datetime.now().year
         vehicle_age = current_year - (f.get("year") or 2020)
         kms = f.get("mileage") or 50_000
         kms_per_year = kms / max(vehicle_age, 1)
@@ -63,13 +64,13 @@ class LightGBMService:
         row = {
             "brand": f.get("brand") or "Unknown",
             "model": f.get("model") or "Unknown",
-            "trim": f.get("trim"),
-            "fuel_type": f.get("fuel_type"),
-            "body_type": f.get("body_type"),
-            "steering_side": f.get("steering_side"),
-            "regional_specs": f.get("regional_specs"),
-            "doors": f.get("doors"),
-            "seating_capacity": f.get("seating_capacity"),
+            "trim": f.get("trim") or "Unknown",
+            "fuel_type": f.get("fuel_type") or "Unknown",
+            "body_type": f.get("body_type") or "Unknown",
+            "steering_side": f.get("steering_side") or "Unknown",
+            "regional_specs": f.get("regional_specs") or "Unknown",
+            "doors": f.get("doors") or "Unknown",
+            "seating_capacity": f.get("seating_capacity") or "Unknown",
             "cylinders": self._clean_cylinders(f.get("cylinders")),
             "age_bucket": self._age_bucket(vehicle_age),
             "kms": kms,
@@ -97,13 +98,13 @@ class LightGBMService:
         return "10+"
 
     @staticmethod
-    def _clean_cylinders(raw) -> str | None:
+    def _clean_cylinders(raw) -> str:
         if raw is None:
-            return None
+            return "Unknown"
         s = str(raw).strip()
         if not s:
-            return None
+            return "Unknown"
         m = re.match(r"(\d+)", s)
         if m:
             return m.group(1)
-        return None
+        return "Unknown"

@@ -1,9 +1,6 @@
-"""
-CarWatch Backend API
-FastAPI-based backend for the CarWatch application.
-"""
 import os
 import logging
+from contextlib import asynccontextmanager
 from pathlib import Path
 from fastapi import FastAPI
 
@@ -26,13 +23,30 @@ from api.routes import cars, predictions, health, watchlists, profile, notificat
 from api.services.watchlists_service import initialize_watchlists
 from api.services.scheduler import start_scheduler, stop_scheduler
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    db_models.Base.metadata.create_all(bind=engine)
+    print("Database tables ready")
+
+    db = SessionLocal()
+    try:
+        initialize_watchlists(db)
+    finally:
+        db.close()
+
+    start_scheduler()
+
+    yield
+    stop_scheduler()
+
+
 app = FastAPI(
     title="CarWatch API",
     description="Backend API for CarWatch - UAE Used Car Price Predictor",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
-# CORS middleware for Next.js frontend
 origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
 
 app.add_middleware(
@@ -44,7 +58,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
 app.include_router(health.router, prefix="/api", tags=["Health"])
 app.include_router(cars.router, prefix="/api/cars", tags=["Cars"])
 app.include_router(predictions.router, prefix="/api/predictions", tags=["Predictions"])
@@ -53,27 +66,6 @@ app.include_router(profile.router, prefix="/api/profile", tags=["Profile"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
 app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
 
-
-@app.on_event("startup")
-async def startup_event():
-    # Create tables if they don't exist (Alembic takes over for production)
-    db_models.Base.metadata.create_all(bind=engine)
-    print("✓ Database tables ready")
-
-    # Initialize watchlist matches
-    db = SessionLocal()
-    try:
-        initialize_watchlists(db)
-    finally:
-        db.close()
-
-    # Start the hourly scraper scheduler
-    start_scheduler()
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    stop_scheduler()
 
 
 if __name__ == "__main__":

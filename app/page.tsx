@@ -27,7 +27,7 @@ export default function Home() {
   const { user, loading: authLoading, avatarSeed } = useAuth();
   const [favorites, setFavorites] = useState<number[]>([]);
   const [showAllListings, setShowAllListings] = useState(false);
-  const [popularListings, setPopularListings] = useState<CarCardData[]>([]);
+  const [newestListings, setNewestListings] = useState<CarCardData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [totalListings, setTotalListings] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -44,8 +44,8 @@ export default function Home() {
       try {
         setIsLoading(true);
         setError(null);
-        const data = await apiRequest<{ listings: CarCardData[]; total: number }>(`${API_ENDPOINTS.cars.list}?sort=popular&limit=8`);
-        setPopularListings(data.listings);
+        const data = await apiRequest<{ listings: CarCardData[]; total: number }>(`${API_ENDPOINTS.cars.list}?sort=newest&limit=8`);
+        setNewestListings(data.listings);
         setTotalListings(data.total);
       } catch {
         setError("Failed to load listings. Please try again later.");
@@ -81,7 +81,7 @@ export default function Home() {
 
   const activeWatchlists = watchlists.filter((w) => w.isActive).length;
   const totalNewMatches = watchlists.reduce((sum, w) => sum + (w.newCount || 0), 0);
-  const displayedListings = showAllListings ? popularListings : popularListings.slice(0, 6);
+  const displayedListings = showAllListings ? newestListings : newestListings.slice(0, 6);
   const userName = user?.user_metadata?.name || user?.email?.split("@")[0] || null;
 
   const stats = [
@@ -211,12 +211,12 @@ export default function Home() {
             </div>
           </section>
 
-          {/* Popular Listings */}
+          {/* Newest Listings */}
           <section className="py-6">
             <div className="flex items-end justify-between mb-6">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-1">Featured</p>
-                <h3 className="text-2xl font-semibold text-foreground tracking-tight">Popular Listings</h3>
+                <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-1">Just Added</p>
+                <h3 className="text-2xl font-semibold text-foreground tracking-tight">Newest Listings</h3>
               </div>
               <Link href="/browse">
                 <Button variant="ghost" size="sm" className="text-muted-foreground">
@@ -257,13 +257,13 @@ export default function Home() {
                   ))}
                 </div>
 
-                {!showAllListings && popularListings.length > 6 && (
+                {!showAllListings && newestListings.length > 6 && (
                   <div className="mt-8 text-center">
                     <Button
                       variant="outline"
                       onClick={() => setShowAllListings(true)}
                     >
-                      Show More ({popularListings.length - 6} more)
+                      Show More ({newestListings.length - 6} more)
                     </Button>
                   </div>
                 )}

@@ -1,11 +1,9 @@
-"""
-Two-stage CatBoost inference with sigmoid-gated luxury correction.
-"""
 import os
 import json
 import re
 import numpy as np
 import pandas as pd
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
 
@@ -168,7 +166,7 @@ class MLService:
     NUM_FEATURES_S1 = ["kms", "vehicle_age", "kms_per_year", "horsepower_mid", "engine_cc_mid"]
 
     def _prepare_stage1_features(self, f: Dict[str, Any]) -> pd.DataFrame:
-        current_year = 2026
+        current_year = datetime.now().year
         vehicle_age = current_year - (f.get("year") or 2020)
         kms = f.get("mileage") or 50_000
         kms_per_year = kms / max(vehicle_age, 1)
@@ -207,7 +205,7 @@ class MLService:
     def _prepare_stage2_features(
         self, f: Dict[str, Any], mu_log: float, sigma_log: float
     ) -> pd.DataFrame:
-        current_year = 2026
+        current_year = datetime.now().year
         vehicle_age = current_year - (f.get("year") or 2020)
         kms = f.get("mileage") or 50_000
         kms_per_year = kms / max(vehicle_age, 1)
@@ -280,7 +278,7 @@ class MLService:
         model_name = features.get("model", "Unknown")
         annual_kms = self.get_annual_kms(brand, model_name)
 
-        current_year = 2026
+        current_year = datetime.now().year
         year = features.get("year", 2020)
         current_age = current_year - year
         current_kms = features.get("mileage", 50_000)

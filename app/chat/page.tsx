@@ -52,6 +52,10 @@ export default function ChatPage() {
   useEffect(() => { setIsMounted(true); }, []);
 
   useEffect(() => {
+    return () => { abortRef.current?.abort(); };
+  }, []);
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isStreaming]);
 
@@ -377,9 +381,12 @@ export default function ChatPage() {
         )}
       </AnimatePresence>
 
-      {/* Sidebar overlay */}
+      {/* Sidebar backdrop — solid on mobile (hides content), transparent on desktop (click-to-close) */}
       {isSidebarOpen && (
-        <div className="fixed inset-0 bg-black/30 z-40" onClick={() => setIsSidebarOpen(false)} />
+        <div
+          className="fixed inset-0 z-40 bg-[hsl(var(--background))] lg:bg-transparent"
+          onClick={() => setIsSidebarOpen(false)}
+        />
       )}
 
       {/* Main */}

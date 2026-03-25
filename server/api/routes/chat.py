@@ -1,12 +1,10 @@
-"""
-Chat endpoints — authenticated, user-scoped.
-"""
 import json
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from datetime import datetime, timezone
 
+from db.database import SessionLocal
 from db.deps import get_db, get_current_user
 from db.models import User, ChatConversation, ChatMessage
 from models.schemas import (
@@ -51,6 +49,7 @@ def list_conversations(
 ):
     convs = (
         db.query(ChatConversation)
+        .options(selectinload(ChatConversation.messages))
         .filter(ChatConversation.user_id == current_user.id)
         .order_by(ChatConversation.updated_at.desc())
         .all()
@@ -141,7 +140,6 @@ async def send_message(
     if not conv:
         raise HTTPException(status_code=404, detail="Conversation not found")
 
-    # Save the user message
     user_msg = ChatMessage(
         conversation_id=conv.id,
         role="user",
@@ -169,7 +167,6 @@ async def send_message(
             user_id=current_user.id,
             db=db,
         ):
-            # Extract text from SSE data chunks for saving
             if chunk.startswith('data: {'):
                 try:
                     data = json.loads(chunk[6:].strip())
@@ -179,16 +176,24 @@ async def send_message(
                     pass
             yield chunk
 
-        # Save the full assistant response
+        # request-scoped session is closed by now, use a fresh one
         if text_parts:
-            assistant_msg = ChatMessage(
-                conversation_id=conv.id,
-                role="assistant",
-                content="".join(text_parts),
-            )
-            db.add(assistant_msg)
-            conv.updated_at = datetime.now(timezone.utc)
-            db.commit()
+            save_db = SessionLocal()
+            try:
+                assistant_msg = ChatMessage(
+                    conversation_id=conv.id,
+                    role="assistant",
+                    content="".join(text_parts),
+                )
+                save_db.add(assistant_msg)
+                save_db.query(ChatConversation).filter(
+                    ChatConversation.id == conv.id
+                ).update({"updated_at": datetime.now(timezone.utc)})
+                save_db.commit()
+            except Exception:
+                save_db.rollback()
+            finally:
+                save_db.close()
 
     return StreamingResponse(
         generate(),
