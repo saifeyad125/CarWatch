@@ -1,0 +1,69 @@
+{
+  "calibration_method": "CV-based CQR (cross-conformal, Barber et al. 2021)",
+  "conformal_Q": 0.05106577691423375,
+  "nominal_coverage": 0.9,
+  "oof_samples": 52028,
+  "oof_coverage": 0.9000345967555932,
+  "quantile_alpha_low": 0.05,
+  "quantile_alpha_high": 0.95,
+  "stage2_config": {
+    "luxury_threshold_aed": 800000,
+    "sigmoid_tau": 0.3,
+    "sigma_inflation_beta": 0.4,
+    "stage2_features": [
+      "brand",
+      "model",
+      "vehicle_age",
+      "kms_per_year",
+      "horsepower_mid",
+      "engine_cc_mid",
+      "fuel_type",
+      "body_type",
+      "regional_specs",
+      "trim",
+      "mu_log_stage1",
+      "sigma_log_stage1"
+    ],
+    "median_iterations": 32
+  },
+  "stage1_only_metrics": {
+    "RMSE_log": 0.20621266779203826,
+    "MAE_log": 0.1324090422981133,
+    "R2_log": 0.9698752781353644,
+    "MAE_price": 34777.54500985035,
+    "RMSE_price": 333653.16437164956,
+    "R2_price": 0.7928222565788008,
+    "MedAPE": 8.890655754404628
+  },
+  "twostage_metrics": {
+    "RMSE_log": 0.20668124965200654,
+    "MAE_log": 0.13432733520377302,
+    "R2_log": 0.9697382163699917,
+    "MAE_price": 37207.940158700374,
+    "RMSE_price": 356847.03457192244,
+    "R2_price": 0.7630172218135143,
+    "MedAPE": 9.143263497671361
+  },
+  "cqr_metrics": {
+    "coverage_90pct": 90.69034440344403,
+    "coverage_90pct_price": 90.69034440344403,
+    "mean_interval_width_aed": 163338.2805557651,
+    "median_interval_width_aed": 50778.51523956949,
+    "mean_sigma_log": 0.20954657704352644,
+    "median_sigma_log": 0.18603438923566656,
+    "oof_coverage_luxury": 0.8754406580493537,
+    "oof_coverage_non_luxury": 0.9013036887316827
+  },
+  "comparison_vs_catboost": {
+    "catboost_MAE": 42580,
+    "catboost_MedAPE": 12.43,
+    "catboost_R2_price": 0.8745,
+    "catboost_coverage_90": 91.41
+  },
+  "comparison_vs_holdout": {
+    "holdout_MAE": 39631,
+    "holdout_MedAPE": 9.65,
+    "holdout_R2_price": 0.7722,
+    "holdout_coverage_90": 89.72
+  }
+}

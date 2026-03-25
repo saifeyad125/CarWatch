@@ -1,0 +1,61 @@
+{
+  "calibration_method": "Conformalized Quantile Regression (Romano et al. 2019)",
+  "conformal_Q": 0.04374806057876235,
+  "nominal_coverage": 0.9,
+  "calibration_set_size": 10406,
+  "quantile_alpha_low": 0.05,
+  "quantile_alpha_high": 0.95,
+  "stage2_config": {
+    "luxury_threshold_aed": 800000,
+    "sigmoid_tau": 0.3,
+    "sigma_inflation_beta": 0.4,
+    "stage2_features": [
+      "brand",
+      "model",
+      "vehicle_age",
+      "kms_per_year",
+      "horsepower_mid",
+      "engine_cc_mid",
+      "fuel_type",
+      "body_type",
+      "regional_specs",
+      "trim",
+      "mu_log_stage1",
+      "sigma_log_stage1"
+    ],
+    "median_iterations": 61
+  },
+  "stage1_only_metrics": {
+    "RMSE_log": 0.21107521670560483,
+    "MAE_log": 0.13706929373425866,
+    "R2_log": 0.9684378302016261,
+    "MAE_price": 39097.6245611344,
+    "RMSE_price": 385797.0522046104,
+    "R2_price": 0.7230059678718956,
+    "MedAPE": 9.258261258812292
+  },
+  "twostage_metrics": {
+    "RMSE_log": 0.21109709451034786,
+    "MAE_log": 0.1397046000218139,
+    "R2_log": 0.9684312870670564,
+    "MAE_price": 39630.92275508874,
+    "RMSE_price": 349881.1475545667,
+    "R2_price": 0.7721790351346738,
+    "MedAPE": 9.653505845426826
+  },
+  "cqr_metrics": {
+    "coverage_90pct": 89.72170971709717,
+    "coverage_90pct_price": 89.72170971709717,
+    "mean_interval_width_aed": 165360.31320462338,
+    "median_interval_width_aed": 51945.77155578759,
+    "mean_sigma_log": 0.21402485753509473,
+    "median_sigma_log": 0.18952042707550815,
+    "calibration_set_coverage": 0.9001537574476264
+  },
+  "comparison_vs_catboost": {
+    "catboost_MAE": 42580,
+    "catboost_MedAPE": 12.43,
+    "catboost_R2_price": 0.8745,
+    "catboost_coverage_90": 91.41
+  }
+}
