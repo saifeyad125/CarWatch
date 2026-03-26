@@ -505,7 +505,7 @@ def scrape_new_listings(db: Session, pages: int = MAX_PAGES) -> list[Listing]:
             regional_specs=details.get("regional_specs"),
             image=scraped_images[0] if scraped_images else DEFAULT_IMAGE,
             images=scraped_images if scraped_images else None,
-            location=details.get("location") or "Dubai, UAE",
+            location=(details.get("location") or "Dubai, UAE")[:255],
             source="dubizzle",
         )
         db.add(listing)

@@ -39,7 +39,7 @@ class Listing(Base):
     regional_specs = Column(String(50), nullable=True)
     image = Column(Text, nullable=True)
     images = Column(JSON, nullable=True)  # array of image URLs
-    location = Column(String(100), nullable=True, default="Dubai, UAE")
+    location = Column(String(255), nullable=True, default="Dubai, UAE")
 
     # ML-derived fields
     predicted_price = Column(Integer, nullable=True)

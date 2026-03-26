@@ -414,7 +414,7 @@ def scrape_dubicars_listings(
             regional_specs=details.get("regional_specs"),
             image=scraped_images[0] if scraped_images else DEFAULT_IMAGE,
             images=scraped_images if scraped_images else None,
-            location=f"{stub['city']}, UAE" if stub.get("city") else "Dubai, UAE",
+            location=(f"{stub['city']}, UAE" if stub.get("city") else "Dubai, UAE")[:255],
             source="dubicars",
         )
 
