@@ -25,8 +25,9 @@ from api.services.scheduler import start_scheduler, stop_scheduler
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    logger = logging.getLogger(__name__)
     db_models.Base.metadata.create_all(bind=engine)
-    print("Database tables ready")
+    logger.info("Database tables ready")
 
     db = SessionLocal()
     try:

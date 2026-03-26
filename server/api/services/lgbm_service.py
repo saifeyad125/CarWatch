@@ -1,10 +1,13 @@
 import os
+import logging
 import re
 import numpy as np
 import pandas as pd
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
+
+logger = logging.getLogger(__name__)
 
 
 class LightGBMService:
@@ -28,7 +31,7 @@ class LightGBMService:
         try:
             import lightgbm as lgb
         except (ImportError, OSError) as e:
-            print(f"LightGBM not available: {e}")
+            logger.warning("LightGBM not available: %s", e)
             return
 
         base = Path(__file__).parent.parent.parent  # server/
@@ -40,9 +43,9 @@ class LightGBMService:
         if Path(model_path).exists():
             self.model = lgb.Booster(model_file=model_path)
             self.model_loaded = True
-            print(f"LightGBM loaded: {model_path}")
+            logger.info("LightGBM loaded: %s", model_path)
         else:
-            print(f"LightGBM model not found: {model_path}")
+            logger.warning("LightGBM model not found: %s", model_path)
 
     def predict_price(self, features: Dict[str, Any]) -> Dict[str, float]:
         if not self.model_loaded:

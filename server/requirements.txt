@@ -18,6 +18,8 @@ alembic==1.18.4
 apscheduler==3.11.0
 requests==2.32.3
 beautifulsoup4==4.13.4
+numpy>=1.24
+pandas>=2.0
 catboost>=1.2
 lightgbm>=4.0
 PyJWT[crypto]==2.9.0

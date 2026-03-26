@@ -1,11 +1,14 @@
 import os
 import json
+import logging
 import re
 import numpy as np
 import pandas as pd
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
+
+logger = logging.getLogger(__name__)
 
 
 def _sigmoid(x: np.ndarray) -> np.ndarray:
@@ -36,7 +39,7 @@ class MLService:
         try:
             from catboost import CatBoostRegressor
         except ImportError:
-            print("CatBoost not installed. pip install catboost")
+            logger.warning("CatBoost not installed. pip install catboost")
             return
 
         base = Path(__file__).parent.parent.parent  # server/
@@ -48,18 +51,18 @@ class MLService:
             self.stage1_model = CatBoostRegressor()
             self.stage1_model.load_model(s1_path)
             self.model_loaded = True
-            print(f"Stage 1 loaded: {s1_path}")
+            logger.info("Stage 1 loaded: %s", s1_path)
         else:
-            print(f"Stage 1 not found: {s1_path}")
+            logger.warning("Stage 1 not found: %s", s1_path)
 
         # Stage 2
         s2_path = os.getenv("ML_STAGE2_PATH", str(models_dir / "stage2_luxury_model.cbm"))
         if Path(s2_path).exists():
             self.stage2_model = CatBoostRegressor()
             self.stage2_model.load_model(s2_path)
-            print(f"Stage 2 loaded: {s2_path}")
+            logger.info("Stage 2 loaded: %s", s2_path)
         else:
-            print(f"Stage 2 not found: {s2_path}")
+            logger.warning("Stage 2 not found: %s", s2_path)
 
         # Calibration config
         cal_path = os.getenv("ML_CALIBRATION_PATH", str(models_dir / "calibration_info.json"))
@@ -75,10 +78,10 @@ class MLService:
             self.tau = s2cfg.get("sigmoid_tau", 0.3)
             self.beta = s2cfg.get("sigma_inflation_beta", 0.4)
             self.stage2_features = s2cfg.get("stage2_features", [])
-            print(f"Calibration loaded: factor={self.calibration_factor:.4f}, "
-                  f"tau={self.tau}, beta={self.beta}")
+            logger.info("Calibration loaded: factor=%.4f, tau=%s, beta=%s",
+                        self.calibration_factor, self.tau, self.beta)
         else:
-            print(f"Calibration not found: {cal_path}")
+            logger.warning("Calibration not found: %s", cal_path)
 
         # Usage profiles
         profiles_path = os.getenv(
@@ -87,9 +90,9 @@ class MLService:
         if Path(profiles_path).exists():
             with open(profiles_path) as f:
                 self.usage_profiles = json.load(f)
-            print(f"Usage profiles loaded: {profiles_path}")
+            logger.info("Usage profiles loaded: %s", profiles_path)
         else:
-            print(f"Usage profiles not found: {profiles_path}")
+            logger.warning("Usage profiles not found: %s", profiles_path)
 
     # prediction
 

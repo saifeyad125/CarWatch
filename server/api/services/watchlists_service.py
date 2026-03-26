@@ -1,6 +1,9 @@
+import logging
 import re
 from datetime import datetime, timezone
 from typing import List
+
+logger = logging.getLogger(__name__)
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
@@ -446,8 +449,8 @@ def initialize_watchlists(db: Session):
     watchlists = db.query(Watchlist).all()
     for w in watchlists:
         result = run_watchlist_scan(db, w.id)
-        print(f"  Watchlist '{w.title}': scanned {result['totalScanned']} listings, "
-              f"{result['totalMatches']} matched, {result['newMatches']} new")
-    print(f"✓ Initialized {len(watchlists)} watchlists against {total_listings} listings")
+        logger.info("Watchlist '%s': scanned %d listings, %d matched, %d new",
+                    w.title, result['totalScanned'], result['totalMatches'], result['newMatches'])
+    logger.info("Initialized %d watchlists against %d listings", len(watchlists), total_listings)
 
 

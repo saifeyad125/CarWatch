@@ -1,6 +1,3 @@
-"""
-FastAPI dependencies – DB session and auth.
-"""
 import os
 import logging
 from fastapi import Depends, HTTPException, status
@@ -46,10 +43,6 @@ def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db),
 ) -> User:
-    """
-    Decode the Supabase JWT, look up or create the local User row.
-    Supports both HS256 (legacy) and ES256 (new) Supabase JWTs.
-    """
     token = credentials.credentials
     try:
         # Try JWKS-based verification first (ES256)
@@ -73,7 +66,7 @@ def get_current_user(
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
     except jwt.InvalidTokenError as e:
-        print(f"[AUTH] FAILED: {e}")
+        logger.error("Auth failed: %s", e)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
     supabase_id: str = payload.get("sub", "")
@@ -101,8 +94,6 @@ def get_current_user(
 
 
 def delete_supabase_user(supabase_id: str) -> bool:
-    """Delete a user from Supabase Auth using the Admin API.
-    Returns True on success, False on failure. Logs errors."""
     if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
         logger.error("Cannot delete Supabase user: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set")
         return False
