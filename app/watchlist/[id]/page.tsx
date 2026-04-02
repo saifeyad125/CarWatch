@@ -330,9 +330,15 @@ export default function WatchlistDetailPage({ params }: { params: Promise<{ id: 
                               {match.listing.location}
                             </p>
                           </div>
-                          {match.isGoodDeal && (
-                            <Badge variant="default" className="bg-green-500 text-white text-xs">
-                              Good Deal
+                          {match.listing.dealLabel && (
+                            <Badge variant="default" className={`text-xs text-white ${
+                              match.listing.dealLabel === "Good Deal"
+                                ? "bg-emerald-500"
+                                : match.listing.dealLabel === "Overpriced"
+                                  ? "bg-red-500"
+                                  : "bg-slate-500"
+                            }`}>
+                              {match.listing.dealLabel}
                             </Badge>
                           )}
                         </div>

@@ -18,7 +18,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
   loading: true,
-  avatarSeed: "User",
+  avatarSeed: "Saif",
   setAvatarSeed: () => {},
   signOut: async () => {},
 });
@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [avatarSeed, setAvatarSeed] = useState("User");
+  const [avatarSeed, setAvatarSeed] = useState("Saif");
 
   useEffect(() => {
     // Get initial session
@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Fetch avatar seed from profile when user is authenticated
   useEffect(() => {
     if (!user) {
-      setAvatarSeed("User");
+      setAvatarSeed("Saif");
       return;
     }
     apiRequest<{ avatarSeed?: string }>(API_ENDPOINTS.profile)
