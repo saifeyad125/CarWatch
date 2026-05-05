@@ -2,34 +2,40 @@
 
 import {
   ArrowLeft, Heart, Share2, MapPin, Gauge, Calendar,
-  TrendingUp, CheckCircle, ChevronLeft, ChevronRight, ExternalLink,
+  ChevronLeft, ChevronRight, Phone, Building2, ExternalLink, CheckCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CarCard, CarCardSkeleton, type CarCardData } from "@/components/ui/car-card";
 import { PartCard, type PartCardData } from "@/components/ui/part-card";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import { API_ENDPOINTS, apiRequest } from "@/lib/api";
-import { isFavorite as checkFav, toggleFavorite as toggleFav } from "@/lib/favorites";
+import { isFavorite as isFav, toggleFavorite as toggleFav } from "@/lib/favorites";
 import { motion } from "framer-motion";
 
-interface CarListing extends CarCardData {
-  description: string;
-  url: string;
-  seller: { name: string; avatar: string; phone: string; type: string };
-  features: string[];
-  images?: string[];
-  marketAnalysis?: {
-    depreciation?: { oneYear: number; threeYear: number; fiveYear: number } | null;
-    marketTrend: string;
-    priceHistory: Array<{ month: string; averagePrice: number }>;
-  } | null;
-  similarListings?: CarCardData[];
+interface DealerCarDetail {
+  id: number;
+  make: string;
+  model: string;
+  trim?: string;
+  year: number;
+  price: string;
+  priceRaw: number;
+  predictedPrice?: string | null;
+  dealLabel?: string;
+  confidenceLabel?: "Very Confident" | "Confident" | null;
   confidenceLow?: string | null;
   confidenceHigh?: string | null;
+  mileage: string;
+  location: string;
+  image: string;
+  images: string[];
+  description: string;
+  features: string[];
+  depreciation?: { oneYear: number; threeYear: number; fiveYear: number } | null;
+  dealer: { id: number; name: string; logoUrl?: string | null; location?: string; phone?: string };
 }
 
 function ImageCarousel({
@@ -65,12 +71,7 @@ function ImageCarousel({
           style={{ transform: `translateX(-${activeIndex * 100}%)` }}
         >
           {images.map((img, i) => (
-            <img
-              key={i}
-              src={img}
-              alt={`${alt} - Image ${i + 1}`}
-              className="w-full h-64 md:h-[420px] object-cover shrink-0"
-            />
+            <img key={i} src={img} alt={`${alt} - Image ${i + 1}`} className="w-full h-64 md:h-[420px] object-cover shrink-0" />
           ))}
         </div>
       </div>
@@ -84,22 +85,15 @@ function ImageCarousel({
       {images.length > 1 && (
         <>
           {activeIndex > 0 && (
-            <button
-              onClick={goPrev}
-              className="absolute left-3 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-white/90 dark:bg-black/50 text-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-soft"
-            >
+            <button onClick={goPrev} className="absolute left-3 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-white/90 dark:bg-black/50 text-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-soft">
               <ChevronLeft className="h-4 w-4" />
             </button>
           )}
           {activeIndex < images.length - 1 && (
-            <button
-              onClick={goNext}
-              className="absolute right-3 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-white/90 dark:bg-black/50 text-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-soft"
-            >
+            <button onClick={goNext} className="absolute right-3 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-white/90 dark:bg-black/50 text-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-soft">
               <ChevronRight className="h-4 w-4" />
             </button>
           )}
-
           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
             {(() => {
               const maxDots = 7;
@@ -110,18 +104,11 @@ function ImageCarousel({
               return images.slice(start, start + maxDots).map((_, j) => {
                 const idx = start + j;
                 return (
-                  <button
-                    key={idx}
-                    onClick={() => onIndexChange(idx)}
-                    className={`h-1.5 rounded-full transition-all shrink-0 ${
-                      idx === activeIndex ? "w-6 bg-white" : "w-1.5 bg-white/50"
-                    }`}
-                  />
+                  <button key={idx} onClick={() => onIndexChange(idx)} className={`h-1.5 rounded-full transition-all shrink-0 ${idx === activeIndex ? "w-6 bg-white" : "w-1.5 bg-white/50"}`} />
                 );
               });
             })()}
           </div>
-
           <div className="absolute top-4 right-4 bg-black/50 text-white text-[11px] font-medium px-2.5 py-1 rounded-full backdrop-blur-sm">
             {activeIndex + 1}/{images.length}
           </div>
@@ -131,47 +118,51 @@ function ImageCarousel({
   );
 }
 
-export default function ListingDetail({ params }: { params: Promise<{ id: string }> }) {
+export default function DealerCarDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const { id } = use(params);
-  const [car, setCar] = useState<CarListing | null>(null);
+  const [car, setCar] = useState<DealerCarDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const [shareText, setShareText] = useState<string | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [compatParts, setCompatParts] = useState<PartCardData[]>([]);
+  const [compatibleParts, setCompatibleParts] = useState<PartCardData[]>([]);
 
   useEffect(() => {
-    const fetchCarDetails = async () => {
+    const fetchDetails = async () => {
       try {
         setIsLoading(true);
-        const data = await apiRequest<CarListing>(API_ENDPOINTS.cars.detail(parseInt(id)));
+        const data = await apiRequest<DealerCarDetail>(API_ENDPOINTS.dealerCars.detail(parseInt(id)));
         setCar(data);
-        apiRequest<{ parts: PartCardData[]; total: number }>(API_ENDPOINTS.parts.compatible(data.make, data.model))
-          .then((res) => { if (res?.parts) setCompatParts(res.parts); })
-          .catch(() => {});
       } catch {
         setError("Failed to load car details.");
       } finally {
         setIsLoading(false);
       }
     };
-    fetchCarDetails();
+    fetchDetails();
   }, [id]);
 
   useEffect(() => {
-    setIsFavorite(checkFav("used", parseInt(id)));
+    setIsFavorite(isFav("dealer", parseInt(id)));
   }, [id]);
 
+  useEffect(() => {
+    if (!car) return;
+    apiRequest<{ parts: PartCardData[]; total: number }>(API_ENDPOINTS.parts.compatible(car.make, car.model))
+      .then((data) => setCompatibleParts(data.parts || []))
+      .catch(() => setCompatibleParts([]));
+  }, [car?.make, car?.model]);
+
   const toggleFavorite = () => {
-    toggleFav("used", parseInt(id));
+    toggleFav("dealer", parseInt(id));
     setIsFavorite(!isFavorite);
   };
 
   const handleShare = async () => {
     const url = window.location.href;
-    const title = car ? `${car.year} ${car.make} ${car.model}${car.trim ? ` ${car.trim}` : ""} - ${car.price}` : "Car Listing";
+    const title = car ? `${car.year} ${car.make} ${car.model}${car.trim ? ` ${car.trim}` : ""} - ${car.price}` : "Dealer Car Listing";
     if (navigator.share) {
       try { await navigator.share({ title, url }); } catch {}
     } else {
@@ -181,7 +172,6 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
     }
   };
 
-  // Loading
   if (isLoading) {
     return (
       <div className="flex flex-col h-full bg-background">
@@ -213,7 +203,6 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
     );
   }
 
-  // Error
   if (error || !car) {
     return (
       <div className="flex flex-col h-full bg-background">
@@ -241,12 +230,11 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
 
   return (
     <div className="flex flex-col h-full bg-background">
-      {/* Header */}
       <header className="shrink-0 h-16 border-b border-border/40 bg-card/80 backdrop-blur-nav px-4 md:px-6 flex items-center justify-between sticky top-0 z-10">
         <Button variant="ghost" size="icon" onClick={() => router.back()}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <span className="text-sm font-medium text-foreground">Car Details</span>
+        <span className="text-sm font-medium text-foreground">Dealer Car Details</span>
         <div className="flex items-center gap-1">
           <motion.div whileTap={{ scale: 1.2 }} transition={{ type: "spring", stiffness: 500, damping: 15 }}>
             <Button variant="ghost" size="icon" onClick={toggleFavorite}>
@@ -266,17 +254,10 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
         </div>
       </header>
 
-      {/* Content */}
       <div className="flex-1 overflow-y-auto scrollbar-hide">
         <div className="max-w-7xl mx-auto pb-safe">
           <div className="md:grid md:grid-cols-5 md:gap-8 md:px-6 md:pt-6">
-            {/* Left: Images */}
-            <motion.div
-              className="md:col-span-3"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.4 }}
-            >
+            <motion.div className="md:col-span-3" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
               <ImageCarousel
                 images={allImages}
                 alt={`${car.year} ${car.make} ${car.model}${car.trim ? ` ${car.trim}` : ""}`}
@@ -286,7 +267,6 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
               />
             </motion.div>
 
-            {/* Right: Details */}
             <motion.div
               className="md:col-span-2"
               initial={{ opacity: 0, y: 16 }}
@@ -294,7 +274,6 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
               transition={{ duration: 0.4, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
             >
               <div className="px-4 md:px-0 space-y-5 pt-5 md:pt-0">
-                {/* Title */}
                 <div>
                   <h2 className="text-2xl font-bold text-foreground tracking-tight">
                     {car.year} {car.make} {car.model}{car.trim ? ` ${car.trim}` : ""}
@@ -309,7 +288,6 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
                   </div>
                 </div>
 
-                {/* Price card */}
                 <Card className="p-5">
                   <div className="flex items-start justify-between mb-2">
                     <span className="text-3xl font-bold text-primary tracking-tight">{car.price}</span>
@@ -358,7 +336,6 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
                   )}
                 </Card>
 
-                {/* Quick Stats */}
                 <div className="grid grid-cols-3 gap-3">
                   {[
                     { icon: Calendar, value: car.year, label: "Year" },
@@ -373,67 +350,55 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
                   ))}
                 </div>
 
-                {/* Market Analysis */}
-                {car.marketAnalysis && (
-                  <Card className="p-5">
-                    <div className="flex items-center gap-2 mb-4">
-                      <TrendingUp className="h-4 w-4 text-primary" />
-                      <h3 className="font-semibold text-foreground">Market Analysis</h3>
-                    </div>
-
-                    <div className="space-y-4">
-                      {car.marketAnalysis.depreciation && (
-                        <div>
-                          <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2.5">Depreciation</h4>
-                          <div className="grid grid-cols-3 gap-2">
-                            {[
-                              { label: "1 Year", value: car.marketAnalysis.depreciation.oneYear },
-                              { label: "3 Years", value: car.marketAnalysis.depreciation.threeYear },
-                              { label: "5 Years", value: car.marketAnalysis.depreciation.fiveYear },
-                            ].map((d) => (
-                              <div key={d.label} className="text-center p-2.5 bg-muted/50 rounded-lg">
-                                <div className="text-sm font-bold text-red-600 dark:text-red-400">-{d.value}%</div>
-                                <div className="text-[11px] text-muted-foreground">{d.label}</div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
+                <Card className="p-5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Building2 className="h-4 w-4 text-primary" />
+                    <h3 className="font-semibold text-foreground">Dealer Information</h3>
+                  </div>
+                  <div className="flex items-center gap-3 mb-3">
+                    {car.dealer.logoUrl && (
+                      <img src={car.dealer.logoUrl} alt={car.dealer.name} className="h-10 w-10 rounded-lg object-cover border border-border/60" />
+                    )}
+                    <div>
+                      <p className="font-medium text-foreground">{car.dealer.name}</p>
+                      {car.dealer.location && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          <MapPin className="h-3 w-3" /> {car.dealer.location}
+                        </p>
                       )}
+                    </div>
+                  </div>
+                  {car.dealer.phone && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                      <Phone className="h-3.5 w-3.5" /> {car.dealer.phone}
+                    </div>
+                  )}
+                  <Link href={`/browse/dealers?dealer=${car.dealer.id}`}>
+                    <Button variant="outline" size="sm" className="w-full">
+                      <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                      View all from this dealer
+                    </Button>
+                  </Link>
+                </Card>
 
-                      <div>
-                        <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2.5">Price Projections</h4>
-                        <div className="space-y-2">
-                          {(() => {
-                            const maxPrice = Math.max(...car.marketAnalysis.priceHistory.map((d) => d.averagePrice));
-                            return car.marketAnalysis.priceHistory.map((data) => (
-                              <div key={data.month} className="flex items-center justify-between text-sm">
-                                <span className="text-muted-foreground w-12 text-xs">{data.month}</span>
-                                <div className="flex-1 mx-3 h-1.5 bg-muted rounded-full overflow-hidden">
-                                  <div
-                                    className="h-full bg-primary/60 rounded-full transition-all"
-                                    style={{ width: `${(data.averagePrice / maxPrice) * 100}%` }}
-                                  />
-                                </div>
-                                <span className="text-xs font-medium w-14 text-right">{(data.averagePrice / 1000).toFixed(0)}k</span>
-                              </div>
-                            ));
-                          })()}
+                {car.depreciation && (
+                  <Card className="p-5">
+                    <h3 className="font-semibold text-foreground mb-3">Depreciation</h3>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { label: "1 Year", value: car.depreciation.oneYear },
+                        { label: "3 Years", value: car.depreciation.threeYear },
+                        { label: "5 Years", value: car.depreciation.fiveYear },
+                      ].map((d) => (
+                        <div key={d.label} className="text-center p-2.5 bg-muted/50 rounded-lg">
+                          <div className="text-sm font-bold text-red-600 dark:text-red-400">-{d.value}%</div>
+                          <div className="text-[11px] text-muted-foreground">{d.label}</div>
                         </div>
-                      </div>
-
-                      <div className="pt-3 border-t border-border/60">
-                        <Link href={`/listing/${car.id}/analysis`}>
-                          <Button variant="outline" className="w-full">
-                            <TrendingUp className="mr-2 h-4 w-4" />
-                            Detailed Analysis
-                          </Button>
-                        </Link>
-                      </div>
+                      ))}
                     </div>
                   </Card>
                 )}
 
-                {/* Features */}
                 <Card className="p-5">
                   <h3 className="font-semibold text-foreground mb-3">Features</h3>
                   <div className="grid grid-cols-2 gap-2">
@@ -446,7 +411,6 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
                   </div>
                 </Card>
 
-                {/* Description */}
                 <Card className="p-5">
                   <h3 className="font-semibold text-foreground mb-2">Description</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">{car.description}</p>
@@ -455,8 +419,7 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
             </motion.div>
           </div>
 
-          {/* Similar listings */}
-          {car.similarListings && car.similarListings.length > 0 && (
+          {compatibleParts.length > 0 && (
             <motion.section
               className="px-4 md:px-6 py-8"
               initial={{ opacity: 0, y: 16 }}
@@ -465,45 +428,13 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
             >
               <div className="flex items-end justify-between mb-5">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-1">Compare</p>
-                  <h3 className="text-xl font-semibold text-foreground tracking-tight">Similar Listings</h3>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-1">Accessories</p>
+                  <h3 className="text-xl font-semibold text-foreground tracking-tight">Compatible Parts</h3>
                 </div>
                 <span className="text-xs text-muted-foreground md:hidden">Swipe to see more</span>
               </div>
-
               <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-4 px-4 pb-2 md:grid md:grid-cols-2 lg:grid-cols-3 md:mx-0 md:px-0 md:overflow-visible">
-                {car.similarListings.map((similar, i) => (
-                  <div key={similar.id} className="snap-start shrink-0 w-[calc(100%-24px)] md:w-auto">
-                    <CarCard car={similar} index={i} />
-                  </div>
-                ))}
-              </div>
-            </motion.section>
-          )}
-
-          {compatParts.length > 0 && (
-            <motion.section
-              className="px-4 md:px-6 py-8"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <div className="flex items-end justify-between mb-5">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-1">Accessories</p>
-                  <h3 className="text-xl font-semibold text-foreground tracking-tight">
-                    Parts for {car.make} {car.model}
-                  </h3>
-                </div>
-                <Link
-                  href={`/browse/parts?q=${encodeURIComponent(car.make)}`}
-                  className="text-xs text-primary hover:underline"
-                >
-                  View all →
-                </Link>
-              </div>
-              <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-4 px-4 pb-2 md:grid md:grid-cols-2 lg:grid-cols-4 md:mx-0 md:px-0 md:overflow-visible">
-                {compatParts.slice(0, 4).map((part, i) => (
+                {compatibleParts.map((part, i) => (
                   <div key={part.id} className="snap-start shrink-0 w-[calc(100%-24px)] md:w-auto">
                     <PartCard part={part} index={i} />
                   </div>
@@ -514,15 +445,23 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
         </div>
       </div>
 
-      {/* Bottom CTA */}
       <div className="shrink-0 p-4 border-t border-border/40 bg-card/80 backdrop-blur-nav">
         <div className="max-w-md mx-auto">
-          <a href={car.url} target="_blank" rel="noopener noreferrer" className="block">
-            <Button className="w-full h-12" size="lg">
-              <ExternalLink className="mr-2 h-4 w-4" />
-              View on {car.source === "dubicars" ? "DubiCars" : "Dubizzle"}
-            </Button>
-          </a>
+          {car.dealer.phone ? (
+            <a href={`tel:${car.dealer.phone}`} className="block">
+              <Button className="w-full h-12" size="lg">
+                <Phone className="mr-2 h-4 w-4" />
+                Contact Dealer
+              </Button>
+            </a>
+          ) : (
+            <Link href={`/browse/dealers?dealer=${car.dealer.id}`} className="block">
+              <Button className="w-full h-12" size="lg">
+                <Building2 className="mr-2 h-4 w-4" />
+                View Dealer
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
     </div>

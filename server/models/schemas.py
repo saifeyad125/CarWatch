@@ -155,8 +155,9 @@ class WatchlistCreate(BaseModel):
     subtitle: Optional[str] = None
     locationLabel: Optional[str] = None
     tags: List[str] = []
-    isActive: bool = False          # inactive by default until user activates
+    isActive: bool = False
     alertsEnabled: bool = False
+    type: str = "car"
     searchCriteria: WatchlistSearchCriteria
 
 class WatchlistStatusUpdate(BaseModel):
@@ -229,3 +230,117 @@ class ChatConversationDetail(BaseModel):
 
 class ChatSendMessage(BaseModel):
     content: str
+
+
+# Dealers
+
+class DealerSummary(BaseModel):
+    id: int
+    name: str
+    logoUrl: Optional[str] = None
+    location: Optional[str] = None
+    phone: Optional[str] = None
+    listingCount: int = 0
+
+class DealerDetail(DealerSummary):
+    email: Optional[str] = None
+
+class DealersListResponse(BaseModel):
+    dealers: List[DealerSummary]
+
+class DealerCarListingSummary(BaseModel):
+    id: int
+    make: str
+    model: str
+    trim: Optional[str] = None
+    year: int
+    price: str
+    predictedPrice: Optional[str] = None
+    predictedPriceLgbm: Optional[str] = None
+    modelUsed: Optional[str] = None
+    dealLabel: Optional[Literal["Good Deal", "Fair", "Overpriced"]] = None
+    confidenceLabel: Optional[str] = None
+    mileage: str
+    location: str
+    image: str
+    dealerName: str
+    dealerLogo: Optional[str] = None
+    dealerId: int
+
+class DealerCarListingsResponse(BaseModel):
+    listings: List[DealerCarListingSummary]
+    total: int
+
+
+# Parts
+
+class PartCategorySummary(BaseModel):
+    id: int
+    name: str
+    slug: str
+    icon: Optional[str] = None
+    parentId: Optional[int] = None
+    partCount: int = 0
+
+class PartCategoryWithChildren(PartCategorySummary):
+    children: List[PartCategorySummary] = []
+    breadcrumb: List[PartCategorySummary] = []
+
+class PartCompatibilityResponse(BaseModel):
+    brand: str
+    model: str
+    yearFrom: Optional[int] = None
+    yearTo: Optional[int] = None
+
+class PartListingSummary(BaseModel):
+    id: int
+    name: str
+    price: str
+    image: Optional[str] = None
+    sellerName: str
+    categoryBreadcrumb: str
+    compatibleCars: str
+
+class PartListingsResponse(BaseModel):
+    parts: List[PartListingSummary]
+    total: int
+
+class PartDetail(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+    price: str
+    partNumber: Optional[str] = None
+    image: Optional[str] = None
+    images: List[str] = []
+    categoryBreadcrumb: List[PartCategorySummary]
+    compatibilities: List[PartCompatibilityResponse]
+    sellerName: str
+    sellerPhone: Optional[str] = None
+    sellerLocation: Optional[str] = None
+
+
+# Browse Hub
+
+class BrowseCountsResponse(BaseModel):
+    used_cars: int
+    dealer_cars: int
+    parts: int
+
+class SearchResultGroup(BaseModel):
+    results: list
+    total: int
+
+class SearchResponse(BaseModel):
+    used_cars: SearchResultGroup
+    dealer_cars: SearchResultGroup
+    parts: SearchResultGroup
+
+
+class PartWatchlistSearchCriteria(BaseModel):
+    category_id: Optional[int] = None
+    keyword: Optional[str] = None
+    compatible_brand: Optional[str] = None
+    compatible_model: Optional[str] = None
+    price_min: Optional[int] = None
+    price_max: Optional[int] = None

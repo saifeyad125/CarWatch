@@ -12,6 +12,13 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Python directories
+    "server/**",
+    "ai_training/**",
+    "scraper/**",
+    "data/**",
+    "**/node_modules/**",
+    "**/.venv/**",
   ]),
 ]);
 

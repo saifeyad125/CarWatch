@@ -17,6 +17,7 @@ export const API_ENDPOINTS = {
   predictions: {
     predict: `${API_BASE_URL}/api/predictions/predict`,
     uncertainty: `${API_BASE_URL}/api/predictions/uncertainty`,
+    forecast: `${API_BASE_URL}/api/predictions/forecast`,
   },
   
   // Watchlist endpoints
@@ -47,6 +48,36 @@ export const API_ENDPOINTS = {
     conversations: `${API_BASE_URL}/api/chat/conversations`,
     conversation: (id: number) => `${API_BASE_URL}/api/chat/conversations/${id}`,
     messages: (id: number) => `${API_BASE_URL}/api/chat/conversations/${id}/messages`,
+  },
+
+  // Dealers
+  dealers: {
+    list: `${API_BASE_URL}/api/dealers`,
+    detail: (id: number) => `${API_BASE_URL}/api/dealers/${id}`,
+  },
+
+  // Dealer Cars
+  dealerCars: {
+    list: `${API_BASE_URL}/api/dealer-cars`,
+    detail: (id: number) => `${API_BASE_URL}/api/dealer-cars/${id}`,
+    brands: `${API_BASE_URL}/api/dealer-cars/brands`,
+    models: (brand: string) => `${API_BASE_URL}/api/dealer-cars/brands/${encodeURIComponent(brand)}/models`,
+    trims: (brand: string, model: string) => `${API_BASE_URL}/api/dealer-cars/brands/${encodeURIComponent(brand)}/models/${encodeURIComponent(model)}/trims`,
+  },
+
+  // Parts
+  parts: {
+    list: `${API_BASE_URL}/api/parts`,
+    detail: (id: number) => `${API_BASE_URL}/api/parts/${id}`,
+    categories: `${API_BASE_URL}/api/parts/categories`,
+    category: (id: number) => `${API_BASE_URL}/api/parts/categories/${id}`,
+    compatible: (brand: string, model: string) => `${API_BASE_URL}/api/parts/compatible/${encodeURIComponent(brand)}/${encodeURIComponent(model)}`,
+  },
+
+  // Browse Hub
+  browse: {
+    counts: `${API_BASE_URL}/api/browse/counts`,
+    search: `${API_BASE_URL}/api/browse/search`,
   },
 
   // Health check

@@ -52,6 +52,36 @@ class DealAnalysis(BaseModel):
     confidence_interval: tuple[float, float]
 
 
+class ForecastRequest(BaseModel):
+    brand: str = Field(..., description="Car brand")
+    model: str = Field(..., description="Car model")
+    year: int = Field(..., ge=1990, le=2026, description="Year of manufacture")
+    mileage: int = Field(..., ge=0, le=500_000, description="Current mileage in km")
+    annual_kms: int = Field(..., ge=1_000, le=100_000, description="Expected annual driving in km")
+    fuel_type: Optional[str] = Field("Petrol", description="Fuel type")
+    body_type: Optional[str] = Field(None, description="Body type")
+    trim: Optional[str] = Field(None, description="Trim level")
+    cylinders: Optional[int] = Field(None, description="Number of cylinders")
+    horsepower: Optional[int] = Field(None, description="Horsepower")
+    engine_cc: Optional[int] = Field(None, description="Engine capacity in CC")
+    regional_specs: Optional[str] = Field("GCC", description="Regional specs")
+    steering_side: Optional[str] = Field("Left", description="Steering side")
+
+
+class ForecastPoint(BaseModel):
+    years_ahead: int
+    projected_age: int
+    projected_kms: int
+    predicted_price: int
+    retention_pct: float
+
+
+class ForecastResponse(BaseModel):
+    current_price: int
+    annual_kms: int
+    projections: list[ForecastPoint]
+
+
 @router.post("/predict", response_model=PredictionResponse)
 async def predict_price(features: CarFeatures):
     # always CatBoost here (confidence intervals); for hybrid routing use /analyze-deal
@@ -115,3 +145,18 @@ async def analyze_deal(features: CarFeatures, asking_price: float):
 @router.get("/model-info")
 async def get_model_info():
     return ml_service.get_model_info()
+
+
+@router.post("/forecast", response_model=ForecastResponse)
+async def forecast(req: ForecastRequest):
+    try:
+        feature_dict = req.model_dump()
+        annual_kms = feature_dict.pop("annual_kms")
+        result = ml_service.compute_forecast(feature_dict, annual_kms)
+        if not result:
+            raise HTTPException(status_code=503, detail="Model not loaded")
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Forecast failed: {str(e)}")

@@ -59,6 +59,118 @@ class Listing(Base):
     watchlist_matches = relationship("WatchlistMatch", back_populates="listing", cascade="all, delete-orphan")
 
 
+class Dealer(Base):
+    __tablename__ = "dealers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(200), nullable=False)
+    logo_url = Column(Text, nullable=True)
+    location = Column(String(255), nullable=True)
+    phone = Column(String(50), nullable=True)
+    email = Column(String(255), nullable=True)
+    is_seed = Column(Boolean, default=False, server_default="false", nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    listings = relationship("DealerListing", back_populates="dealer", cascade="all, delete-orphan")
+
+
+class DealerListing(Base):
+    __tablename__ = "dealer_listings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    dealer_id = Column(Integer, ForeignKey("dealers.id", ondelete="CASCADE"), nullable=False, index=True)
+    brand = Column(String(100), nullable=False, index=True)
+    model = Column(String(200), nullable=False, index=True)
+    trim = Column(String(200), nullable=True)
+    year = Column(Integer, nullable=False, index=True)
+    price = Column(Integer, nullable=False)
+    kms = Column(Integer, nullable=True)
+    url = Column(Text, nullable=True)
+    horsepower = Column(String(50), nullable=True)
+    doors = Column(String(20), nullable=True)
+    fuel_type = Column(String(50), nullable=True)
+    cylinders = Column(String(50), nullable=True)
+    interior_color = Column(String(50), nullable=True)
+    exterior_color = Column(String(50), nullable=True)
+    body_type = Column(String(50), nullable=True)
+    seating_capacity = Column(String(20), nullable=True)
+    engine_capacity = Column(String(50), nullable=True)
+    steering_side = Column(String(20), nullable=True)
+    regional_specs = Column(String(50), nullable=True)
+    image = Column(Text, nullable=True)
+    images = Column(JSON, nullable=True)
+    location = Column(String(255), nullable=True)
+    description = Column(Text, nullable=True)
+
+    predicted_price = Column(Integer, nullable=True)
+    predicted_price_lgbm = Column(Integer, nullable=True)
+    deal_label = Column(String(20), nullable=True)
+    sigma_log = Column(Float, nullable=True)
+    confidence_low = Column(Integer, nullable=True)
+    confidence_high = Column(Integer, nullable=True)
+    depreciation_data = Column(JSON, nullable=True)
+
+    is_seed = Column(Boolean, default=False, server_default="false", nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
+                        onupdate=lambda: datetime.now(timezone.utc))
+
+    dealer = relationship("Dealer", back_populates="listings")
+    watchlist_matches = relationship("DealerWatchlistMatch", back_populates="dealer_listing", cascade="all, delete-orphan")
+
+
+class PartCategory(Base):
+    __tablename__ = "part_categories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(200), nullable=False)
+    slug = Column(String(200), nullable=False, unique=True)
+    icon = Column(String(50), nullable=True)
+    parent_id = Column(Integer, ForeignKey("part_categories.id"), nullable=True)
+    sort_order = Column(Integer, default=0, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    parent = relationship("PartCategory", remote_side=[id], backref="children")
+    parts = relationship("Part", back_populates="category")
+
+
+class Part(Base):
+    __tablename__ = "parts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(300), nullable=False)
+    description = Column(Text, nullable=True)
+    price = Column(Integer, nullable=False)
+    category_id = Column(Integer, ForeignKey("part_categories.id"), nullable=False, index=True)
+    seller_name = Column(String(200), nullable=False)
+    seller_phone = Column(String(50), nullable=True)
+    seller_location = Column(String(255), nullable=True)
+    image = Column(Text, nullable=True)
+    images = Column(JSON, nullable=True)
+    part_number = Column(String(100), nullable=True)
+    is_seed = Column(Boolean, default=False, server_default="false", nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
+                        onupdate=lambda: datetime.now(timezone.utc))
+
+    category = relationship("PartCategory", back_populates="parts")
+    compatibilities = relationship("PartCompatibility", back_populates="part", cascade="all, delete-orphan")
+    watchlist_matches = relationship("PartWatchlistMatch", back_populates="part", cascade="all, delete-orphan")
+
+
+class PartCompatibility(Base):
+    __tablename__ = "part_compatibilities"
+
+    id = Column(Integer, primary_key=True, index=True)
+    part_id = Column(Integer, ForeignKey("parts.id", ondelete="CASCADE"), nullable=False, index=True)
+    brand = Column(String(100), nullable=False)
+    model = Column(String(200), nullable=False)
+    year_from = Column(Integer, nullable=True)
+    year_to = Column(Integer, nullable=True)
+
+    part = relationship("Part", back_populates="compatibilities")
+
+
 class Watchlist(Base):
     __tablename__ = "watchlists"
 
@@ -69,6 +181,7 @@ class Watchlist(Base):
     tags = Column(JSON, default=list)                     # e.g. ["Used", "Certified"]
     is_active = Column(Boolean, default=False)   # inactive until user explicitly activates
     alerts_enabled = Column(Boolean, default=False)
+    type = Column(String(20), default="car", server_default="car", nullable=False)
 
     # Search criteria stored as JSONB
     criteria_json = Column(JSON, nullable=False, default=dict)
@@ -104,12 +217,48 @@ class WatchlistMatch(Base):
     listing = relationship("Listing", back_populates="watchlist_matches")
 
 
+class DealerWatchlistMatch(Base):
+    __tablename__ = "dealer_watchlist_matches"
+
+    id = Column(Integer, primary_key=True, index=True)
+    watchlist_id = Column(Integer, ForeignKey("watchlists.id", ondelete="CASCADE"), nullable=False)
+    dealer_listing_id = Column(Integer, ForeignKey("dealer_listings.id", ondelete="CASCADE"), nullable=False)
+    is_new = Column(Boolean, default=True)
+    matched_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        UniqueConstraint("watchlist_id", "dealer_listing_id", name="uq_watchlist_dealer_listing"),
+    )
+
+    watchlist = relationship("Watchlist")
+    dealer_listing = relationship("DealerListing", back_populates="watchlist_matches")
+
+
+class PartWatchlistMatch(Base):
+    __tablename__ = "part_watchlist_matches"
+
+    id = Column(Integer, primary_key=True, index=True)
+    watchlist_id = Column(Integer, ForeignKey("watchlists.id", ondelete="CASCADE"), nullable=False)
+    part_id = Column(Integer, ForeignKey("parts.id", ondelete="CASCADE"), nullable=False)
+    is_new = Column(Boolean, default=True)
+    matched_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        UniqueConstraint("watchlist_id", "part_id", name="uq_watchlist_part"),
+    )
+
+    watchlist = relationship("Watchlist")
+    part = relationship("Part", back_populates="watchlist_matches")
+
+
 class Notification(Base):
     __tablename__ = "notifications"
 
     id = Column(Integer, primary_key=True, index=True)
     watchlist_id = Column(Integer, ForeignKey("watchlists.id", ondelete="CASCADE"), nullable=False)
     listing_id = Column(Integer, ForeignKey("listings.id", ondelete="SET NULL"), nullable=True)
+    dealer_listing_id = Column(Integer, ForeignKey("dealer_listings.id", ondelete="SET NULL"), nullable=True)
+    part_id = Column(Integer, ForeignKey("parts.id", ondelete="SET NULL"), nullable=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     type = Column(String(30), nullable=False)  # "new_match", "listing_expired"
     title = Column(String(200), nullable=False)
@@ -119,6 +268,8 @@ class Notification(Base):
 
     watchlist = relationship("Watchlist")
     listing = relationship("Listing")
+    dealer_listing = relationship("DealerListing")
+    part_rel = relationship("Part")
     user = relationship("User", back_populates="notifications")
 
 

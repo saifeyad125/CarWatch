@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CarCard, CarCardSkeleton, type CarCardData } from "@/components/ui/car-card";
+import { PartCard, PartCardSkeleton, type PartCardData } from "@/components/ui/part-card";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { API_ENDPOINTS, apiRequest } from "@/lib/api";
+import { getFavoritesByType, toggleFavorite as toggleFav } from "@/lib/favorites";
 import { useAuth } from "@/components/auth-provider";
 import { motion } from "framer-motion";
 
@@ -33,10 +35,11 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [watchlists, setWatchlists] = useState<WatchlistItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [newParts, setNewParts] = useState<PartCardData[]>([]);
+  const [partsLoading, setPartsLoading] = useState(true);
 
   useEffect(() => {
-    const savedFavorites = localStorage.getItem("carFavorites");
-    if (savedFavorites) setFavorites(JSON.parse(savedFavorites));
+    setFavorites(getFavoritesByType("used"));
   }, []);
 
   useEffect(() => {
@@ -57,6 +60,13 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    apiRequest<{ parts: PartCardData[]; total: number }>(`${API_ENDPOINTS.parts.list}?limit=6&sort=newest`)
+      .then((data) => setNewParts(data.parts || []))
+      .catch(() => setNewParts([]))
+      .finally(() => setPartsLoading(false));
+  }, []);
+
+  useEffect(() => {
     if (!user) return;
     const fetchUserData = async () => {
       try {
@@ -72,11 +82,8 @@ export default function Home() {
   }, [user]);
 
   const toggleFavorite = (carId: number) => {
-    const newFavorites = favorites.includes(carId)
-      ? favorites.filter((id) => id !== carId)
-      : [...favorites, carId];
-    setFavorites(newFavorites);
-    localStorage.setItem("carFavorites", JSON.stringify(newFavorites));
+    toggleFav("used", carId);
+    setFavorites(getFavoritesByType("used"));
   };
 
   const activeWatchlists = watchlists.filter((w) => w.isActive).length;
@@ -278,6 +285,42 @@ export default function Home() {
               </>
             )}
           </section>
+
+          {/* New Parts */}
+          {(partsLoading || newParts.length > 0) && (
+            <section className="py-6">
+              <div className="flex items-end justify-between mb-6">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-1">Marketplace</p>
+                  <h3 className="text-2xl font-semibold text-foreground tracking-tight">New Parts</h3>
+                </div>
+                <Link href="/browse/parts">
+                  <Button variant="ghost" size="sm" className="text-muted-foreground">
+                    Browse all
+                    <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                  </Button>
+                </Link>
+              </div>
+
+              {partsLoading ? (
+                <div className="flex gap-4 overflow-x-auto snap-x scrollbar-hide -mx-4 px-4 pb-2 md:grid md:grid-cols-3 lg:grid-cols-4 md:mx-0 md:px-0 md:overflow-visible">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="snap-start shrink-0 w-[200px] md:w-auto">
+                      <PartCardSkeleton />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-4 px-4 pb-2 md:grid md:grid-cols-3 lg:grid-cols-4 md:mx-0 md:px-0 md:overflow-visible">
+                  {newParts.map((part, i) => (
+                    <div key={part.id} className="snap-start shrink-0 w-[200px] md:w-auto">
+                      <PartCard part={part} index={i} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
 
           {/* Active Monitors */}
           {user && watchlists.length > 0 && (

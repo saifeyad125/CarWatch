@@ -28,10 +28,7 @@ export function BottomNavigation() {
   const [watchlistBadge, setWatchlistBadge] = useState(0);
 
   useEffect(() => {
-    if (!user) {
-      setWatchlistBadge(0);
-      return;
-    }
+    if (!user) return;
 
     const fetchBadges = async () => {
       try {
@@ -60,6 +57,7 @@ export function BottomNavigation() {
     return () => {
       clearInterval(interval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      setWatchlistBadge(0);
     };
   }, [user]);
 

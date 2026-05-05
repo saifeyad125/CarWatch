@@ -51,15 +51,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Fetch avatar seed from profile when user is authenticated
   useEffect(() => {
-    if (!user) {
-      setAvatarSeed("Saif");
-      return;
-    }
+    if (!user) return;
     apiRequest<{ avatarSeed?: string }>(API_ENDPOINTS.profile)
       .then((data) => {
         if (data?.avatarSeed) setAvatarSeed(data.avatarSeed);
       })
       .catch(() => {});
+    return () => setAvatarSeed("Saif");
   }, [user]);
 
   const signOut = async () => {

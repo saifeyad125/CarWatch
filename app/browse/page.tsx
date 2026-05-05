@@ -1,185 +1,136 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { Search, SlidersHorizontal, X, ArrowUpDown, LogIn, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useEffect, Suspense } from "react";
+import { Search, X, Car, Building2, Wrench, LogIn, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CarCard, CarCardSkeleton, type CarCardData } from "@/components/ui/car-card";
 import { API_ENDPOINTS, apiRequest } from "@/lib/api";
 import { useAuth } from "@/components/auth-provider";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { useSearchParams, useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 
-export default function Browse() {
+interface SearchResultItem {
+  id: number;
+  year?: number;
+  brand?: string;
+  model?: string;
+  price?: string;
+  location?: string;
+  dealerName?: string;
+  sellerName?: string;
+  name?: string;
+  image?: string;
+}
+
+interface SearchResults {
+  used_cars: { results: SearchResultItem[]; total: number };
+  dealer_cars: { results: SearchResultItem[]; total: number };
+  parts: { results: SearchResultItem[]; total: number };
+}
+
+export default function BrowseHubPage() {
+  return (
+    <Suspense>
+      <BrowseHub />
+    </Suspense>
+  );
+}
+
+function BrowseHub() {
   const { user, avatarSeed } = useAuth();
   const userName = user?.user_metadata?.name || user?.email?.split("@")[0] || null;
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
-  const [priceMin, setPriceMin] = useState("");
-  const [priceMax, setPriceMax] = useState("");
-  const [selectedMake, setSelectedMake] = useState("");
-  const [selectedModel, setSelectedModel] = useState("");
-  const [selectedTrim, setSelectedTrim] = useState("");
-  const [availableModels, setAvailableModels] = useState<string[]>([]);
-  const [availableTrims, setAvailableTrims] = useState<string[]>([]);
-  const [selectedYear, setSelectedYear] = useState("");
-  const [selectedSource, setSelectedSource] = useState("");
-  const [sortBy, setSortBy] = useState("newest");
-  const [favorites, setFavorites] = useState<number[]>([]);
-  const [allListings, setAllListings] = useState<CarCardData[]>([]);
-  const [totalListings, setTotalListings] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const qParam = searchParams.get("q") || "";
 
-  const PAGE_SIZE = 20;
-  const totalPages = Math.ceil(totalListings / PAGE_SIZE);
+  const [searchQuery, setSearchQuery] = useState(qParam);
+  const [counts, setCounts] = useState({ used_cars: 0, dealer_cars: 0, parts: 0 });
+  const [searchResults, setSearchResults] = useState<SearchResults | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isLoadingCounts, setIsLoadingCounts] = useState(true);
 
-  // Debounce typed inputs so the API isn't called on every keystroke
   const debouncedSearch = useDebounce(searchQuery, 300);
-  const debouncedPriceMin = useDebounce(priceMin, 300);
-  const debouncedPriceMax = useDebounce(priceMax, 300);
-
-  // Reset to page 1 when filters or sort change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [debouncedSearch, selectedSource, selectedMake, selectedModel, selectedTrim, selectedYear, debouncedPriceMin, debouncedPriceMax, sortBy]);
 
   useEffect(() => {
+    apiRequest<{ used_cars: number; dealer_cars: number; parts: number }>(API_ENDPOINTS.browse.counts)
+      .then(setCounts)
+      .catch(() => {})
+      .finally(() => setIsLoadingCounts(false));
+  }, []);
+
+  useEffect(() => {
+    if (debouncedSearch) {
+      router.replace(`/browse?q=${encodeURIComponent(debouncedSearch)}`, { scroll: false });
+    } else if (qParam) {
+      router.replace("/browse", { scroll: false });
+    }
+  }, [debouncedSearch, qParam, router]);
+
+  useEffect(() => {
+    if (!debouncedSearch) return;
     const controller = new AbortController();
-    const fetchListings = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const offset = (currentPage - 1) * PAGE_SIZE;
-        const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(offset) });
-        if (debouncedSearch) params.set("search", debouncedSearch);
-        if (selectedSource) params.set("source", selectedSource);
-        if (selectedMake) params.set("make", selectedMake);
-        if (selectedModel) params.set("model", selectedModel);
-        if (selectedTrim) params.set("trim", selectedTrim);
-        if (selectedYear) {
-          params.set("min_year", selectedYear);
-          params.set("max_year", selectedYear);
-        }
-        if (debouncedPriceMin) params.set("min_price", debouncedPriceMin);
-        if (debouncedPriceMax) params.set("max_price", debouncedPriceMax);
-        if (sortBy) params.set("sort", sortBy);
-        const data = await apiRequest<{ listings: CarCardData[]; total: number }>(
-          `${API_ENDPOINTS.cars.list}?${params}`,
-          { signal: controller.signal }
-        );
-        setAllListings(data.listings);
-        setTotalListings(data.total);
-      } catch (err) {
-        if ((err as Error).name === "AbortError") return;
-        setError("Failed to load listings. Please try again later.");
-      } finally {
-        if (!controller.signal.aborted) setIsLoading(false);
-      }
+    const search = () => {
+      setIsSearching(true);
+      apiRequest<SearchResults>(
+        `${API_ENDPOINTS.browse.search}?q=${encodeURIComponent(debouncedSearch)}`,
+        { signal: controller.signal }
+      )
+        .then(setSearchResults)
+        .catch((err) => {
+          if ((err as Error).name !== "AbortError") setSearchResults(null);
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setIsSearching(false);
+        });
     };
-    fetchListings();
-    return () => controller.abort();
-  }, [debouncedSearch, selectedSource, selectedMake, selectedModel, selectedTrim, selectedYear, debouncedPriceMin, debouncedPriceMax, sortBy, currentPage]);
+    search();
+    return () => {
+      controller.abort();
+      setSearchResults(null);
+    };
+  }, [debouncedSearch]);
 
-  useEffect(() => {
-    if (selectedMake) {
-      apiRequest<{ models: string[] }>(API_ENDPOINTS.cars.models(selectedMake))
-        .then((data) => setAvailableModels(data.models || []))
-        .catch(() => setAvailableModels([]));
-    } else {
-      setAvailableModels([]);
-    }
-    setSelectedModel("");
-  }, [selectedMake]);
+  const categories = [
+    {
+      title: "Used Cars",
+      subtitle: "Browse used car listings",
+      href: "/browse/used",
+      icon: Car,
+      count: counts.used_cars,
+      color: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+      borderColor: "border-blue-500/20 hover:border-blue-500/40",
+    },
+    {
+      title: "Dealer Certified Cars",
+      subtitle: "Certified cars from verified dealers",
+      href: "/browse/dealers",
+      icon: Building2,
+      count: counts.dealer_cars,
+      color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+      borderColor: "border-emerald-500/20 hover:border-emerald-500/40",
+    },
+    {
+      title: "Parts",
+      subtitle: "Parts & accessories",
+      href: "/browse/parts",
+      icon: Wrench,
+      count: counts.parts,
+      color: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+      borderColor: "border-amber-500/20 hover:border-amber-500/40",
+    },
+  ];
 
-  useEffect(() => {
-    if (selectedMake && selectedModel) {
-      apiRequest<{ trims: string[] }>(API_ENDPOINTS.cars.trims(selectedMake, selectedModel))
-        .then((data) => setAvailableTrims(data.trims || []))
-        .catch(() => setAvailableTrims([]));
-    } else {
-      setAvailableTrims([]);
-    }
-    setSelectedTrim("");
-  }, [selectedMake, selectedModel]);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("carFavorites");
-    if (saved) setFavorites(JSON.parse(saved));
-  }, []);
-
-  const toggleFavorite = (carId: number) => {
-    const next = favorites.includes(carId)
-      ? favorites.filter((id) => id !== carId)
-      : [...favorites, carId];
-    setFavorites(next);
-    localStorage.setItem("carFavorites", JSON.stringify(next));
-  };
-
-  const [allBrands, setAllBrands] = useState<string[]>([]);
-  useEffect(() => {
-    apiRequest<{ brands: string[] }>(API_ENDPOINTS.cars.brands)
-      .then((data) => setAllBrands(data.brands || []))
-      .catch(() => setAllBrands([]));
-  }, []);
-
-  const makes = allBrands;
-  const currentYear = new Date().getFullYear();
-  const years = useMemo(
-    () => Array.from({ length: currentYear - 1989 }, (_, i) => String(currentYear - i)),
-    [currentYear]
-  );
-  //we get presorted listings from server side
-  const sortedListings = allListings;
-
-  const activeFilters = [selectedMake, selectedModel, selectedTrim, selectedYear, priceMin, priceMax, selectedSource].filter(Boolean);
-
-  const clearFilters = () => {
-    setSearchQuery("");
-    setSelectedMake("");
-    setSelectedModel("");
-    setSelectedTrim("");
-    setSelectedYear("");
-    setPriceMin("");
-    setPriceMax("");
-    setSelectedSource("");
-  };
-
-  const goToPage = useCallback((page: number) => {
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, []);
-
-  const getPageNumbers = (current: number, total: number): (number | "...")[] => {
-    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-    const pages: (number | "...")[] = [];
-    pages.push(1);
-    if (current > 3) pages.push("...");
-    for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) {
-      pages.push(i);
-    }
-    if (current < total - 2) pages.push("...");
-    pages.push(total);
-    return pages;
-  };
+  const showSearch = !!debouncedSearch;
 
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden">
       {/* Header */}
       <header className="shrink-0 h-16 border-b border-border/40 bg-card/80 backdrop-blur-nav px-4 md:px-6 flex items-center justify-between sticky top-0 z-10">
-        <div className="flex items-center gap-3">
-          <h1 className="text-lg font-semibold text-foreground tracking-tight">Browse</h1>
-          {!isLoading && (
-            <Badge variant="secondary" className="text-xs font-medium">
-              {totalListings} cars
-            </Badge>
-          )}
-        </div>
+        <h1 className="text-lg font-semibold text-foreground tracking-tight">Browse</h1>
         {user ? (
           <Link href="/profile">
             <Avatar className="h-9 w-9 cursor-pointer ring-2 ring-border hover:ring-primary/30 transition-all duration-150">
@@ -197,14 +148,13 @@ export default function Browse() {
         )}
       </header>
 
-      {/* Search + Filter Bar */}
+      {/* Search Bar */}
       <div className="shrink-0 border-b border-border/40 bg-card px-4 md:px-6 py-3">
-        <div className="max-w-7xl mx-auto space-y-3">
-          {/* Search */}
+        <div className="max-w-7xl mx-auto">
           <div className="relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by make, model, trim, or location..."
+              placeholder="Search across all categories..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 pr-10 h-11 bg-background"
@@ -218,303 +168,162 @@ export default function Browse() {
               </button>
             )}
           </div>
-
-          {/* Controls row */}
-          <div className="flex items-center gap-2">
-            <Button
-              variant={showFilters ? "secondary" : "outline"}
-              size="sm"
-              onClick={() => setShowFilters(!showFilters)}
-              className="relative"
-            >
-              <SlidersHorizontal className="h-3.5 w-3.5 mr-1.5" />
-              Filters
-              {activeFilters.length > 0 && (
-                <span className="ml-1.5 h-4.5 min-w-4.5 px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold flex items-center justify-center">
-                  {activeFilters.length}
-                </span>
-              )}
-            </Button>
-
-            <div className="relative">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="h-8 pl-3 pr-8 rounded-md border border-input bg-background text-xs font-medium text-foreground appearance-none cursor-pointer focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-colors"
-              >
-                <option value="newest">Newest First</option>
-                <option value="oldest">Oldest First</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
-              </select>
-              <ArrowUpDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
-            </div>
-
-            {/* Active filter chips */}
-            {activeFilters.length > 0 && (
-              <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
-                {selectedMake && (
-                  <Badge variant="secondary" className="whitespace-nowrap text-xs gap-1">
-                    {selectedMake}
-                    <button onClick={() => setSelectedMake("")}><X className="h-3 w-3" /></button>
-                  </Badge>
-                )}
-                {selectedModel && (
-                  <Badge variant="secondary" className="whitespace-nowrap text-xs gap-1">
-                    {selectedModel}
-                    <button onClick={() => setSelectedModel("")}><X className="h-3 w-3" /></button>
-                  </Badge>
-                )}
-                {selectedTrim && (
-                  <Badge variant="secondary" className="whitespace-nowrap text-xs gap-1">
-                    {selectedTrim}
-                    <button onClick={() => setSelectedTrim("")}><X className="h-3 w-3" /></button>
-                  </Badge>
-                )}
-                {selectedYear && (
-                  <Badge variant="secondary" className="whitespace-nowrap text-xs gap-1">
-                    {selectedYear}
-                    <button onClick={() => setSelectedYear("")}><X className="h-3 w-3" /></button>
-                  </Badge>
-                )}
-                {priceMin && (
-                  <Badge variant="secondary" className="whitespace-nowrap text-xs gap-1">
-                    Min: {priceMin}
-                    <button onClick={() => setPriceMin("")}><X className="h-3 w-3" /></button>
-                  </Badge>
-                )}
-                {priceMax && (
-                  <Badge variant="secondary" className="whitespace-nowrap text-xs gap-1">
-                    Max: {priceMax}
-                    <button onClick={() => setPriceMax("")}><X className="h-3 w-3" /></button>
-                  </Badge>
-                )}
-                {selectedSource && (
-                  <Badge variant="secondary" className="whitespace-nowrap text-xs gap-1">
-                    {selectedSource === "dubicars" ? "DubiCars" : "Dubizzle"}
-                    <button onClick={() => setSelectedSource("")}><X className="h-3 w-3" /></button>
-                  </Badge>
-                )}
-                <button
-                  onClick={clearFilters}
-                  className="text-xs text-muted-foreground hover:text-foreground whitespace-nowrap transition-colors"
-                >
-                  Clear all
-                </button>
-              </div>
-            )}
-          </div>
         </div>
       </div>
 
-      {/* Filters Panel */}
-      <AnimatePresence>
-        {showFilters && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="shrink-0 overflow-hidden border-b border-border/40 bg-card"
-          >
-            <div className="max-w-7xl mx-auto px-4 md:px-6 py-4">
-              <div className="grid grid-cols-2 md:grid-cols-7 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Min Price (AED)</label>
-                  <Input
-                    type="number"
-                    placeholder="0"
-                    value={priceMin}
-                    onChange={(e) => setPriceMin(e.target.value)}
-                    className="h-9"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Max Price (AED)</label>
-                  <Input
-                    type="number"
-                    placeholder="No limit"
-                    value={priceMax}
-                    onChange={(e) => setPriceMax(e.target.value)}
-                    className="h-9"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Make</label>
-                  <div className="relative">
-                    <select
-                      value={selectedMake}
-                      onChange={(e) => setSelectedMake(e.target.value)}
-                      className="h-9 w-full px-3 rounded-lg border border-input bg-background text-sm appearance-none cursor-pointer focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-colors"
-                    >
-                      <option value="">All makes</option>
-                      {makes.map((make) => (
-                        <option key={make} value={make}>{make}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Model</label>
-                  <div className="relative">
-                    <select
-                      value={selectedModel}
-                      onChange={(e) => setSelectedModel(e.target.value)}
-                      disabled={!selectedMake}
-                      className="h-9 w-full px-3 rounded-lg border border-input bg-background text-sm appearance-none cursor-pointer focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <option value="">{selectedMake ? "All models" : "Select make first"}</option>
-                      {availableModels.map((model) => (
-                        <option key={model} value={model}>{model}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Trim</label>
-                  <div className="relative">
-                    <select
-                      value={selectedTrim}
-                      onChange={(e) => setSelectedTrim(e.target.value)}
-                      disabled={!selectedModel}
-                      className="h-9 w-full px-3 rounded-lg border border-input bg-background text-sm appearance-none cursor-pointer focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <option value="">{selectedModel ? "All trims" : "Select model first"}</option>
-                      {availableTrims.map((trim) => (
-                        <option key={trim} value={trim}>{trim}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Year</label>
-                  <div className="relative">
-                    <select
-                      value={selectedYear}
-                      onChange={(e) => setSelectedYear(e.target.value)}
-                      className="h-9 w-full px-3 rounded-lg border border-input bg-background text-sm appearance-none cursor-pointer focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-colors"
-                    >
-                      <option value="">All years</option>
-                      {years.map((year) => (
-                        <option key={year} value={year}>{year}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Source</label>
-                  <div className="relative">
-                    <select
-                      value={selectedSource}
-                      onChange={(e) => setSelectedSource(e.target.value)}
-                      className="h-9 w-full px-3 rounded-lg border border-input bg-background text-sm appearance-none cursor-pointer focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-colors"
-                    >
-                      <option value="">All Sources</option>
-                      <option value="dubizzle">Dubizzle</option>
-                      <option value="dubicars">DubiCars</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Filter backdrop */}
-      {showFilters && (
-        <div
-          className="fixed inset-0 z-0 md:hidden"
-          onClick={() => setShowFilters(false)}
-        />
-      )}
-
-      {/* Results */}
-      <div className="flex-1 overflow-y-auto scrollbar-hide" onClick={() => showFilters && setShowFilters(false)}>
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto scrollbar-hide">
         <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-6 pb-safe">
-          {/* Loading */}
-          {isLoading && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-              {Array.from({ length: 9 }).map((_, i) => (
-                <CarCardSkeleton key={i} />
+          {!showSearch ? (
+            /* Category Cards */
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {categories.map((cat, i) => (
+                <motion.div
+                  key={cat.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  <Link href={cat.href} className="group block">
+                    <div className={`bg-card rounded-xl border ${cat.borderColor} shadow-card p-6 transition-all duration-200 ease-out group-hover:shadow-card-hover group-hover:-translate-y-0.5`}>
+                      <div className="flex items-start justify-between mb-4">
+                        <div className={`h-12 w-12 rounded-xl ${cat.color} flex items-center justify-center`}>
+                          <cat.icon className="h-6 w-6" />
+                        </div>
+                        {!isLoadingCounts && (
+                          <Badge variant="secondary" className="text-xs font-medium">
+                            {cat.count.toLocaleString()}
+                          </Badge>
+                        )}
+                      </div>
+                      <h2 className="font-semibold text-lg text-foreground mb-1">{cat.title}</h2>
+                      <p className="text-sm text-muted-foreground">{cat.subtitle}</p>
+                      <div className="mt-4 flex items-center text-sm font-medium text-primary">
+                        Browse
+                        <ChevronRight className="h-4 w-4 ml-1 transition-transform group-hover:translate-x-0.5" />
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
               ))}
             </div>
-          )}
-
-          {/* Error */}
-          {error && (
-            <Card className="p-6 bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/40">
-              <p className="text-red-700 dark:text-red-300 text-center text-sm">{error}</p>
-            </Card>
-          )}
-
-          {/* Empty state */}
-          {!isLoading && !error && sortedListings.length === 0 && (
-            <div className="text-center py-16">
-              <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
-                <Search className="h-7 w-7 text-muted-foreground" />
-              </div>
-              <h3 className="font-semibold text-foreground mb-1">No cars found</h3>
-              <p className="text-sm text-muted-foreground mb-4">Try adjusting your filters or search query.</p>
-              <Button variant="outline" onClick={clearFilters}>Clear Filters</Button>
-            </div>
-          )}
-
-          {/* Listings */}
-          {!isLoading && !error && sortedListings.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-              {sortedListings.map((car, i) => (
-                <CarCard
-                  key={car.id}
-                  car={car}
-                  index={i}
-                  isFavorite={favorites.includes(car.id)}
-                  onToggleFavorite={toggleFavorite}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Pagination */}
-          {!isLoading && !error && totalPages > 1 && (
-            <div className="flex items-center justify-center gap-1.5 pt-8 pb-24 md:pb-8">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={currentPage === 1}
-                onClick={() => goToPage(currentPage - 1)}
-                className="h-9 w-9 p-0"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              {getPageNumbers(currentPage, totalPages).map((page, i) =>
-                page === "..." ? (
-                  <span key={`dots-${i}`} className="px-1 text-muted-foreground text-sm">...</span>
-                ) : (
-                  <Button
-                    key={page}
-                    variant={page === currentPage ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => goToPage(page as number)}
-                    className="h-9 w-9 p-0 text-sm"
+          ) : (
+            /* Search Results */
+            <div className="space-y-8">
+              {isSearching ? (
+                <div className="space-y-6">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="space-y-3">
+                      <div className="h-5 w-32 skeleton rounded" />
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {[1, 2, 3].map((j) => (
+                          <div key={j} className="h-24 skeleton rounded-xl" />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : searchResults ? (
+                <>
+                  {/* Used Cars Results */}
+                  <SearchSection
+                    title="Used Cars"
+                    total={searchResults.used_cars.total}
+                    seeAllHref={`/browse/used?search=${encodeURIComponent(debouncedSearch)}`}
                   >
-                    {page}
-                  </Button>
-                )
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={currentPage === totalPages}
-                onClick={() => goToPage(currentPage + 1)}
-                className="h-9 w-9 p-0"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+                    {searchResults.used_cars.results.map((r) => (
+                      <Link key={r.id} href={`/listing/${r.id}`} className="group block">
+                        <div className="bg-card rounded-xl border border-border/60 p-3 flex gap-3 transition-all hover:shadow-card-hover hover:-translate-y-0.5">
+                          <img src={r.image || "https://placehold.co/120x80/eee/555?text=No+Image"} alt="" className="w-20 h-14 rounded-lg object-cover shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">{r.year} {r.brand} {r.model}</p>
+                            <p className="text-xs text-primary font-semibold">{r.price}</p>
+                            <p className="text-xs text-muted-foreground">{r.location}</p>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </SearchSection>
+
+                  {/* Dealer Certified Cars Results */}
+                  <SearchSection
+                    title="Dealer Certified Cars"
+                    total={searchResults.dealer_cars.total}
+                    seeAllHref={`/browse/dealers?search=${encodeURIComponent(debouncedSearch)}`}
+                  >
+                    {searchResults.dealer_cars.results.map((r) => (
+                      <Link key={r.id} href={`/listing/dealer/${r.id}`} className="group block">
+                        <div className="bg-card rounded-xl border border-primary/20 p-3 flex gap-3 transition-all hover:shadow-card-hover hover:-translate-y-0.5">
+                          <img src={r.image || "https://placehold.co/120x80/eee/555?text=No+Image"} alt="" className="w-20 h-14 rounded-lg object-cover shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">{r.year} {r.brand} {r.model}</p>
+                            <p className="text-xs text-primary font-semibold">{r.price}</p>
+                            <p className="text-xs text-muted-foreground">{r.dealerName}</p>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </SearchSection>
+
+                  {/* Parts Results */}
+                  <SearchSection
+                    title="Parts"
+                    total={searchResults.parts.total}
+                    seeAllHref={`/browse/parts?search=${encodeURIComponent(debouncedSearch)}`}
+                  >
+                    {searchResults.parts.results.map((r) => (
+                      <Link key={r.id} href={`/listing/parts/${r.id}`} className="group block">
+                        <div className="bg-card rounded-xl border border-border/60 p-3 flex gap-3 transition-all hover:shadow-card-hover hover:-translate-y-0.5">
+                          <img src={r.image || "https://placehold.co/120x80/eee/555?text=No+Image"} alt="" className="w-20 h-14 rounded-lg object-cover shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">{r.name}</p>
+                            <p className="text-xs text-primary font-semibold">{r.price}</p>
+                            <p className="text-xs text-muted-foreground">{r.sellerName}</p>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </SearchSection>
+                </>
+              ) : null}
             </div>
           )}
         </div>
       </div>
     </div>
+  );
+}
+
+function SearchSection({ title, total, seeAllHref, children }: {
+  title: string;
+  total: number;
+  seeAllHref: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-semibold text-foreground">
+          {title}
+          <span className="text-muted-foreground font-normal ml-2 text-sm">({total} results)</span>
+        </h3>
+        {total > 0 && (
+          <Link href={seeAllHref} className="text-sm text-primary font-medium hover:underline flex items-center gap-0.5">
+            See all <ChevronRight className="h-3.5 w-3.5" />
+          </Link>
+        )}
+      </div>
+      {total === 0 ? (
+        <p className="text-sm text-muted-foreground py-4">No results found.</p>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {children}
+        </div>
+      )}
+    </motion.div>
   );
 }

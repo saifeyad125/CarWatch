@@ -24,10 +24,7 @@ export function DesktopSidebar() {
   const [watchlistBadge, setWatchlistBadge] = useState(0);
 
   useEffect(() => {
-    if (!user) {
-      setWatchlistBadge(0);
-      return;
-    }
+    if (!user) return;
 
     const fetchBadges = async () => {
       try {
@@ -41,7 +38,10 @@ export function DesktopSidebar() {
 
     fetchBadges();
     const interval = setInterval(fetchBadges, 30_000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      setWatchlistBadge(0);
+    };
   }, [user]);
 
   return (

@@ -218,9 +218,9 @@ export default function WatchlistPage() {
       const data = await apiRequest<WatchlistsResponse>(API_ENDPOINTS.watchlists.list);
       setWatchlistItems(data.watchlists);
       setSummary(data.summary);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setWatchlistItems((prev) => prev.map((item) => (item.id === id ? { ...item, isActive: currentlyActive } : item)));
-      if (err?.message?.includes("409")) setShowLimitModal(true);
+      if (err instanceof Error && err.message.includes("409")) setShowLimitModal(true);
       else { setActionError("Failed to update status."); setTimeout(() => setActionError(null), 3000); }
     }
   };

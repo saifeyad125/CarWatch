@@ -325,6 +325,53 @@ class MLService:
             "projections": projections,
         }
 
+    def compute_forecast(
+        self, features: Dict[str, Any], annual_kms: int
+    ) -> Dict[str, Any]:
+        if not self.model_loaded:
+            return {}
+
+        current_year = datetime.now().year
+        year = features.get("year", 2020)
+        current_age = current_year - year
+        current_kms = features.get("mileage", 50_000)
+
+        current_pred = self.predict_price(features)
+        current_price = int(current_pred["predicted_price"])
+
+        projections = []
+        prev_price = current_price
+
+        for years_ahead in range(1, 11):
+            projected_age = current_age + years_ahead
+            projected_kms = min(current_kms + (annual_kms * years_ahead), 999_999)
+            synthetic_year = current_year - projected_age
+
+            proj_features = dict(features)
+            proj_features["year"] = synthetic_year
+            proj_features["mileage"] = projected_kms
+
+            pred = self.predict_price(proj_features)
+            raw_price = max(int(pred["predicted_price"]), 1_000)
+            capped_price = min(raw_price, prev_price)
+            prev_price = capped_price
+
+            retention_pct = round((capped_price / current_price) * 100, 1) if current_price > 0 else 0.0
+
+            projections.append({
+                "years_ahead": years_ahead,
+                "projected_age": projected_age,
+                "projected_kms": projected_kms,
+                "predicted_price": capped_price,
+                "retention_pct": retention_pct,
+            })
+
+        return {
+            "current_price": current_price,
+            "annual_kms": annual_kms,
+            "projections": projections,
+        }
+
     def get_model_info(self) -> Dict[str, Any]:
         return {
             "model_loaded": self.model_loaded,

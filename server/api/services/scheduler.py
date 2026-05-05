@@ -10,7 +10,11 @@ from db.models import Watchlist
 from api.services.scraper_service import scrape_new_listings
 from api.services.dubicars_scraper_service import scrape_dubicars_listings
 from api.services.expiry_service import expire_listings
-from api.services.notification_service import create_match_notifications
+from api.services.notification_service import (
+    create_match_notifications,
+    create_dealer_match_notifications,
+    create_part_match_notifications,
+)
 from api.services.watchlists_service import run_watchlist_scan
 from api.services.constants import HYBRID_PRICE_THRESHOLD, hp_to_midpoint, cc_to_midpoint
 
@@ -87,6 +91,38 @@ def _predict_and_label(listing, ml_service, lgbm_service=None) -> None:
         logger.warning(f"ML prediction failed for listing {listing.id}: {e}")
 
 
+def predict_dealer_listings(db=None):
+    own_session = db is None
+    if own_session:
+        db = SessionLocal()
+    try:
+        from db.models import DealerListing
+        rows = db.query(DealerListing).filter(DealerListing.predicted_price.is_(None)).all()
+        if not rows:
+            logger.info("No dealer listings need prediction")
+            return
+        logger.info(f"Predicting prices for {len(rows)} dealer listings")
+        from api.services.ml_service import MLService
+        ml_service = MLService()
+        lgbm_service = None
+        try:
+            from api.services.lgbm_service import LightGBMService
+            lgbm_service = LightGBMService()
+        except Exception as e:
+            logger.warning(f"LightGBM not available for dealer predictions: {e}")
+        for listing in rows:
+            _predict_and_label(listing, ml_service, lgbm_service)
+        db.commit()
+        logger.info(f"Updated predictions for {len(rows)} dealer listings")
+    except Exception as e:
+        logger.error(f"Dealer listing prediction failed: {e}", exc_info=True)
+        if own_session:
+            db.rollback()
+    finally:
+        if own_session:
+            db.close()
+
+
 def hourly_scrape_and_match():
     # scrape -> predict -> expire -> match -> notify
     logger.info("=== Hourly scrape-and-match job started ===")
@@ -121,6 +157,8 @@ def hourly_scrape_and_match():
             except Exception as e:
                 logger.warning(f"ML prediction skipped: {e}")
 
+        predict_dealer_listings(db)
+
         # expire old/dead listings
         expiry_result = expire_listings(db)
         logger.info(f"Expired {expiry_result['age_expired']} by age")
@@ -144,6 +182,16 @@ def hourly_scrape_and_match():
 
             if new_ids and w.alerts_enabled:
                 total_notifications += create_match_notifications(db, w, new_ids)
+
+            dealer_ids = result.get("newDealerMatchIds", [])
+            total_new_matches += len(dealer_ids)
+            if dealer_ids and w.alerts_enabled:
+                total_notifications += create_dealer_match_notifications(db, w, dealer_ids)
+
+            part_ids = result.get("newPartMatchIds", [])
+            total_new_matches += len(part_ids)
+            if part_ids and w.alerts_enabled:
+                total_notifications += create_part_match_notifications(db, w, part_ids)
 
         db.commit()
         logger.info(f"Step 4-5: Scanned {len(active_watchlists)} watchlists, "

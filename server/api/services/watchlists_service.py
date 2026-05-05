@@ -10,9 +10,14 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
-from db.models import Listing, Watchlist, WatchlistMatch as WatchlistMatchDB
+from db.models import (
+    Listing, DealerListing, Part, PartCompatibility,
+    Watchlist, WatchlistMatch as WatchlistMatchDB,
+    DealerWatchlistMatch, PartWatchlistMatch,
+)
 from models.schemas import (
     CarListingSummary,
+    PartWatchlistSearchCriteria,
     WatchlistCard,
     WatchlistCreate,
     WatchlistDetailResponse,
@@ -100,6 +105,53 @@ def _build_criteria_query(db: Session, criteria: WatchlistSearchCriteria):
         q = q.filter(Listing.kms <= criteria.mileage_max)
     if criteria.locations:
         q = q.filter(Listing.location.in_(criteria.locations))
+
+    return q
+
+
+def _build_dealer_criteria_query(db: Session, criteria: WatchlistSearchCriteria):
+    q = db.query(DealerListing)
+
+    if criteria.make:
+        q = q.filter(DealerListing.brand.ilike(criteria.make))
+    if criteria.models:
+        q = q.filter(DealerListing.model.in_(criteria.models))
+    if criteria.year_min:
+        q = q.filter(DealerListing.year >= criteria.year_min)
+    if criteria.year_max:
+        q = q.filter(DealerListing.year <= criteria.year_max)
+    if criteria.price_min:
+        q = q.filter(DealerListing.price >= criteria.price_min)
+    if criteria.price_max:
+        q = q.filter(DealerListing.price <= criteria.price_max)
+    if criteria.mileage_min:
+        q = q.filter(DealerListing.kms >= criteria.mileage_min)
+    if criteria.mileage_max:
+        q = q.filter(DealerListing.kms <= criteria.mileage_max)
+    if criteria.locations:
+        q = q.filter(DealerListing.location.in_(criteria.locations))
+
+    return q
+
+
+def _build_part_criteria_query(db: Session, criteria: PartWatchlistSearchCriteria):
+    q = db.query(Part)
+
+    if criteria.keyword:
+        q = q.filter(Part.name.ilike(f"%{criteria.keyword}%"))
+    if criteria.category_id:
+        q = q.filter(Part.category_id == criteria.category_id)
+    if criteria.price_min:
+        q = q.filter(Part.price >= criteria.price_min)
+    if criteria.price_max:
+        q = q.filter(Part.price <= criteria.price_max)
+    if criteria.compatible_brand or criteria.compatible_model:
+        part_ids_q = db.query(PartCompatibility.part_id)
+        if criteria.compatible_brand:
+            part_ids_q = part_ids_q.filter(PartCompatibility.brand.ilike(criteria.compatible_brand))
+        if criteria.compatible_model:
+            part_ids_q = part_ids_q.filter(PartCompatibility.model.ilike(criteria.compatible_model))
+        q = q.filter(Part.id.in_(part_ids_q))
 
     return q
 
@@ -295,45 +347,89 @@ def run_watchlist_scan(db: Session, watchlist_id: int, user_id: int | None = Non
                 detail=f"Please wait {int(SCAN_COOLDOWN_SECONDS - elapsed)} seconds before scanning again.",
             )
 
-    criteria = WatchlistSearchCriteria(**(w.criteria_json or {}))
-
-    # Count total listings in DB for reporting
-    total_in_db = db.query(func.count(Listing.id)).scalar()
-
-    # Use DB-level filtering — no Python loop needed
-    matching_listings = _build_criteria_query(db, criteria).all()
-
-    # Get existing match listing_ids for this watchlist
-    existing_ids = set(
-        r[0] for r in db.query(WatchlistMatchDB.listing_id)
-        .filter(WatchlistMatchDB.watchlist_id == watchlist_id)
-        .all()
-    )
-
-    new_match_listing_ids: list[int] = []
     now = datetime.now(timezone.utc)
-    for listing in matching_listings:
-        if listing.id not in existing_ids:
-            db.add(WatchlistMatchDB(
-                watchlist_id=watchlist_id,
-                listing_id=listing.id,
-                is_new=True,
-                matched_at=now,
-            ))
-            new_match_listing_ids.append(listing.id)
+    new_match_listing_ids: list[int] = []
+    new_dealer_ids: list[int] = []
+    new_part_ids: list[int] = []
+    total_in_db = 0
+    total_matched = 0
+    existing_count = 0
+
+    if w.type == "car":
+        criteria = WatchlistSearchCriteria(**(w.criteria_json or {}))
+
+        # Used car matching
+        total_in_db = db.query(func.count(Listing.id)).scalar()
+        matching_listings = _build_criteria_query(db, criteria).all()
+        total_matched += len(matching_listings)
+
+        existing_ids = set(
+            r[0] for r in db.query(WatchlistMatchDB.listing_id)
+            .filter(WatchlistMatchDB.watchlist_id == watchlist_id)
+            .all()
+        )
+        existing_count += len(existing_ids)
+
+        for listing in matching_listings:
+            if listing.id not in existing_ids:
+                db.add(WatchlistMatchDB(
+                    watchlist_id=watchlist_id,
+                    listing_id=listing.id,
+                    is_new=True,
+                    matched_at=now,
+                ))
+                new_match_listing_ids.append(listing.id)
+
+        # Dealer listing matching
+        dealer_matches = _build_dealer_criteria_query(db, criteria).all()
+        total_matched += len(dealer_matches)
+
+        existing_dealer_ids = set(
+            r[0] for r in db.query(DealerWatchlistMatch.dealer_listing_id)
+            .filter(DealerWatchlistMatch.watchlist_id == watchlist_id)
+            .all()
+        )
+        existing_count += len(existing_dealer_ids)
+
+        for dl in dealer_matches:
+            if dl.id not in existing_dealer_ids:
+                db.add(DealerWatchlistMatch(
+                    watchlist_id=watchlist_id,
+                    dealer_listing_id=dl.id,
+                    is_new=True,
+                    matched_at=now,
+                ))
+                new_dealer_ids.append(dl.id)
+
+    elif w.type == "part":
+        part_criteria = PartWatchlistSearchCriteria(**(w.criteria_json or {}))
+        part_matches = _build_part_criteria_query(db, part_criteria).all()
+        total_matched += len(part_matches)
+
+        existing_part_ids = set(
+            r[0] for r in db.query(PartWatchlistMatch.part_id)
+            .filter(PartWatchlistMatch.watchlist_id == watchlist_id)
+            .all()
+        )
+        existing_count += len(existing_part_ids)
+
+        for p in part_matches:
+            if p.id not in existing_part_ids:
+                db.add(PartWatchlistMatch(
+                    watchlist_id=watchlist_id,
+                    part_id=p.id,
+                    is_new=True,
+                    matched_at=now,
+                ))
+                new_part_ids.append(p.id)
+
+    total_new = len(new_match_listing_ids) + len(new_dealer_ids) + len(new_part_ids)
 
     w.updated_at = datetime.now(timezone.utc)
     try:
         db.commit()
     except IntegrityError:
-        # concurrent scan already inserted some of these — recover gracefully
         db.rollback()
-        actually_new = set(
-            r[0] for r in db.query(WatchlistMatchDB.listing_id)
-            .filter(WatchlistMatchDB.watchlist_id == watchlist_id)
-            .all()
-        ) - existing_ids
-        new_match_listing_ids = list(actually_new)
         w = db.query(Watchlist).filter(Watchlist.id == watchlist_id).first()
         w.updated_at = datetime.now(timezone.utc)
         db.commit()
@@ -341,10 +437,12 @@ def run_watchlist_scan(db: Session, watchlist_id: int, user_id: int | None = Non
     return {
         "watchlistId": watchlist_id,
         "totalScanned": total_in_db,
-        "totalMatches": len(matching_listings),
-        "existingMatches": len(existing_ids),
-        "newMatches": len(new_match_listing_ids),
+        "totalMatches": total_matched,
+        "existingMatches": existing_count,
+        "newMatches": total_new,
         "newMatchListingIds": new_match_listing_ids,
+        "newDealerMatchIds": new_dealer_ids,
+        "newPartMatchIds": new_part_ids,
     }
 
 
@@ -423,6 +521,7 @@ def create_watchlist(db: Session, payload: WatchlistCreate, user_id: int) -> Wat
         tags=tags,
         is_active=payload.isActive,
         alerts_enabled=payload.alertsEnabled,
+        type=payload.type,
         criteria_json=criteria.model_dump(exclude_none=True),
         user_id=user_id,
     )

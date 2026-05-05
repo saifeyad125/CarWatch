@@ -264,6 +264,7 @@ def get_listings(
     max_price: Optional[int] = Query(None),
     sort: Optional[str] = Query(None),
     source: Optional[str] = Query(None),
+    fuel_type: Optional[str] = Query(None),
     limit: int = Query(20, ge=1, le=200),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
@@ -296,6 +297,8 @@ def get_listings(
         q = q.filter(Listing.price <= max_price)
     if source:
         q = q.filter(Listing.source == source)
+    if fuel_type:
+        q = q.filter(Listing.fuel_type.ilike(fuel_type))
 
     total = q.count()
     if sort == "newest":
