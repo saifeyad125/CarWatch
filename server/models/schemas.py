@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional, Literal
 
 
@@ -44,7 +44,7 @@ class MarketAnalysis(BaseModel):
 class CarListingDetail(CarListingSummary):
     description: str
     seller: Seller
-    url: str
+    url: Optional[str] = None
     features: List[str]
     images: List[str] = []
     marketAnalysis: Optional[MarketAnalysis] = None
@@ -326,6 +326,7 @@ class BrowseCountsResponse(BaseModel):
     used_cars: int
     dealer_cars: int
     parts: int
+    motorcycles: int
 
 class SearchResultGroup(BaseModel):
     results: list
@@ -335,6 +336,7 @@ class SearchResponse(BaseModel):
     used_cars: SearchResultGroup
     dealer_cars: SearchResultGroup
     parts: SearchResultGroup
+    motorcycles: SearchResultGroup
 
 
 class PartWatchlistSearchCriteria(BaseModel):
@@ -344,3 +346,138 @@ class PartWatchlistSearchCriteria(BaseModel):
     compatible_model: Optional[str] = None
     price_min: Optional[int] = None
     price_max: Optional[int] = None
+
+
+# Motorcycles
+
+class MotorcycleListingSummary(BaseModel):
+    id: int
+    make: str
+    model: str
+    trim: Optional[str] = None
+    year: int
+    price: str
+    mileage: str
+    location: str
+    image: str
+    source: str = "dubizzle"
+    engineCc: Optional[int] = None
+    motorcycleType: Optional[str] = None
+
+class MotorcycleListingsResponse(BaseModel):
+    listings: List[MotorcycleListingSummary]
+    total: int
+
+class MotorcycleListingDetail(MotorcycleListingSummary):
+    description: str
+    features: List[str]
+    images: List[str] = []
+    seller: Seller
+
+class DealerMotorcycleListingSummary(MotorcycleListingSummary):
+    dealerName: str
+    dealerLogo: Optional[str] = None
+    dealerId: int
+
+class DealerMotorcycleListingsResponse(BaseModel):
+    listings: List[DealerMotorcycleListingSummary]
+    total: int
+
+class MotorcycleDealerSummary(BaseModel):
+    id: int
+    name: str
+    logoUrl: Optional[str] = None
+    location: Optional[str] = None
+    phone: Optional[str] = None
+    listingCount: int = 0
+
+class MotorcycleDealersListResponse(BaseModel):
+    dealers: List[MotorcycleDealerSummary]
+
+
+# Sell / User Listings
+
+class CarListingCreate(BaseModel):
+    brand: str
+    model: str
+    trim: Optional[str] = None
+    year: int
+    price: int
+    kms: Optional[int] = None
+    fuel_type: Optional[str] = None
+    body_type: Optional[str] = None
+    cylinders: Optional[str] = None
+    horsepower: Optional[str] = None
+    engine_capacity: Optional[str] = None
+    doors: Optional[str] = None
+    seating_capacity: Optional[str] = None
+    steering_side: Optional[str] = None
+    regional_specs: Optional[str] = None
+    exterior_color: Optional[str] = None
+    interior_color: Optional[str] = None
+    location: Optional[str] = "Dubai, UAE"
+    image: Optional[str] = None
+    images: Optional[List[str]] = None
+    seller_name: Optional[str] = Field(None, max_length=200)
+    seller_phone: Optional[str] = Field(None, max_length=50, pattern=r'^[\d\s+().-]+$')
+    description: Optional[str] = None
+
+
+class MotorcycleListingCreate(BaseModel):
+    brand: str
+    model: str
+    trim: Optional[str] = None
+    year: int
+    price: int
+    kms: Optional[int] = None
+    engine_cc: Optional[int] = None
+    motorcycle_type: Optional[str] = None
+    horsepower: Optional[str] = None
+    fuel_type: Optional[str] = None
+    exterior_color: Optional[str] = None
+    regional_specs: Optional[str] = None
+    location: Optional[str] = "Dubai, UAE"
+    image: Optional[str] = None
+    images: Optional[List[str]] = None
+    seller_name: Optional[str] = Field(None, max_length=200)
+    seller_phone: Optional[str] = Field(None, max_length=50, pattern=r'^[\d\s+().-]+$')
+    description: Optional[str] = None
+
+
+class ListingSubmissionResponse(BaseModel):
+    id: int
+    type: str
+    status: str
+    predictedPrice: Optional[int] = None
+    dealLabel: Optional[str] = None
+    confidenceLow: Optional[int] = None
+    confidenceHigh: Optional[int] = None
+
+
+class MyListingItem(BaseModel):
+    id: int
+    type: str
+    make: str
+    model: str
+    trim: Optional[str] = None
+    year: int
+    price: str
+    mileage: str
+    location: str
+    image: str
+    status: str
+    createdAt: str
+
+
+class MyListingsResponse(BaseModel):
+    cars: List[MyListingItem]
+    motorcycles: List[MyListingItem]
+
+
+class PendingListingsResponse(BaseModel):
+    cars: List[MyListingItem]
+    motorcycles: List[MyListingItem]
+
+
+class ListingStatusUpdate(BaseModel):
+    status: Literal["approved", "rejected"]

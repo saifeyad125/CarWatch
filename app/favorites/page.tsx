@@ -1,25 +1,29 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, Heart, Search, Car, Building2, Wrench } from "lucide-react";
+import { ArrowLeft, Heart, Search, Car, Building2, Wrench, Bike } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { CarCard, CarCardSkeleton, type CarCardData } from "@/components/ui/car-card";
 import { DealerCarCard, DealerCarCardSkeleton, type DealerCarCardData } from "@/components/ui/dealer-car-card";
 import { PartCard, PartCardSkeleton, type PartCardData } from "@/components/ui/part-card";
+import { MotorcycleCard, type MotorcycleCardData } from "@/components/ui/motorcycle-card";
+import { DealerMotorcycleCard, type DealerMotorcycleCardData } from "@/components/ui/dealer-motorcycle-card";
 import { useRouter } from "next/navigation";
 import { API_ENDPOINTS, apiRequest } from "@/lib/api";
 import { getFavorites, getFavoritesByType, toggleFavorite } from "@/lib/favorites";
 import { motion } from "framer-motion";
 
-type TabKey = "all" | "used" | "dealer" | "part";
+type TabKey = "all" | "used" | "dealer" | "part" | "motorcycle" | "dealer_motorcycle";
 
 const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   { key: "all", label: "All", icon: null },
   { key: "used", label: "Used Cars", icon: <Car className="h-3.5 w-3.5" /> },
   { key: "dealer", label: "Dealer Cars", icon: <Building2 className="h-3.5 w-3.5" /> },
   { key: "part", label: "Parts", icon: <Wrench className="h-3.5 w-3.5" /> },
+  { key: "motorcycle", label: "Motorcycles", icon: <Bike className="h-3.5 w-3.5" /> },
+  { key: "dealer_motorcycle", label: "Dealer Motorcycles", icon: <Bike className="h-3.5 w-3.5" /> },
 ];
 
 export default function FavoritesPage() {
@@ -31,8 +35,10 @@ export default function FavoritesPage() {
   const [usedListings, setUsedListings] = useState<CarCardData[]>([]);
   const [dealerListings, setDealerListings] = useState<DealerCarCardData[]>([]);
   const [partListings, setPartListings] = useState<PartCardData[]>([]);
+  const [motoListings, setMotoListings] = useState<MotorcycleCardData[]>([]);
+  const [dealerMotoListings, setDealerMotoListings] = useState<DealerMotorcycleCardData[]>([]);
 
-  const totalCount = usedListings.length + dealerListings.length + partListings.length;
+  const totalCount = usedListings.length + dealerListings.length + partListings.length + motoListings.length + dealerMotoListings.length;
 
   useEffect(() => {
     const loadFavorites = async () => {
@@ -46,25 +52,33 @@ export default function FavoritesPage() {
       const usedIds = getFavoritesByType("used");
       const dealerIds = getFavoritesByType("dealer");
       const partIds = getFavoritesByType("part");
+      const motoIds = getFavoritesByType("motorcycle");
+      const dealerMotoIds = getFavoritesByType("dealer_motorcycle");
 
-      const [used, dealer, parts] = await Promise.all([
+      const [used, dealer, parts, motos, dealerMotos] = await Promise.all([
         Promise.all(usedIds.map((id) => apiRequest<CarCardData>(API_ENDPOINTS.cars.detail(id)).catch(() => null))),
         Promise.all(dealerIds.map((id) => apiRequest<DealerCarCardData>(API_ENDPOINTS.dealerCars.detail(id)).catch(() => null))),
         Promise.all(partIds.map((id) => apiRequest<PartCardData>(API_ENDPOINTS.parts.detail(id)).catch(() => null))),
+        Promise.all(motoIds.map((id) => apiRequest<MotorcycleCardData>(API_ENDPOINTS.motorcycles.detail(id)).catch(() => null))),
+        Promise.all(dealerMotoIds.map((id) => apiRequest<DealerMotorcycleCardData>(API_ENDPOINTS.motorcycleDealerCars.detail(id)).catch(() => null))),
       ]);
       setUsedListings(used.filter((r): r is CarCardData => r !== null));
       setDealerListings(dealer.filter((r): r is DealerCarCardData => r !== null));
       setPartListings(parts.filter((r): r is PartCardData => r !== null));
+      setMotoListings(motos.filter((r): r is MotorcycleCardData => r !== null));
+      setDealerMotoListings(dealerMotos.filter((r): r is DealerMotorcycleCardData => r !== null));
       setIsLoading(false);
     };
     loadFavorites();
   }, []);
 
-  const removeFavorite = (type: "used" | "dealer" | "part", id: number) => {
+  const removeFavorite = (type: "used" | "dealer" | "part" | "motorcycle" | "dealer_motorcycle", id: number) => {
     toggleFavorite(type, id);
     if (type === "used") setUsedListings((prev) => prev.filter((c) => c.id !== id));
     if (type === "dealer") setDealerListings((prev) => prev.filter((c) => c.id !== id));
     if (type === "part") setPartListings((prev) => prev.filter((p) => p.id !== id));
+    if (type === "motorcycle") setMotoListings((prev) => prev.filter((m) => m.id !== id));
+    if (type === "dealer_motorcycle") setDealerMotoListings((prev) => prev.filter((m) => m.id !== id));
   };
 
   const q = searchQuery.toLowerCase();
@@ -77,11 +91,19 @@ export default function FavoritesPage() {
   const filteredParts = partListings.filter(
     (p) => p.name.toLowerCase().includes(q) || p.sellerName.toLowerCase().includes(q)
   );
+  const filteredMotos = motoListings.filter(
+    (m) => m.make.toLowerCase().includes(q) || m.model.toLowerCase().includes(q) || `${m.year}`.includes(q)
+  );
+  const filteredDealerMotos = dealerMotoListings.filter(
+    (m) => m.make.toLowerCase().includes(q) || m.model.toLowerCase().includes(q) || `${m.year}`.includes(q)
+  );
 
   const showUsed = (activeTab === "all" || activeTab === "used") && filteredUsed.length > 0;
   const showDealer = (activeTab === "all" || activeTab === "dealer") && filteredDealer.length > 0;
   const showParts = (activeTab === "all" || activeTab === "part") && filteredParts.length > 0;
-  const hasResults = showUsed || showDealer || showParts;
+  const showMotos = (activeTab === "all" || activeTab === "motorcycle") && filteredMotos.length > 0;
+  const showDealerMotos = (activeTab === "all" || activeTab === "dealer_motorcycle") && filteredDealerMotos.length > 0;
+  const hasResults = showUsed || showDealer || showParts || showMotos || showDealerMotos;
 
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden">
@@ -134,7 +156,9 @@ export default function FavoritesPage() {
                       tab.key === "all" ? totalCount
                       : tab.key === "used" ? usedListings.length
                       : tab.key === "dealer" ? dealerListings.length
-                      : partListings.length;
+                      : tab.key === "part" ? partListings.length
+                      : tab.key === "motorcycle" ? motoListings.length
+                      : dealerMotoListings.length;
                     if (tab.key !== "all" && count === 0) return null;
                     return (
                       <button
@@ -224,6 +248,44 @@ export default function FavoritesPage() {
                         index={i}
                         isFavorite={true}
                         onToggleFavorite={(id) => removeFavorite("part", id)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {showMotos && (
+                <section>
+                  {activeTab === "all" && (
+                    <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest mb-3">Motorcycles</h2>
+                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+                    {filteredMotos.map((m, i) => (
+                      <MotorcycleCard
+                        key={m.id}
+                        motorcycle={m}
+                        index={i}
+                        isFavorite={true}
+                        onToggleFavorite={(id) => removeFavorite("motorcycle", id)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {showDealerMotos && (
+                <section>
+                  {activeTab === "all" && (
+                    <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest mb-3">Dealer Motorcycles</h2>
+                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+                    {filteredDealerMotos.map((m, i) => (
+                      <DealerMotorcycleCard
+                        key={m.id}
+                        motorcycle={m}
+                        index={i}
+                        isFavorite={true}
+                        onToggleFavorite={(id) => removeFavorite("dealer_motorcycle", id)}
                       />
                     ))}
                   </div>

@@ -1,11 +1,14 @@
+import os
 from collections import defaultdict
 from fastapi import APIRouter, HTTPException, Query, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional, List
 from sqlalchemy.orm import Session, load_only
 from sqlalchemy import or_
+import jwt
 
 from db.deps import get_db
-from db.models import Listing, ModelAnalytics
+from db.models import Listing, ModelAnalytics, User, UserStatus
 from api.services.constants import HYBRID_PRICE_THRESHOLD, derive_model_used, derive_confidence_label
 from models.schemas import (
     CarListingSummary,
@@ -96,6 +99,7 @@ def _get_similar_listings(row: Listing, db: Session) -> List[CarListingSummary]:
         .filter(
             Listing.id != row.id,
             Listing.brand == row.brand,
+            Listing.listing_status == "approved",
         )
         .limit(300)
         .all()
@@ -160,27 +164,36 @@ def _listing_to_detail(row: Listing, db: Session) -> CarListingDetail:
     if row.regional_specs:
         features.append(f"{row.regional_specs} Specs")
     
-    # Mock seller data (TODO: add seller table)
-    seller = Seller(
-        name="AutoTrader UAE",
-        avatar="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop",
-        phone="+971 50 123 4567",
-        type="Verified Dealer"
-    )
+    if row.is_user_submitted and (row.seller_name or row.seller_phone):
+        seller = Seller(
+            name=row.seller_name or "Private Seller",
+            avatar=f"https://api.dicebear.com/7.x/avataaars/svg?seed={row.seller_name or 'seller'}",
+            phone=row.seller_phone or "Contact via listing",
+            type="Private Seller",
+        )
+    else:
+        seller = Seller(
+            name="AutoTrader UAE",
+            avatar="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop",
+            phone="+971 50 123 4567",
+            type="Verified Dealer",
+        )
     
-    # Generate description from DB fields
-    description = f"Well-maintained {row.year} {row.brand} {row.model}"
-    if row.trim:
-        description += f" {row.trim}"
-    description += f" with {_fmt_mileage(row.kms)}."
-    if row.fuel_type and row.cylinders:
-        description += f" Powered by a {row.cylinders}-cylinder {row.fuel_type} engine"
-        if row.horsepower:
-            description += f" producing {row.horsepower}hp"
-        description += "."
-    if row.regional_specs:
-        description += f" {row.regional_specs} specifications."
-    description += " Excellent condition, ready for immediate delivery."
+    if row.description:
+        description = row.description
+    else:
+        description = f"Well-maintained {row.year} {row.brand} {row.model}"
+        if row.trim:
+            description += f" {row.trim}"
+        description += f" with {_fmt_mileage(row.kms)}."
+        if row.fuel_type and row.cylinders:
+            description += f" Powered by a {row.cylinders}-cylinder {row.fuel_type} engine"
+            if row.horsepower:
+                description += f" producing {row.horsepower}hp"
+            description += "."
+        if row.regional_specs:
+            description += f" {row.regional_specs} specifications."
+        description += " Excellent condition, ready for immediate delivery."
     
     # Market analysis from ML depreciation data
     dep = row.depreciation_data
@@ -250,7 +263,31 @@ def _listing_to_detail(row: Listing, db: Session) -> CarListingDetail:
     )
 
 
-# routes 
+_optional_bearer = HTTPBearer(auto_error=False)
+
+
+def _try_get_user(credentials: Optional[HTTPAuthorizationCredentials], db: Session) -> Optional[User]:
+    if not credentials:
+        return None
+    try:
+        token = credentials.credentials
+        supabase_url = os.getenv("SUPABASE_URL", "")
+        if supabase_url:
+            from db.deps import _get_jwks_client
+            jwks_client = _get_jwks_client()
+            signing_key = jwks_client.get_signing_key_from_jwt(token)
+            payload = jwt.decode(token, signing_key.key, algorithms=["ES256"], audience="authenticated")
+        else:
+            payload = jwt.decode(token, os.getenv("SUPABASE_JWT_SECRET", ""), algorithms=["HS256"], audience="authenticated")
+        supabase_id = payload.get("sub", "")
+        if not supabase_id:
+            return None
+        return db.query(User).filter(User.supabase_id == supabase_id).first()
+    except Exception:
+        return None
+
+
+# routes
 
 @router.get("", response_model=CarListingsResponse)
 def get_listings(
@@ -270,6 +307,7 @@ def get_listings(
     db: Session = Depends(get_db),
 ):
     q = db.query(Listing)
+    q = q.filter(Listing.listing_status == "approved")
     if search:
         search = search.replace('\x00', '')
         tokens = search.strip().split()
@@ -319,7 +357,7 @@ def get_listings(
 
 @router.get("/brands")
 def get_brands(db: Session = Depends(get_db)):
-    rows = db.query(Listing.brand).distinct().order_by(Listing.brand).all()
+    rows = db.query(Listing.brand).filter(Listing.listing_status == "approved").distinct().order_by(Listing.brand).all()
     return {"brands": [r[0] for r in rows]}
 
 
@@ -328,6 +366,7 @@ def get_models_for_brand(brand: str, db: Session = Depends(get_db)):
     rows = (
         db.query(Listing.model)
         .filter(Listing.brand.ilike(brand.strip()))
+        .filter(Listing.listing_status == "approved")
         .distinct()
         .order_by(Listing.model)
         .all()
@@ -344,6 +383,7 @@ def get_trims_for_model(brand: str, model: str, db: Session = Depends(get_db)):
             Listing.model.ilike(model.strip()),
             Listing.trim.isnot(None),
             Listing.trim != "",
+            Listing.listing_status == "approved",
         )
         .distinct()
         .order_by(Listing.trim)
@@ -353,18 +393,41 @@ def get_trims_for_model(brand: str, model: str, db: Session = Depends(get_db)):
 
 
 @router.get("/{car_id}", response_model=CarListingDetail)
-def get_car_by_id(car_id: int, db: Session = Depends(get_db)):
+def get_car_by_id(
+    car_id: int,
+    db: Session = Depends(get_db),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(_optional_bearer),
+):
     row = db.query(Listing).filter(Listing.id == car_id).first()
     if not row:
         raise HTTPException(status_code=404, detail=f"Car with ID {car_id} not found")
+
+    if row.listing_status != "approved":
+        current_user = _try_get_user(credentials, db)
+        is_owner = current_user and row.submitted_by_user_id == current_user.id
+        is_admin = current_user and current_user.status == UserStatus.admin
+        if not (is_owner or is_admin):
+            raise HTTPException(status_code=404, detail=f"Car with ID {car_id} not found")
+
     return _listing_to_detail(row, db)
 
 
 @router.get("/{car_id}/analysis", response_model=AnalysisResponse)
-def get_car_analysis(car_id: int, db: Session = Depends(get_db)):
+def get_car_analysis(
+    car_id: int,
+    db: Session = Depends(get_db),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(_optional_bearer),
+):
     row = db.query(Listing).filter(Listing.id == car_id).first()
     if not row:
         raise HTTPException(status_code=404, detail=f"Car with ID {car_id} not found")
+
+    if row.listing_status != "approved":
+        current_user = _try_get_user(credentials, db)
+        is_owner = current_user and row.submitted_by_user_id == current_user.id
+        is_admin = current_user and current_user.status == UserStatus.admin
+        if not (is_owner or is_admin):
+            raise HTTPException(status_code=404, detail=f"Car with ID {car_id} not found")
 
     # depreciation curve from stored data
     dep = row.depreciation_data or {}
@@ -413,7 +476,7 @@ def get_car_analysis(car_id: int, db: Session = Depends(get_db)):
             Listing.deal_label, Listing.sigma_log, Listing.image,
             Listing.location, Listing.source,
         ))
-        .filter(Listing.id != row.id)
+        .filter(Listing.id != row.id, Listing.listing_status == "approved")
         .order_by(Listing.id.desc())
         .limit(500)
         .all()

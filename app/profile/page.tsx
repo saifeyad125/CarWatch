@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import {
   Bell, HelpCircle, Settings, ChevronRight,
-  LogOut, Moon, Sun, Mail, Phone, MapPin, Edit, Trash2, Check,
+  LogOut, Moon, Sun, Mail, Phone, MapPin, Edit, Trash2, Check, Package, ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -142,6 +142,13 @@ export default function ProfilePage() {
   }
 
   const settingsGroups = [
+    {
+      title: "Marketplace",
+      items: [
+        { id: "my-listings", label: "My Listings", desc: "View your submitted listings", icon: Package },
+        ...(profile?.status === "admin" ? [{ id: "admin/pending", label: "Pending Reviews", desc: "Review user submissions", icon: ShieldCheck }] : []),
+      ],
+    },
     {
       title: "Account",
       items: [

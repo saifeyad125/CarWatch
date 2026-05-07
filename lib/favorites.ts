@@ -1,5 +1,5 @@
 export interface FavoriteItem {
-  type: "used" | "dealer" | "part";
+  type: "used" | "dealer" | "part" | "motorcycle" | "dealer_motorcycle";
   id: number;
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Home, Search, List, MessageCircle } from "lucide-react";
+import { Home, Search, Plus, List, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -18,6 +18,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { icon: Home, label: "Home", href: "/" },
   { icon: Search, label: "Browse", href: "/browse" },
+  { icon: Plus, label: "Sell", href: "/sell" },
   { icon: List, label: "Watchlist", href: "/watchlist" },
   { icon: MessageCircle, label: "AI Chat", href: "/chat" },
 ];
@@ -86,11 +87,18 @@ export function BottomNavigation() {
                 <div className="relative">
                   <div className={cn(
                     "rounded-xl p-2 transition-all duration-200",
-                    isActive && "bg-primary/10"
+                    item.href === "/sell"
+                      ? "bg-primary rounded-full p-2.5 shadow-glow-primary"
+                      : isActive && "bg-primary/10"
                   )}>
                     <Icon
-                      className={cn("h-5 w-5", isActive && "text-primary")}
-                      strokeWidth={isActive ? 2.25 : 1.75}
+                      className={cn(
+                        "h-5 w-5",
+                        item.href === "/sell"
+                          ? "text-primary-foreground"
+                          : isActive && "text-primary"
+                      )}
+                      strokeWidth={item.href === "/sell" ? 2.5 : isActive ? 2.25 : 1.75}
                     />
                   </div>
                   {badge > 0 && (

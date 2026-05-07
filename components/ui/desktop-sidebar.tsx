@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Home, Search, List, MessageCircle, LogOut } from "lucide-react";
+import { Home, Search, Plus, List, MessageCircle, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -13,6 +13,7 @@ import { motion } from "framer-motion";
 const navItems = [
   { icon: Home, label: "Home", href: "/" },
   { icon: Search, label: "Browse", href: "/browse" },
+  { icon: Plus, label: "Sell", href: "/sell" },
   { icon: List, label: "Watchlist", href: "/watchlist" },
   { icon: MessageCircle, label: "AI Chat", href: "/chat" },
 ];

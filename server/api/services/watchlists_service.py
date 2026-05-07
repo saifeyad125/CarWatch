@@ -86,6 +86,7 @@ def _time_ago(dt: datetime) -> str:
 
 def _build_criteria_query(db: Session, criteria: WatchlistSearchCriteria):
     q = db.query(Listing)
+    q = q.filter(Listing.listing_status == "approved")
 
     if criteria.make:
         q = q.filter(Listing.brand.ilike(criteria.make))

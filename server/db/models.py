@@ -25,7 +25,7 @@ class Listing(Base):
     price = Column(Integer, nullable=False)             # AED, raw integer
     favorite_count = Column(Integer, default=0, server_default='0', nullable=False)
     kms = Column(Integer, nullable=True)
-    url = Column(Text, nullable=False, unique=True)      # natural unique key
+    url = Column(Text, nullable=True, unique=True)      # natural unique key
     horsepower = Column(String(50), nullable=True)
     doors = Column(String(20), nullable=True)
     fuel_type = Column(String(50), nullable=True)
@@ -51,12 +51,20 @@ class Listing(Base):
     confidence_low = Column(Integer, nullable=True)
     confidence_high = Column(Integer, nullable=True)
 
+    is_user_submitted = Column(Boolean, default=False, server_default="false", nullable=False)
+    listing_status = Column(String(20), default="approved", server_default="approved", nullable=False, index=True)
+    submitted_by_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    seller_phone = Column(String(50), nullable=True)
+    seller_name = Column(String(200), nullable=True)
+    description = Column(Text, nullable=True)
+
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
                         onupdate=lambda: datetime.now(timezone.utc))
 
     # Relationships
     watchlist_matches = relationship("WatchlistMatch", back_populates="listing", cascade="all, delete-orphan")
+    submitter = relationship("User", foreign_keys=[submitted_by_user_id])
 
 
 class Dealer(Base):
@@ -117,6 +125,100 @@ class DealerListing(Base):
 
     dealer = relationship("Dealer", back_populates="listings")
     watchlist_matches = relationship("DealerWatchlistMatch", back_populates="dealer_listing", cascade="all, delete-orphan")
+
+
+class MotorcycleListing(Base):
+    __tablename__ = "motorcycle_listings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    brand = Column(String(100), nullable=False, index=True)
+    model = Column(String(200), nullable=False, index=True)
+    trim = Column(String(200), nullable=True)
+    year = Column(Integer, nullable=False, index=True)
+    price = Column(Integer, nullable=False)
+    kms = Column(Integer, nullable=True)
+    url = Column(Text, nullable=True, unique=True)
+    engine_cc = Column(Integer, nullable=True)
+    motorcycle_type = Column(String(50), nullable=True)
+    horsepower = Column(String(50), nullable=True)
+    fuel_type = Column(String(50), nullable=True)
+    exterior_color = Column(String(50), nullable=True)
+    regional_specs = Column(String(50), nullable=True)
+    image = Column(Text, nullable=True)
+    images = Column(JSON, nullable=True)
+    location = Column(String(255), nullable=True, default="Dubai, UAE")
+    source = Column(String(50), nullable=False, default="dubizzle", index=True)
+
+    predicted_price = Column(Integer, nullable=True)
+    deal_label = Column(String(20), nullable=True)
+    sigma_log = Column(Float, nullable=True)
+    confidence_low = Column(Integer, nullable=True)
+    confidence_high = Column(Integer, nullable=True)
+    depreciation_data = Column(JSON, nullable=True)
+
+    is_user_submitted = Column(Boolean, default=False, server_default="false", nullable=False)
+    listing_status = Column(String(20), default="approved", server_default="approved", nullable=False, index=True)
+    submitted_by_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    seller_phone = Column(String(50), nullable=True)
+    seller_name = Column(String(200), nullable=True)
+    description = Column(Text, nullable=True)
+
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
+                        onupdate=lambda: datetime.now(timezone.utc))
+
+
+class MotorcycleDealer(Base):
+    __tablename__ = "motorcycle_dealers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(200), nullable=False)
+    logo_url = Column(Text, nullable=True)
+    location = Column(String(255), nullable=True)
+    phone = Column(String(50), nullable=True)
+    email = Column(String(255), nullable=True)
+    is_seed = Column(Boolean, default=False, server_default="false", nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    listings = relationship("DealerMotorcycleListing", back_populates="dealer", cascade="all, delete-orphan")
+
+
+class DealerMotorcycleListing(Base):
+    __tablename__ = "dealer_motorcycle_listings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    dealer_id = Column(Integer, ForeignKey("motorcycle_dealers.id", ondelete="CASCADE"), nullable=False, index=True)
+    brand = Column(String(100), nullable=False, index=True)
+    model = Column(String(200), nullable=False, index=True)
+    trim = Column(String(200), nullable=True)
+    year = Column(Integer, nullable=False, index=True)
+    price = Column(Integer, nullable=False)
+    kms = Column(Integer, nullable=True)
+    url = Column(Text, nullable=True)
+    engine_cc = Column(Integer, nullable=True)
+    motorcycle_type = Column(String(50), nullable=True)
+    horsepower = Column(String(50), nullable=True)
+    fuel_type = Column(String(50), nullable=True)
+    exterior_color = Column(String(50), nullable=True)
+    regional_specs = Column(String(50), nullable=True)
+    image = Column(Text, nullable=True)
+    images = Column(JSON, nullable=True)
+    location = Column(String(255), nullable=True)
+    description = Column(Text, nullable=True)
+
+    predicted_price = Column(Integer, nullable=True)
+    deal_label = Column(String(20), nullable=True)
+    sigma_log = Column(Float, nullable=True)
+    confidence_low = Column(Integer, nullable=True)
+    confidence_high = Column(Integer, nullable=True)
+    depreciation_data = Column(JSON, nullable=True)
+
+    is_seed = Column(Boolean, default=False, server_default="false", nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
+                        onupdate=lambda: datetime.now(timezone.utc))
+
+    dealer = relationship("MotorcycleDealer", back_populates="listings")
 
 
 class PartCategory(Base):

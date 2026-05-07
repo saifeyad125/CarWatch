@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from db.deps import get_db
-from db.models import Listing, DealerListing, Dealer, Part, PartCategory, PartCompatibility
+from db.models import Listing, DealerListing, Dealer, Part, PartCategory, PartCompatibility, MotorcycleListing, DealerMotorcycleListing, MotorcycleDealer
 from api.services.constants import derive_model_used, derive_confidence_label
 
 router = APIRouter()
@@ -24,10 +24,19 @@ def _fmt_mileage(kms: Optional[int]) -> str:
 
 @router.get("/counts")
 def browse_counts(db: Session = Depends(get_db)):
-    used = db.query(func.count(Listing.id)).scalar() or 0
+    used = db.query(func.count(Listing.id)).filter(Listing.listing_status == "approved").scalar() or 0
     dealer = db.query(func.count(DealerListing.id)).scalar() or 0
     parts = db.query(func.count(Part.id)).scalar() or 0
-    return {"used_cars": used, "dealer_cars": dealer, "parts": parts}
+    moto_used = db.query(func.count(MotorcycleListing.id)).filter(MotorcycleListing.listing_status == "approved").scalar() or 0
+    moto_dealer = db.query(func.count(DealerMotorcycleListing.id)).scalar() or 0
+    return {
+        "used_cars": used,
+        "dealer_cars": dealer,
+        "parts": parts,
+        "motorcycles": moto_used + moto_dealer,
+        "used_motorcycles": moto_used,
+        "dealer_motorcycles": moto_dealer,
+    }
 
 
 @router.get("/search")
@@ -36,6 +45,7 @@ def cross_category_search(q: str = Query(..., min_length=1), db: Session = Depen
     per_group = 3
 
     used_q = db.query(Listing).filter(
+        Listing.listing_status == "approved",
         (Listing.brand.ilike(term)) | (Listing.model.ilike(term))
     )
     used_total = used_q.count()
@@ -86,8 +96,41 @@ def cross_category_search(q: str = Query(..., min_length=1), db: Session = Depen
             "categoryBreadcrumb": breadcrumb,
         })
 
+    moto_used_q = db.query(MotorcycleListing).filter(
+        MotorcycleListing.listing_status == "approved",
+        (MotorcycleListing.brand.ilike(term)) | (MotorcycleListing.model.ilike(term))
+    )
+    moto_dealer_q = db.query(DealerMotorcycleListing).filter(
+        (DealerMotorcycleListing.brand.ilike(term)) | (DealerMotorcycleListing.model.ilike(term))
+    )
+    moto_total = moto_used_q.count() + moto_dealer_q.count()
+    moto_used_rows = moto_used_q.order_by(MotorcycleListing.created_at.desc()).limit(per_group).all()
+    moto_dealer_rows = moto_dealer_q.order_by(DealerMotorcycleListing.created_at.desc()).limit(per_group).all()
+    moto_results = [
+        {
+            "id": r.id, "brand": r.brand, "model": r.model, "year": r.year,
+            "price": _fmt_price(r.price), "image": r.image or "",
+            "location": r.location or "Dubai, UAE",
+            "motorcycleType": r.motorcycle_type,
+            "mileage": _fmt_mileage(r.kms),
+        }
+        for r in moto_used_rows
+    ] + [
+        {
+            "id": r.id, "brand": r.brand, "model": r.model, "year": r.year,
+            "price": _fmt_price(r.price), "image": r.image or "",
+            "location": r.location or "Dubai, UAE",
+            "motorcycleType": r.motorcycle_type,
+            "mileage": _fmt_mileage(r.kms),
+            "dealerName": r.dealer.name if r.dealer else None,
+        }
+        for r in moto_dealer_rows
+    ]
+    moto_results = moto_results[:per_group]
+
     return {
         "used_cars": {"results": used_results, "total": used_total},
         "dealer_cars": {"results": dealer_results, "total": dealer_total},
         "parts": {"results": parts_results, "total": parts_total},
+        "motorcycles": {"results": moto_results, "total": moto_total},
     }

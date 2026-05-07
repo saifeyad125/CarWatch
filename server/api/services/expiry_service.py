@@ -69,7 +69,7 @@ def expire_listings(
     # age-based expiry
     age_expired = (
         db.query(Listing)
-        .filter(Listing.created_at < cutoff)
+        .filter(Listing.created_at < cutoff, Listing.is_user_submitted == False)
         .all()
     )
     age_expired_ids = [l.id for l in age_expired]
@@ -87,7 +87,7 @@ def expire_listings(
     if ENABLE_IMAGE_EXPIRY:
         image_rows = (
             db.query(Listing.id, Listing.image, Listing.source)
-            .filter(Listing.image.isnot(None), Listing.image != DEFAULT_IMAGE)
+            .filter(Listing.image.isnot(None), Listing.image != DEFAULT_IMAGE, Listing.is_user_submitted == False)
             .all()
         )
         image_dead_ids, image_checked = check_images_alive(image_rows)
@@ -105,7 +105,7 @@ def expire_listings(
         logger.info("Image expiry disabled, skipping")
 
     # url spot-check (random sample)
-    url_rows = db.query(Listing.id, Listing.url).all()
+    url_rows = db.query(Listing.id, Listing.url).filter(Listing.is_user_submitted == False, Listing.url.isnot(None)).all()
     sample = random.sample(url_rows, min(recheck_batch, len(url_rows)))
 
     dead_ids: list[int] = []

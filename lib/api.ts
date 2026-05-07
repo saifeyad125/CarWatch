@@ -74,10 +74,42 @@ export const API_ENDPOINTS = {
     compatible: (brand: string, model: string) => `${API_BASE_URL}/api/parts/compatible/${encodeURIComponent(brand)}/${encodeURIComponent(model)}`,
   },
 
+  // Motorcycles
+  motorcycles: {
+    list: `${API_BASE_URL}/api/motorcycles`,
+    detail: (id: number) => `${API_BASE_URL}/api/motorcycles/${id}`,
+    brands: `${API_BASE_URL}/api/motorcycles/brands`,
+    models: (brand: string) => `${API_BASE_URL}/api/motorcycles/brands/${encodeURIComponent(brand)}/models`,
+  },
+
+  // Motorcycle Dealers
+  motorcycleDealers: {
+    list: `${API_BASE_URL}/api/motorcycle-dealers`,
+    detail: (id: number) => `${API_BASE_URL}/api/motorcycle-dealers/${id}`,
+  },
+
+  // Motorcycle Dealer Cars
+  motorcycleDealerCars: {
+    list: `${API_BASE_URL}/api/motorcycle-dealer-cars`,
+    detail: (id: number) => `${API_BASE_URL}/api/motorcycle-dealer-cars/${id}`,
+    brands: `${API_BASE_URL}/api/motorcycle-dealer-cars/brands`,
+    models: (brand: string) => `${API_BASE_URL}/api/motorcycle-dealer-cars/brands/${encodeURIComponent(brand)}/models`,
+  },
+
   // Browse Hub
   browse: {
     counts: `${API_BASE_URL}/api/browse/counts`,
     search: `${API_BASE_URL}/api/browse/search`,
+  },
+
+  // Sell / User Listings
+  sell: {
+    car: `${API_BASE_URL}/api/sell/car`,
+    motorcycle: `${API_BASE_URL}/api/sell/motorcycle`,
+    myListings: `${API_BASE_URL}/api/sell/my-listings`,
+    delete: (type: string, id: number) => `${API_BASE_URL}/api/sell/${type}/${id}`,
+    pending: `${API_BASE_URL}/api/sell/pending`,
+    updateStatus: (type: string, id: number) => `${API_BASE_URL}/api/sell/${type}/${id}/status`,
   },
 
   // Health check

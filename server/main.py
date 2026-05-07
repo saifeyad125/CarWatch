@@ -19,7 +19,7 @@ from db.database import engine, Base, SessionLocal
 from db import models as db_models          # registers ORM models with Base
 
 # Import routers
-from api.routes import cars, predictions, health, watchlists, profile, notifications, chat, dealers, dealer_cars, parts, browse
+from api.routes import cars, predictions, health, watchlists, profile, notifications, chat, dealers, dealer_cars, parts, browse, motorcycles, motorcycle_dealers, motorcycle_dealer_cars, sell
 from api.services.watchlists_service import initialize_watchlists
 from api.services.scheduler import start_scheduler, stop_scheduler
 
@@ -70,6 +70,10 @@ app.include_router(dealers.router, prefix="/api/dealers", tags=["Dealers"])
 app.include_router(dealer_cars.router, prefix="/api/dealer-cars", tags=["Dealer Cars"])
 app.include_router(parts.router, prefix="/api/parts", tags=["Parts"])
 app.include_router(browse.router, prefix="/api/browse", tags=["Browse"])
+app.include_router(motorcycles.router, prefix="/api/motorcycles", tags=["Motorcycles"])
+app.include_router(motorcycle_dealers.router, prefix="/api/motorcycle-dealers", tags=["Motorcycle Dealers"])
+app.include_router(motorcycle_dealer_cars.router, prefix="/api/motorcycle-dealer-cars", tags=["Motorcycle Dealer Cars"])
+app.include_router(sell.router, prefix="/api/sell", tags=["Sell"])
 
 
 

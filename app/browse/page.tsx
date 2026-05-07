@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { Search, X, Car, Building2, Wrench, LogIn, ChevronRight } from "lucide-react";
+import { Search, X, Car, Building2, Wrench, Bike, LogIn, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +30,7 @@ interface SearchResults {
   used_cars: { results: SearchResultItem[]; total: number };
   dealer_cars: { results: SearchResultItem[]; total: number };
   parts: { results: SearchResultItem[]; total: number };
+  motorcycles: { results: SearchResultItem[]; total: number };
 }
 
 export default function BrowseHubPage() {
@@ -48,7 +49,7 @@ function BrowseHub() {
   const qParam = searchParams.get("q") || "";
 
   const [searchQuery, setSearchQuery] = useState(qParam);
-  const [counts, setCounts] = useState({ used_cars: 0, dealer_cars: 0, parts: 0 });
+  const [counts, setCounts] = useState({ used_cars: 0, dealer_cars: 0, parts: 0, motorcycles: 0, used_motorcycles: 0, dealer_motorcycles: 0 });
   const [searchResults, setSearchResults] = useState<SearchResults | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [isLoadingCounts, setIsLoadingCounts] = useState(true);
@@ -56,7 +57,7 @@ function BrowseHub() {
   const debouncedSearch = useDebounce(searchQuery, 300);
 
   useEffect(() => {
-    apiRequest<{ used_cars: number; dealer_cars: number; parts: number }>(API_ENDPOINTS.browse.counts)
+    apiRequest<{ used_cars: number; dealer_cars: number; parts: number; motorcycles: number; used_motorcycles: number; dealer_motorcycles: number }>(API_ENDPOINTS.browse.counts)
       .then(setCounts)
       .catch(() => {})
       .finally(() => setIsLoadingCounts(false));
@@ -122,6 +123,15 @@ function BrowseHub() {
       color: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
       borderColor: "border-amber-500/20 hover:border-amber-500/40",
     },
+    {
+      title: "Motorcycles",
+      subtitle: "Used & dealer motorcycles",
+      href: "/browse/motorcycles",
+      icon: Bike,
+      count: counts.motorcycles,
+      color: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
+      borderColor: "border-violet-500/20 hover:border-violet-500/40",
+    },
   ];
 
   const showSearch = !!debouncedSearch;
@@ -176,31 +186,31 @@ function BrowseHub() {
         <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-6 pb-safe">
           {!showSearch ? (
             /* Category Cards */
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
               {categories.map((cat, i) => (
                 <motion.div
                   key={cat.title}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }}
+                  transition={{ duration: 0.35, delay: i * 0.06, ease: [0.16, 1, 0.3, 1] }}
                 >
                   <Link href={cat.href} className="group block">
-                    <div className={`bg-card rounded-xl border ${cat.borderColor} shadow-card p-6 transition-all duration-200 ease-out group-hover:shadow-card-hover group-hover:-translate-y-0.5`}>
-                      <div className="flex items-start justify-between mb-4">
-                        <div className={`h-12 w-12 rounded-xl ${cat.color} flex items-center justify-center`}>
-                          <cat.icon className="h-6 w-6" />
+                    <div className={`bg-card rounded-xl border ${cat.borderColor} shadow-card p-4 transition-all duration-200 ease-out group-hover:shadow-card-hover group-hover:-translate-y-0.5 h-full flex flex-col`}>
+                      <div className="flex items-start justify-between mb-3">
+                        <div className={`h-10 w-10 rounded-lg ${cat.color} flex items-center justify-center`}>
+                          <cat.icon className="h-5 w-5" />
                         </div>
                         {!isLoadingCounts && (
-                          <Badge variant="secondary" className="text-xs font-medium">
+                          <Badge variant="secondary" className="text-[11px] font-medium px-1.5 py-0.5">
                             {cat.count.toLocaleString()}
                           </Badge>
                         )}
                       </div>
-                      <h2 className="font-semibold text-lg text-foreground mb-1">{cat.title}</h2>
-                      <p className="text-sm text-muted-foreground">{cat.subtitle}</p>
-                      <div className="mt-4 flex items-center text-sm font-medium text-primary">
+                      <h2 className="font-semibold text-sm md:text-base text-foreground mb-0.5 leading-tight">{cat.title}</h2>
+                      <p className="text-xs text-muted-foreground hidden sm:block">{cat.subtitle}</p>
+                      <div className="mt-auto pt-3 flex items-center text-xs md:text-sm font-medium text-primary">
                         Browse
-                        <ChevronRight className="h-4 w-4 ml-1 transition-transform group-hover:translate-x-0.5" />
+                        <ChevronRight className="h-3.5 w-3.5 ml-0.5 transition-transform group-hover:translate-x-0.5" />
                       </div>
                     </div>
                   </Link>
@@ -279,6 +289,26 @@ function BrowseHub() {
                             <p className="text-sm font-medium text-foreground truncate">{r.name}</p>
                             <p className="text-xs text-primary font-semibold">{r.price}</p>
                             <p className="text-xs text-muted-foreground">{r.sellerName}</p>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </SearchSection>
+
+                  {/* Motorcycles Results */}
+                  <SearchSection
+                    title="Motorcycles"
+                    total={searchResults.motorcycles.total}
+                    seeAllHref={`/browse/motorcycles?search=${encodeURIComponent(debouncedSearch)}`}
+                  >
+                    {searchResults.motorcycles.results.map((r) => (
+                      <Link key={r.id} href={`/listing/motorcycle/${r.id}`} className="group block">
+                        <div className="bg-card rounded-xl border border-violet-500/20 p-3 flex gap-3 transition-all hover:shadow-card-hover hover:-translate-y-0.5">
+                          <img src={r.image || "https://placehold.co/120x80/eee/555?text=No+Image"} alt="" className="w-20 h-14 rounded-lg object-cover shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">{r.year} {r.brand} {r.model}</p>
+                            <p className="text-xs text-primary font-semibold">{r.price}</p>
+                            <p className="text-xs text-muted-foreground">{r.location}</p>
                           </div>
                         </div>
                       </Link>
