@@ -43,8 +43,12 @@ export default function MotorcyclesBrowse() {
   const [selectedYear, setSelectedYear] = useState("");
   const [selectedType, setSelectedType] = useState("");
   const [sortBy, setSortBy] = useState("newest");
-  const [usedFavorites, setUsedFavorites] = useState<number[]>(() => getFavoritesByType("motorcycle"));
-  const [dealerFavorites, setDealerFavorites] = useState<number[]>(() => getFavoritesByType("dealer_motorcycle"));
+  const [usedFavorites, setUsedFavorites] = useState<number[]>(() =>
+    typeof window !== "undefined" ? getFavoritesByType("motorcycle") : []
+  );
+  const [dealerFavorites, setDealerFavorites] = useState<number[]>(() =>
+    typeof window !== "undefined" ? getFavoritesByType("dealer_motorcycle") : []
+  );
 
   const [usedListings, setUsedListings] = useState<MotorcycleCardData[]>([]);
   const [usedTotal, setUsedTotal] = useState(0);
